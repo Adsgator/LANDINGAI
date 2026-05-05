@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LandingAI — Adsgator</title>
+  <link rel="stylesheet" href="assets/app.css">
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="logo-container">
+      <div class="logo">LandingAI</div>
+    </div>
+    
+    <nav class="nav-section">
+      <div class="nav-label">Briefing</div>
+      <div id="nav-steps">
+        <!-- Steps will be injected here -->
+      </div>
+      
+      <div class="nav-label">Geração</div>
+      <a href="#" class="nav-item" data-step="9" id="nav-step-9">
+        <div class="step-num">9</div>
+        <span>Revisar & Gerar</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="status-badge">
+        <div id="api-status-dot" class="status-dot"></div>
+        <span id="api-status-text">Modo: Prompt</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <h2 id="current-step-title" class="step-title">Identificação do Projeto</h2>
+        <p id="current-step-subtitle" class="step-subtitle">Defina a identidade base e os nomes do projeto</p>
+      </div>
+      
+      <div class="progress-container">
+        <div id="main-progress-bar" class="progress-bar"></div>
+      </div>
+    </header>
+
+    <div class="scroll-area">
+      <div class="content-wrapper" id="step-content">
+        <!-- Step content will be injected here -->
+      </div>
+    </div>
+
+    <footer class="footer-actions">
+      <button id="btn-prev" class="btn btn-ghost" disabled>← Voltar</button>
+      <div class="footer-center">
+        <!-- Optional status info -->
+      </div>
+      <button id="btn-next" class="btn btn-primary">Próximo →</button>
+    </footer>
+  </main>
+</div>
+
+<!-- Modal de Geração -->
+<div id="gen-modal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 id="modal-client-name">⚡ Gerando Doc 3</h3>
+      <button id="close-modal" class="btn-ghost" style="border:none; padding:4px; font-size:18px; cursor:pointer;">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="gen-progress-track">
+        <div id="gen-progress-bar" class="gen-progress-bar"></div>
+      </div>
+      
+      <ul class="gen-steps">
+        <li class="gen-step" data-gen-step="1">
+          <div class="gen-step-icon">○</div>
+          <span>Compilando briefing...</span>
+        </li>
+        <li class="gen-step" data-gen-step="2">
+          <div class="gen-step-icon">○</div>
+          <span>Analisando intenção de busca...</span>
+        </li>
+        <li class="gen-step" data-gen-step="3">
+          <div class="gen-step-icon">○</div>
+          <span>Gerando metadados SEO e fluxo de blocos...</span>
+        </li>
+        <li class="gen-step" data-gen-step="4">
+          <div class="gen-step-icon">○</div>
+          <span>Construindo especificação por seção...</span>
+        </li>
+        <li class="gen-step" data-gen-step="5">
+          <div class="gen-step-icon">○</div>
+          <span>Finalizando checklists e assets...</span>
+        </li>
+      </ul>
+
+      <div style="margin-top: 32px; padding: 16px; background: var(--bg-raised); border-radius: var(--r-md); font-size: 13px; color: var(--text-secondary);">
+        O Gemini 1.5 Pro está gerando a Ficha de Implementação completa. Isso leva ~30-60 segundos.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<!-- Scripts -->
+<script src="assets/app.js"></script>
+</body>
+</html>

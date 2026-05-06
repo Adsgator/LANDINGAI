@@ -30,9 +30,19 @@ Object.assign(window.App, {
       const p = localStorage.getItem(STORAGE_KEYS.PROJECTS);
       const a = localStorage.getItem(STORAGE_KEYS.ACTIVE);
       const k = localStorage.getItem(STORAGE_KEYS.API_KEYS);
+      const s = localStorage.getItem(STORAGE_KEYS.SETTINGS);
       if (p) this.state.projects = JSON.parse(p);
       if (a && a.trim()) this.state.activeId = a.trim();
       if (k) this.state.apiKeys = JSON.parse(k);
+      
+      // Validação do modelo selecionado (caso tenha mudado no config ou seja velho)
+      if (s) {
+          const settings = JSON.parse(s);
+          if (settings.selectedModel) this.state.selectedModel = settings.selectedModel;
+      }
+      if (!AI_MODELS[this.state.selectedModel]) {
+          this.state.selectedModel = 'gemini-2.5-flash';
+      }
     } catch (e) { console.error('Erro ao carregar localStorage:', e); }
   },
 

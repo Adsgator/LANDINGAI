@@ -11,7 +11,7 @@ const VERSION = '2.0.0';
 
 const STORAGE_KEYS = {
   PROJECTS: 'landingai_v2_projects',
-  ACTIVE:   'landingai_v2_active',
+  ACTIVE: 'landingai_v2_active',
   API_KEYS: 'landingai_v2_apikeys',
   SETTINGS: 'landingai_v2_settings',
 };
@@ -49,23 +49,47 @@ const AI_MODELS = {
     endpoint: 'https://api.x.ai/v1/chat/completions',
     maxTokens: 12000, temp: 0.65,
   },
-  'mistral-large': {
-    id: 'mistral-large', label: 'Mistral Large',
-    provider: 'mistral', group: 'Mistral', tier: 'paid',
-    endpoint: 'https://api.mistral.ai/v1/chat/completions',
-    maxTokens: 12000, temp: 0.65,
+  maxTokens: 12000, temp: 0.65,
+},
+'openrouter-sonnet': {
+  id: 'openrouter-sonnet', label: 'Claude Sonnet (OpenRouter)',
+    provider: 'openrouter', group: 'OpenRouter', tier: 'paid',
+      endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        model: 'anthropic/claude-sonnet-4-5',
+          maxTokens: 16000, temp: 0.65,
+  },
+'openrouter-gemini-pro': {
+  id: 'openrouter-gemini-pro', label: 'Gemini 2.5 Pro (OpenRouter)',
+    provider: 'openrouter', group: 'OpenRouter', tier: 'paid',
+      endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        model: 'google/gemini-2.5-pro',
+          maxTokens: 16000, temp: 0.65,
+  },
+'openrouter-deepseek': {
+  id: 'openrouter-deepseek', label: 'DeepSeek R2 (OpenRouter)',
+    provider: 'openrouter', group: 'OpenRouter', tier: 'paid',
+      endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        model: 'deepseek/deepseek-r2',
+          maxTokens: 16000, temp: 0.65,
+  },
+'openrouter-llama': {
+  id: 'openrouter-llama', label: 'Llama 4 Maverick (OpenRouter)',
+    provider: 'openrouter', group: 'OpenRouter', tier: 'free',
+      endpoint: 'https://openrouter.ai/api/v1/chat/completions',
+        model: 'meta-llama/llama-4-maverick',
+          maxTokens: 12000, temp: 0.65,
   },
 };
 
 const STEPS = [
-  { id: 1, label: 'Identificação',    sub: 'Nome, nicho e tipo de projeto', icon: 'user' },
-  { id: 2, label: 'Contato e Redes', sub: 'WhatsApp, e-mail e redes',      icon: 'share-2' },
-  { id: 3, label: 'Localização',      sub: 'Endereço e modalidade',         icon: 'map-pin' },
-  { id: 4, label: 'Serviço Principal',sub: 'O que é vendido',              icon: 'briefcase' },
-  { id: 5, label: 'Lista de Serviços',sub: 'Detalhes e preços',            icon: 'tag' },
-  { id: 6, label: 'Público-Alvo',     sub: 'Perfil e dores do cliente',     icon: 'target' },
-  { id: 7, label: 'Diferenciais',     sub: 'Autoridade e prova social',     icon: 'star' },
-  { id: 8, label: 'Tom e Identidade', sub: 'Estilo e vocabulário',         icon: 'palette' },
+  { id: 1, label: 'Identificação', sub: 'Nome, nicho e tipo de projeto', icon: 'user' },
+  { id: 2, label: 'Contato e CTA', sub: 'WhatsApp, e-mail e conversão', icon: 'phone' },
+  { id: 3, label: 'Presença Digital', sub: 'Redes sociais e plataformas', icon: 'globe' },
+  { id: 4, label: 'Atendimento', sub: 'Modalidade, endereço, cidades', icon: 'map-pin' },
+  { id: 5, label: 'Serviço / Produto', sub: 'O que é vendido e como funciona', icon: 'briefcase' },
+  { id: 6, label: 'Público-Alvo', sub: 'Perfil, dores e resultado', icon: 'target' },
+  { id: 7, label: 'Autoridade', sub: 'Diferenciais e prova social', icon: 'star' },
+  { id: 8, label: 'Tom e Identidade', sub: 'Estilo, vocabulário e restrições', icon: 'palette' },
 ];
 
 const REQUIRED_FIELDS = {
@@ -80,38 +104,254 @@ const REQUIRED_FIELDS = {
 };
 
 const FIELD_WARNINGS = {
-  publico_primario: { min: 60,  msg: 'Muito curto — detalhe melhor o perfil do cliente ideal.' },
-  publico_dor:      { min: 50,  msg: 'Pouco detalhe sobre a dor — use as palavras do cliente.' },
-  servicos_descricao:{ min: 80,  msg: 'Descreva melhor os serviços para uma copy mais rica.' },
-  diferencial:      { min: 60,  msg: 'Seja mais específico sobre o que te diferencia.' },
+  publico_primario: { min: 60, msg: 'Muito curto — detalhe melhor o perfil do cliente ideal.' },
+  publico_dor: { min: 50, msg: 'Pouco detalhe sobre a dor — use as palavras do cliente.' },
+  servicos_descricao: { min: 80, msg: 'Descreva melhor os serviços para uma copy mais rica.' },
+  diferencial: { min: 60, msg: 'Seja mais específico sobre o que te diferencia.' },
 };
 
 const FIELD_TOOLTIPS = {
-  nome_cliente:         'Nome completo como aparecerá no site. Ex: "Beatriz Mattos".',
-  segmento:             'Área de atuação detalhada. Ex: "Adestramento comportamental".',
-  whatsapp:             'Dígitos com DDD. Ex: 5511999999999.',
-  gtm_id:               'ID do Google Tag Manager. Ex: GTM-XXXXXXX.',
-  servico_principal:    'O foco da campanha. Uma linha que define a H1.',
-  publico_dor:          'O problema real que faz o cliente te procurar.',
-  frase_impacto:        'Frase curta que resume a essência do seu serviço.',
-  estilo_desejado:      'Ex: Sóbrio, técnico e confiante.',
-  briefing_bruto:       'Cole aqui o material bruto enviado pelo cliente.',
+  // Step 1
+  nome_cliente: 'Nome do profissional como aparecerá no site. Ex: "Dra. Ana Lima" ou "Beatriz Mattos".',
+  nome_marca: 'Nome comercial ou da marca, se diferente do nome do profissional. Ex: "BM Adestramento", "Clínica Bem-Estar".',
+  segmento: 'Área de atuação específica — não "saúde" mas "fisioterapia pélvica" ou "psicologia clínica com foco em ansiedade". Quanto mais específico, mais precisa a copy.',
+  tipo: 'Define a estrutura do site: Serviço = agendamento/contratação; Mentoria = programa com acompanhamento; Produto = item físico ou digital.',
+  dominio: 'Domínio do site. Ex: beatrizmattos.com.br. Confirmar disponibilidade antes do go-live.',
+  cnpj: 'CNPJ para exibir no rodapé — obrigatório para algumas categorias regulamentadas.',
+  aviso_legal: 'Registro profissional para o rodapé. Ex: CRM 12345-SP, CRP 06/12345, OAB/SP 123456.',
+
+  // Step 2
+  whatsapp: 'Apenas dígitos com DDI e DDD. Ex: 5511999999999 (55=Brasil, 11=SP). Vai em todos os CTAs da página.',
+  email: 'E-mail de contato exibido na página. Deixar vazio se o cliente preferir contato só por WhatsApp.',
+  horarios: 'Dias e horários de atendimento. Ex: Seg–Sex: 8h–18h, Sáb: 8h–12h. Aumenta credibilidade.',
+  gtm_id: 'ID do Google Tag Manager. Ex: GTM-XXXXXXX. Fornecido pelo gestor de tráfego. Vai no .env — nunca hardcoded.',
+  objetivo_conversao: 'A ação principal que o visitante deve fazer. WhatsApp é padrão para serviços locais. Formulário serve para triagem.',
+
+  // Step 3
+  instagram: 'Usuário do Instagram com @. Ex: @beatrizmattos. Aparece no footer e, se ativo, pode incluir Feed.',
+  tiktok: 'Usuário do TikTok. Deixar vazio se não tiver ou não for relevante para o negócio.',
+  youtube: 'Link completo do canal. Ex: youtube.com/@beatrizmattos',
+  google_business: 'Perfil Google Meu Negócio. Se Sim e tiver 10+ avaliações reais com nota ≥ 4.5, inclui o bloco de reviews.',
+  google_nota: 'Nota exata do perfil Google. Mínimo 4.5 para incluir o bloco na página.',
+  google_qtd: 'Número de avaliações. Mínimo 10 para incluir. Nunca inventamos notas.',
+
+  // Step 4
+  modalidade: 'Define quais blocos aparecem: Presencial → inclui endereço + mapa. Online → sem mapa. Híbrido → ambos.',
+  endereco: 'Endereço completo com ponto de referência. Só incluir se autorizado pelo cliente. Ex: Rua das Flores, 123 – Jardins, SP – Próximo ao Shopping X.',
+  exibir_localizacao: 'Como exibir o endereço: completo, só o bairro, ou apenas a cidade.',
+  cidades_atendimento: 'Regiões atendidas — importante para SEO local. Ex: São Paulo e Grande ABC.',
+  plataforma_online: 'Plataforma usada para atendimento online. Ex: Google Meet, Zoom, WhatsApp Vídeo.',
+
+  // Step 5
+  servico_principal: 'O serviço ou produto mais importante — foco da campanha. Vai definir a H1 e o Hero da página.',
+  servicos_lista: 'Lista de todos os serviços ou planos, um por linha. A IA decide se cria grade de serviços ou tabela de planos.',
+  servicos_descricao: 'Como funciona o processo, o que está incluso, quanto tempo dura, qual resultado esperado. Quanto mais detalhe, mais rica a copy do bloco "Como Funciona".',
+  preco_exibir: 'Exibir preço reduz volume de leads mas aumenta qualidade. Bom para serviços premium ou com preço fixo.',
+  preco_valor: 'Valor e forma de cobrança. Ex: R$ 350/sessão, A partir de R$ 1.200/mês.',
+  preco_condicao: 'Condição especial ou parcelamento. Ex: 3x sem juros no cartão.',
+  oferta_especial: 'Promoção ativa com prazo real. A IA cria um bloco de urgência com base nisso. Deixar vazio se não houver.',
+
+  // Step 6
+  publico_primario: 'Perfil do cliente ideal: gênero, faixa etária, situação de vida, localização. Fale sobre uma pessoa real, não uma demografia genérica.',
+  publico_dor: 'O problema real que faz o cliente buscar esse serviço. Use a linguagem do cliente — como ele pesquisa no Google, não o termo técnico.',
+  publico_resultado: 'O que o cliente imagina conquistar após contratar. Deve aparecer no Hero e no CTA Final da página.',
+  publico_secundario: 'Se houver um segundo perfil de cliente relevante. A IA pode criar variações de copy.',
+  faq: 'Perguntas frequentes reais que os clientes fazem. A IA inclui o bloco FAQ se houver objeções documentadas aqui.',
+
+  // Step 7
+  diferencial: 'O que concretamente diferencia esse profissional. Não "atendimento humanizado" — mas o que ele faz diferente: método, certificação, resultado concreto, garantia.',
+  frase_impacto: 'Como o profissional descreveria o que faz em uma frase. Vem da conversa — não invente. Pode virar a H1 da página.',
+  historia: 'Por que esse profissional faz o que faz. Se for genuína e diferente do padrão do nicho, a IA inclui um bloco de história.',
+  casos_resultados: 'Números e resultados concretos. Ex: 120 cães atendidos, 97% relataram melhora em 30 dias.',
+  depoimentos: 'Nunca inventamos depoimentos. Se Sim, o bloco de Prova Social é incluído na página.',
+  depoimentos_qtd: 'Quantidade de depoimentos disponíveis. Ideal: 3 a 6. Mais de 6 pode virar slider.',
+  depoimentos_formato: 'Formato dos depoimentos disponíveis. Influencia como o bloco será montado.',
+
+  // Step 8
+  estilo_desejado: 'Descreva como o site deve ser percebido. Não "moderno" ou "clean" isolados — diga o quê. Ex: Sóbrio e técnico como Linear.app, mas mais quente por ser nicho de saúde.',
+  sensacao_visitante: 'Emoção desejada ao navegar. É diferente do estilo visual — é o sentimento. Ex: Segurança imediata. Que essa é a pessoa certa.',
+  frase_tom: 'Uma frase curta que captura a personalidade da marca. Guia o tom de voz da IA. Ex: Especialista que já viu tudo e fala sem rodeios.',
+  vocabulario_usa: 'Termos técnicos ou expressões do cliente que devem aparecer na copy. Vêm da conversa — não do formulário.',
+  vocabulario_nunca: 'Expressões que quebram a autenticidade. Tão importante quanto o vocabulário correto. Ex: "pet", "fofo", "jornada", "transformação".',
+  restricoes: 'Tudo que NÃO quer de forma alguma — cores, estilos, elementos, referências negativas. Ex: Sem rosa. Sem visual de infoproduto. Sem fontes cursivas.',
 };
 
 const REGRAS_FIXAS_ADSGATOR = `
-1. DESIGN EDITORIAL E PREMIUM: A Landing Page deve ter um visual de "Direção de Arte". Use layouts assimétricos e tipografia com personalidade.
-2. MOBILE FIRST REAL: O design deve ser concebido para 375px primeiro.
-3. SEM PLACEHOLDERS: Todo o texto deve ser final e persuasivo.
-4. TOKENS E DESIGN SYSTEM: Escala tipográfica clara e paleta harmoniosa.
-5. CONVERSÃO ESTRATÉGICA: CTA principal sempre visível ou acessível.
+## STACK TÉCNICA IMUTÁVEL
+
+- Framework: Astro (output: 'hybrid' para suportar endpoint /api/contato)
+- CSS: Tailwind CSS — todos os tokens em tailwind.config.js. Zero HEX hardcoded. Zero style="" onde Tailwind resolve.
+- Animações de scroll: GSAP + ScrollTrigger em <script> dentro dos .astro — NUNCA em bundle React
+- Animações de UI: Framer Motion apenas em islands React (MobileMenu, ContactForm, CookieBanner)
+- Scroll suave: Lenis (@studio-freight/lenis) integrado ao GSAP ticker
+- Formulários: Web3Forms (FORMS_ACCESS_KEY no .env)
+- Analytics: Vercel Analytics (@vercel/analytics) + Vercel Speed Insights (@vercel/speed-insights)
+- Deploy: Vercel
+
+## GIT — OBRIGATÓRIO ANTES DE QUALQUER CÓDIGO
+
+git init → git add . → git commit -m "init: projeto Astro base"
+.gitignore: node_modules/, dist/, .env
+Conectar ao repositório remoto antes do primeiro deploy.
+
+## ARQUIVOS OBRIGATÓRIOS
+
+- public/robots.txt → Allow: / | Disallow: /links, /politica-de-privacidade, /404
+- public/manifest.json → name, start_url, display: "standalone", theme_color via token
+- .env.example → GTM_ID= | WHATSAPP_NUMBER= | FORMS_ACCESS_KEY= | INSTAGRAM_TOKEN= (se ativo)
+- src/pages/404.astro → personalizada com botão voltar + botão WhatsApp
+- src/pages/politica-de-privacidade.astro → LGPD completa
+- src/pages/links.astro → página de links (excluída do sitemap)
+
+## COMPONENTES GLOBAIS OBRIGATÓRIOS
+
+Layout.astro → SEO, GTM (is:inline), Consent Mode v2, Lenis, GSAP, Analytics, SpeedInsights
+Button.astro → props: label, href, variant, trackingId, section | nunca botão inline
+SectionHeader.astro → props: label, title, subtitle, align
+FeatureCard.astro → props: icon, title, description
+TestimonialCard.astro → props: name, role, text, avatar (se depoimentos existirem)
+
+## COMPONENTES REACT (ISLANDS)
+
+MobileMenu.tsx → fullscreen overlay AnimatePresence | focus trap | Escape fecha | overflow:hidden no body
+ContactForm.tsx → honeypot | validação inline | ErrorBoundary com fallback WhatsApp | client:visible
+CookieBanner.tsx → LGPD + Consent Mode v2 | client:idle | localStorage 'adsgator-consent'
+
+## UX OBRIGATÓRIO
+
+Header → sticky z-50 | esconde ao scroll down (GSAP) | reaparece ao scroll up | backdrop-blur após 80px
+WhatsApp flutuante → IntersectionObserver | aparece após Hero sair | some quando footer entra | SVG nativo #25D366 | 56×56px | aria-label="Falar no WhatsApp"
+Mobile First → começa em 375px | Hero usa 100svh | texto mínimo 16px | touch targets 44px
+Footer → fundo diferente da última seção | logo da marca | logo Adsgator com link adsgator.com.br | ano dinâmico {new Date().getFullYear()}
+
+## COPY — DNA ADSGATOR INEGOCIÁVEL
+
+- H1 espelha a dor real de busca — nunca o nome técnico do serviço
+- Copy em primeira pessoa: "Eu atendo...", "Meu método..." — NUNCA "Maria atende..."
+- Zero institucional: proibido "inovador", "excelência", "missão", "visão", "comprometidos com", "resultados extraordinários"
+- CTAs específicos: nunca "Saiba mais", "Clique aqui", "Entre em contato", "Solicite um orçamento"
+- Nunca inventar depoimentos, avaliações ou notas Google
+
+## BLOCOS CONDICIONAIS — REGRAS RÍGIDAS
+
+- Mapa: APENAS se modalidade presencial/híbrida com endereço explicitamente autorizado
+- Avaliações Google: APENAS se google_business=sim E nota≥4.5 E avaliações≥10
+- Feed Instagram: APENAS se perfil ativo e relevante para o serviço
+- Depoimentos: APENAS se depoimentos=sim. Nunca inventar.
+- Preços: APENAS se preco_exibir=sim e valores fornecidos
+
+## PERFORMANCE E SEO
+
+- <link rel="preload"> na imagem hero com fetchpriority="high"
+- font-display: swap em toda @font-face
+- Canonical URL em cada página via prop canonicalUrl
+- Schema.org JSON-LD no Layout.astro (LocalBusiness ou Person conforme o nicho)
+- Lighthouse Performance ≥ 90 mobile | Accessibility ≥ 90
+- og-image 1200×630 presente
+
+## ACESSIBILIDADE MÍNIMA
+
+- WCAG AA em todo texto sobre fundo
+- focus-visible em todos os elementos interativos
+- Links externos com rel="noopener noreferrer"
+- Todas as imagens com alt descritivo, width e height definidos
+- prefers-reduced-motion check em todas as animações GSAP
+- <h1> único por página
 `;
 
 const PROMPT_AUDITORIA = `
-Analise a implementação atual contra os seguintes critérios:
-- A hierarquia visual respeita a importância dos serviços?
-- O tom de voz está consistente com a personalidade da marca?
-- O design mobile mantém a elegância da versão desktop?
+## AUDITORIA PÓS-IMPLEMENTAÇÃO
+
+Faça uma auditoria completa do projeto que você acabou de construir.
+Para cada item responda: ✅ implementado | ⚠ parcial (explique) | ❌ não implementado.
+
+### HEADER INTELIGENTE
+[ ] Header some suavemente ao scrollar para baixo e reaparece ao scrollar para cima
+[ ] Fundo com backdrop-blur ou opacidade após 80px de scroll
+[ ] Logo linkada para / (raiz)
+[ ] CTA visível no header em desktop
+[ ] Versão mobile testada em 375px
+
+### BOTÃO WHATSAPP FLUTUANTE
+[ ] Presente em todas as páginas
+[ ] Oculto no carregamento — aparece após o Hero sair do viewport (IntersectionObserver)
+[ ] Some quando o footer entra no viewport
+[ ] Tem aria-label="Falar no WhatsApp"
+[ ] Rastreado com data-tracking="click-whatsapp" data-section="floating-button"
+
+### BANNER DE CONSENTIMENTO (LGPD)
+[ ] CookieBanner presente e funcional
+[ ] Aparece apenas se não houver consentimento registrado
+[ ] Botões "Aceitar" e "Recusar" funcionando e registrando escolha
+[ ] Google Consent Mode v2 configurado — GTM em modo restrito antes do consentimento
+[ ] Não bloqueia o carregamento da página
+
+### ANALYTICS E PERFORMANCE
+[ ] Vercel Analytics instalado e ativo
+[ ] Vercel Speed Insights instalado e ativo
+[ ] Google Tag Manager snippet no <head> E no <body> (via is:inline)
+[ ] GTM ID via variável de ambiente — não hardcoded
+
+### GIT E DEPLOY
+[ ] Repositório Git inicializado e com pelo menos um commit
+[ ] .gitignore cobrindo node_modules, dist, .env
+[ ] Variáveis sensíveis em .env — nunca no código
+[ ] .env.example entregue com todas as variáveis documentadas
+[ ] Deploy configurado na Vercel com CI/CD automático
+
+### DESIGN RESPONSIVO
+[ ] Mobile testado em 375px sem overflow horizontal
+[ ] Hero ocupa 100svh em mobile
+[ ] Touch targets mínimo 44px em todos os elementos clicáveis
+[ ] Fonte mínima 16px em mobile
+[ ] Backgrounds distintos por seção criam ritmo visual
+
+### FOOTER
+[ ] Footer tem identidade visual coerente com a landing page
+[ ] Logo da marca presente
+[ ] Logo da agência Adsgator com link para adsgator.com.br
+[ ] Links: Política de Privacidade + redes sociais confirmadas
+[ ] Ano dinâmico: {new Date().getFullYear()}
+
+### ACESSIBILIDADE
+[ ] Contraste WCAG AA em todo texto sobre fundo
+[ ] focus-visible em todos os elementos interativos
+[ ] Links externos com rel="noopener noreferrer"
+[ ] Todas as imagens com alt descritivo, width e height
+[ ] prefers-reduced-motion check em todas as animações GSAP
+
+### PÁGINAS SECUNDÁRIAS
+[ ] /links funcionando
+[ ] /politica-de-privacidade acessível via footer
+[ ] /404 personalizada com botão voltar e botão WhatsApp
+[ ] Sitemap excluindo /links, /politica-de-privacidade, /404
+[ ] robots.txt criado
+
+### QUALIDADE TÉCNICA
+[ ] Build sem erros (npm run build)
+[ ] Zero console.log em produção
+[ ] Zero HEX hardcoded — todos via token Tailwind
+[ ] Lighthouse Performance ≥ 90 mobile
+[ ] Lighthouse Accessibility ≥ 90
+[ ] Link do WhatsApp testado com mensagem pré-preenchida
+[ ] Schema.org JSON-LD válido
+[ ] og-image 1200×630 presente
+
+Para cada ❌ ou ⚠, descreva exatamente o que precisa ser corrigido.
 `;
+
+const ERROR_MAP = {
+  'api key': { cause: 'API Key inválida ou sem permissão.', tip: 'Verifique se a key está correta e sem espaços extras.' },
+  'quota': { cause: 'Cota da API atingida.', tip: 'Aguarde algumas horas ou troque para outro modelo.' },
+  'rate limit': { cause: 'Muitas requisições em pouco tempo.', tip: 'Aguarde 30 segundos e tente novamente.' },
+  'too short': { cause: 'Resposta muito curta — provavelmente contexto cortado.', tip: 'Tente Gemini 2.5 Pro ou Claude Opus que têm janela maior.' },
+  'context length': { cause: 'Briefing muito longo para este modelo.', tip: 'Reduza o briefing bruto ou troque para um modelo com janela maior.' },
+  'unauthorized': { cause: 'API Key sem autorização para este modelo.', tip: 'Verifique os planos ativos na conta do provider.' },
+  'network': { cause: 'Falha de conexão com a API.', tip: 'Verifique sua internet e tente novamente.' },
+  'timeout': { cause: 'A requisição demorou demais e foi cancelada.', tip: 'Tente um modelo mais rápido (Gemini Flash) ou reduza o briefing.' },
+  'overloaded': { cause: 'O servidor do modelo está sobrecarregado.', tip: 'Aguarde 1–2 minutos e tente novamente.' },
+  'openrouter': { cause: 'Erro no gateway OpenRouter.', tip: 'Verifique os créditos em openrouter.ai/credits.' },
+};
 
 const App = {
   state: {
@@ -124,6 +364,16 @@ const App = {
     intakeFiles: [],
     isGenerating: false,
     artAnalyzed: false,
+    aiLog: {
+      title: '',
+      steps: [],
+      active: null,
+      done: [],
+      errors: [],
+      startedAt: null,
+      stepTimes: {},
+      liveMsg: '',
+    },
   },
 
   get P() { return this.state.projects[this.state.activeId]; },
@@ -136,6 +386,136 @@ const App = {
     this.renderAll();
   },
 
+  openAILog(title, steps) {
+    this.state.aiLog = {
+      title,
+      steps,
+      active: null,
+      done: [],
+      errors: [],
+      startedAt: Date.now(),
+      stepTimes: {},
+      liveMsg: '',
+    };
+    this._renderAILog();
+    this.openModal('modal-gen');
+  },
+
+  aiLogStep(id, liveMsg = '') {
+    const log = this.state.aiLog;
+    // Marcar anterior como done
+    if (log.active !== null) {
+      log.done.push(log.active);
+      log.stepTimes[log.active + '_end'] = Date.now();
+    }
+    log.active = id;
+    log.liveMsg = liveMsg;
+    log.stepTimes[id + '_start'] = Date.now();
+    this._renderAILog();
+  },
+
+  aiLogError(id, msg = '') {
+    const log = this.state.aiLog;
+    log.errors.push(id);
+    log.active = null;
+    log.liveMsg = msg;
+    this._renderAILog();
+  },
+
+  aiLogDone() {
+    const log = this.state.aiLog;
+    if (log.active !== null) log.done.push(log.active);
+    log.active = null;
+    this._renderAILog();
+  },
+
+  aiLogDelay(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  },
+
+  closeAILog() {
+    this.closeModal('modal-gen');
+  },
+
+  _renderAILog() {
+    const log = this.state.aiLog;
+    const total = log.steps.length;
+    const done = log.done.length;
+    const pct = Math.round((done / total) * 100);
+    const elapsed = log.startedAt ? ((Date.now() - log.startedAt) / 1000).toFixed(1) : '0.0';
+
+    const stepRows = log.steps.map(s => {
+      const isActive = log.active === s.id;
+      const isDone = log.done.includes(s.id);
+      const isError = log.errors.includes(s.id);
+
+      let stepElapsed = '';
+      if (isDone && log.stepTimes[s.id + '_start'] && log.stepTimes[s.id + '_end']) {
+        const ms = log.stepTimes[s.id + '_end'] - log.stepTimes[s.id + '_start'];
+        stepElapsed = `<span class="log-step-time">${(ms / 1000).toFixed(1)}s</span>`;
+      }
+
+      const iconName = isActive ? 'loader-2'
+        : isDone ? 'check-circle'
+          : isError ? 'x-circle'
+            : 'circle';
+
+      const stateClass = isActive ? 'log-step--active'
+        : isDone ? 'log-step--done'
+          : isError ? 'log-step--error'
+            : 'log-step--wait';
+
+      return `
+        <div class="log-step ${stateClass}">
+          <i data-lucide="${iconName}" class="log-step-icon ${isActive ? 'spin' : ''}"></i>
+          <span class="log-step-label">${s.label}</span>
+          ${stepElapsed}
+        </div>`;
+    }).join('');
+
+    const liveSection = log.liveMsg ? `
+      <div class="log-live">
+        <span class="log-live-dot"></span>
+        <span class="log-live-msg">${log.liveMsg}</span>
+      </div>` : '';
+
+    const model = AI_MODELS[this.state.selectedModel];
+
+    document.getElementById('modal-gen').innerHTML = `
+      <div class="modal modal--sm ai-log-modal">
+        <div class="modal-header" style="border-bottom:none;padding-bottom:8px">
+          <div class="ai-log-header">
+            <div class="ai-log-title">
+              <i data-lucide="cpu" style="width:16px;height:16px;color:var(--accent2)"></i>
+              ${log.title}
+            </div>
+            <div class="ai-log-meta">
+              <span class="ai-log-model">${model?.label || '—'}</span>
+              <span class="ai-log-elapsed">${elapsed}s</span>
+            </div>
+          </div>
+        </div>
+        <div class="modal-body ai-log-body">
+          <div class="log-progress-wrap">
+            <div class="log-progress-bar">
+              <div class="log-progress-fill" style="width:${pct}%"></div>
+            </div>
+            <span class="log-progress-pct">${pct}%</span>
+          </div>
+          <div class="log-steps-list">
+            ${stepRows}
+          </div>
+          ${liveSection}
+          <p class="log-hint">
+            <i data-lucide="info" style="width:12px;height:12px"></i>
+            Isso pode levar 30–90 segundos dependendo do modelo.
+          </p>
+        </div>
+      </div>
+    `;
+    lucide.createIcons({ nodes: [document.getElementById('modal-gen')] });
+  },
+
   loadStorage() {
     try {
       const p = localStorage.getItem(STORAGE_KEYS.PROJECTS);
@@ -144,7 +524,7 @@ const App = {
       if (p) this.state.projects = JSON.parse(p);
       if (a) this.state.activeId = a;
       if (k) this.state.apiKeys = JSON.parse(k);
-    } catch (e) {}
+    } catch (e) { }
   },
 
   saveStorage() {
@@ -152,24 +532,63 @@ const App = {
       localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(this.state.projects));
       localStorage.setItem(STORAGE_KEYS.ACTIVE, this.state.activeId || '');
       localStorage.setItem(STORAGE_KEYS.API_KEYS, JSON.stringify(this.state.apiKeys));
-    } catch (e) {}
+    } catch (e) { }
   },
 
   autosave() { this.saveStorage(); this.updateSidebar(); },
 
-  createProject(name = 'Novo Projeto') {
+  createProject() {
     const id = 'p_' + Date.now();
     this.state.projects[id] = {
-      id, name, slug: name.toLowerCase().replace(/\s+/g, '-'),
+      id,
+      name: 'Novo Projeto',
+      slug: '',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       visitedSteps: [],
-      briefing: { integracoes: ['whatsapp'], depoimentos_formato: [], arte_referencias_pessoais: [], arte_referencias_nicho: [] }
+      briefing: {
+        integracoes: ['whatsapp'],
+        depoimentos_formato: [],
+        arte_referencias_pessoais: [],
+        arte_referencias_nicho: [],
+      },
     };
     this.state.activeId = id;
     this.state.screen = 'intake';
     this.autosave();
     this.renderAll();
+    // Abrir modal de nome imediatamente após criar
+    setTimeout(() => this.openRenameModal(), 100);
+  },
+
+  openRenameModal() {
+    const p = this.P;
+    if (!p) return;
+    const overlay = document.getElementById('modal-rename');
+    document.getElementById('rename-input').value = p.name || '';
+    this.openModal('modal-rename');
+    setTimeout(() => document.getElementById('rename-input')?.select(), 100);
+  },
+
+  saveProjectName() {
+    const val = document.getElementById('rename-input')?.value?.trim();
+    if (!val) return;
+    this.P.name = val;
+    // Derivar slug do nome se ainda não tiver slug no briefing
+    if (!this.B.slug) {
+      this.P.briefing.slug = val
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
+    }
+    this.P.updatedAt = new Date().toISOString();
+    this.autosave();
+    this.updateSidebar();
+    this.closeModal('modal-rename');
+    this.showToast(`Projeto "${val}" salvo.`, 'success');
   },
 
   loadProject(id) {
@@ -212,13 +631,13 @@ const App = {
   goToScreen(s) { this.state.screen = s; this.renderAll(); },
   goNext() {
     if (this.state.screen === 'intake') this.goToStep(1);
-    else if (this.state.screen === 'step') this.state.currentStep < 8 ? this.goToStep(this.state.currentStep+1) : this.goToScreen('art');
+    else if (this.state.screen === 'step') this.state.currentStep < 8 ? this.goToStep(this.state.currentStep + 1) : this.goToScreen('art');
     else if (this.state.screen === 'art') this.goToScreen('review');
   },
   goPrev() {
     if (this.state.screen === 'review') this.goToScreen('art');
     else if (this.state.screen === 'art') this.goToStep(8);
-    else if (this.state.screen === 'step') this.state.currentStep > 1 ? this.goToStep(this.state.currentStep-1) : this.goToScreen('intake');
+    else if (this.state.screen === 'step') this.state.currentStep > 1 ? this.goToStep(this.state.currentStep - 1) : this.goToScreen('intake');
   },
 
   renderAll() {
@@ -238,8 +657,8 @@ const App = {
 
     switch (this.state.screen) {
       case 'intake': container.innerHTML = this.buildIntakeScreen(); break;
-      case 'step':   container.innerHTML = this.buildStepScreen(this.state.currentStep); break;
-      case 'art':    container.innerHTML = this.buildArtScreen(); break;
+      case 'step': container.innerHTML = this.buildStepScreen(this.state.currentStep); break;
+      case 'art': container.innerHTML = this.buildArtScreen(); break;
       case 'review': container.innerHTML = this.buildReviewScreen(); break;
     }
 
@@ -507,12 +926,12 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
         ${this.fieldLabel('tipo', 'Tipo de negócio', true)}
         <div class="sel-cards" data-field-group="tipo">
           ${[
-            { v: 'servico', icon: 'briefcase', title: 'Serviço', desc: 'Adestramento, fisioterapia, advocacia, consultórios' },
-            { v: 'mentoria', icon: 'graduation-cap', title: 'Mentoria', desc: 'Mentoria individual, em grupo, programa online' },
-            { v: 'consultoria', icon: 'bar-chart', title: 'Consultoria', desc: 'B2B, consultoria especializada, assessoria' },
-            { v: 'produto', icon: 'package', title: 'Produto', desc: 'Venda física, produto digital, ecommerce' },
-            { v: 'saas', icon: 'monitor', title: 'SaaS / Digital', desc: 'Software, app, ferramenta, plataforma' },
-          ].map(o => `
+        { v: 'servico', icon: 'briefcase', title: 'Serviço', desc: 'Adestramento, fisioterapia, advocacia, consultórios' },
+        { v: 'mentoria', icon: 'graduation-cap', title: 'Mentoria', desc: 'Mentoria individual, em grupo, programa online' },
+        { v: 'consultoria', icon: 'bar-chart', title: 'Consultoria', desc: 'B2B, consultoria especializada, assessoria' },
+        { v: 'produto', icon: 'package', title: 'Produto', desc: 'Venda física, produto digital, ecommerce' },
+        { v: 'saas', icon: 'monitor', title: 'SaaS / Digital', desc: 'Software, app, ferramenta, plataforma' },
+      ].map(o => `
             <div class="sel-card" data-field="tipo" data-selcard="${o.v}" tabindex="0" role="option" aria-selected="${B.tipo === o.v}">
               <i data-lucide="${o.icon}" class="sel-card-icon" style="width:18px;height:18px"></i>
               <div>
@@ -590,11 +1009,11 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
         ${this.fieldLabel('objetivo_conversao', 'Como o lead entra em contato?', true)}
         <div class="sel-cards" data-field-group="objetivo_conversao">
           ${[
-            { v: 'whatsapp',   icon: 'message-circle', title: 'WhatsApp',          desc: 'Botão direto para conversa no WA. Mais rápido.' },
-            { v: 'formulario', icon: 'mail',            title: 'Formulário',         desc: 'Formulário no site. Bom para triagem inicial.' },
-            { v: 'agendamento',icon: 'calendar',        title: 'Agendamento Online', desc: 'Link para Calendly, Cal.com ou similar.' },
-            { v: 'outro',      icon: 'link',            title: 'Outro',              desc: 'Especifique abaixo.' },
-          ].map(o => `
+        { v: 'whatsapp', icon: 'message-circle', title: 'WhatsApp', desc: 'Botão direto para conversa no WA. Mais rápido.' },
+        { v: 'formulario', icon: 'mail', title: 'Formulário', desc: 'Formulário no site. Bom para triagem inicial.' },
+        { v: 'agendamento', icon: 'calendar', title: 'Agendamento Online', desc: 'Link para Calendly, Cal.com ou similar.' },
+        { v: 'outro', icon: 'link', title: 'Outro', desc: 'Especifique abaixo.' },
+      ].map(o => `
             <div class="sel-card" data-field="objetivo_conversao" data-selcard="${o.v}" tabindex="0">
               <i data-lucide="${o.icon}" class="sel-card-icon" style="width:18px;height:18px"></i>
               <div>
@@ -653,13 +1072,13 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
 
       <div class="chip-group">
         ${[
-          { v: 'maps',       label: 'Google Maps Embed' },
-          { v: 'reviews',    label: 'Google Reviews Widget' },
-          { v: 'instagram',  label: 'Feed do Instagram' },
-          { v: 'formulario', label: 'Formulário de Contato' },
-          { v: 'whatsapp',   label: 'WhatsApp Flutuante' },
-          { v: 'ligacao',    label: 'Botão de Ligação' },
-        ].map(o => `
+        { v: 'maps', label: 'Google Maps Embed' },
+        { v: 'reviews', label: 'Google Reviews Widget' },
+        { v: 'instagram', label: 'Feed do Instagram' },
+        { v: 'formulario', label: 'Formulário de Contato' },
+        { v: 'whatsapp', label: 'WhatsApp Flutuante' },
+        { v: 'ligacao', label: 'Botão de Ligação' },
+      ].map(o => `
           <button class="chip ${(B.integracoes || []).includes(o.v) ? 'on' : ''}"
             data-field="integracoes" data-chip="${o.v}" data-multi="true">
             ${o.label}
@@ -678,10 +1097,10 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
         ${this.fieldLabel('modalidade', 'Como o cliente atende?', true)}
         <div class="chip-group">
           ${[
-            { v: 'presencial', label: 'Presencial' },
-            { v: 'online',     label: 'Online' },
-            { v: 'hibrido',    label: 'Híbrido (presencial + online)' },
-          ].map(o => `
+        { v: 'presencial', label: 'Presencial' },
+        { v: 'online', label: 'Online' },
+        { v: 'hibrido', label: 'Híbrido (presencial + online)' },
+      ].map(o => `
             <button class="chip ${B.modalidade === o.v ? 'on' : ''}" data-field="modalidade" data-chip="${o.v}">
               ${o.label}
             </button>
@@ -700,10 +1119,10 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
           ${this.fieldLabel('exibir_localizacao', 'Como exibir a localização no site?', true)}
           <div class="chip-group">
             ${[
-              { v: 'completo', label: 'Endereço completo' },
-              { v: 'cidade',   label: 'Só cidade / região' },
-              { v: 'nao',      label: 'Não exibir' },
-            ].map(o => `
+          { v: 'completo', label: 'Endereço completo' },
+          { v: 'cidade', label: 'Só cidade / região' },
+          { v: 'nao', label: 'Não exibir' },
+        ].map(o => `
               <button class="chip ${B.exibir_localizacao === o.v ? 'on' : ''}" data-field="exibir_localizacao" data-chip="${o.v}">
                 ${o.label}
               </button>
@@ -774,96 +1193,94 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
       <p class="form-section-title">Diferenciais e Autoridade</p>
       <div class="field-group">
         ${this.fieldLabel('diferencial', 'O que diferencia o profissional?', true)}
-        <textarea class="field-textarea tall" data-field="diferencial" placeholder="Método, experiência, resultados...">${B.diferencial || ''}</textarea>
+        <textarea class="field-textarea tall" data-field="diferencial"
+          placeholder="Método, experiência, certificações, resultados concretos. Seja específico — não 'atendimento humanizado', mas o que concretamente faz diferente.">${B.diferencial || ''}</textarea>
+        <span class="field-hint">Este campo é a base do bloco de Diferenciais. Quanto mais específico, mais persuasivo.</span>
       </div>
+
       <div class="field-group">
-        ${this.fieldLabel('frase_impacto', 'Frase de impacto (Hero)', true)}
-        <input type="text" class="field-input" data-field="frase_impacto" value="${B.frase_impacto || ''}" placeholder="Ex: O adestramento que respeita o seu tempo.">
+        ${this.fieldLabel('frase_impacto', 'Frase de impacto — possível H1 da página', true)}
+        <input type="text" class="field-input" data-field="frase_impacto"
+          value="${B.frase_impacto || ''}"
+          placeholder="Ex: Adestramento que resolve o problema, não esconde.">
+        <span class="field-hint">Deve espelhar a dor de busca do público, não o nome técnico do serviço.</span>
       </div>
-      <div class="form-row">
-        <div class="field-group">
-          ${this.fieldLabel('depoimentos', 'Tem depoimentos?', true)}
-          <div class="chip-group">
-            <button class="chip ${B.depoimentos === 'sim' ? 'on' : ''}" data-field="depoimentos" data-chip="sim">Sim</button>
-            <button class="chip ${B.depoimentos === 'nao' ? 'on' : ''}" data-field="depoimentos" data-chip="nao">Não</button>
+
+      <div class="field-group">
+        ${this.fieldLabel('historia', 'História ou origem do negócio', false, true)}
+        <textarea class="field-textarea" data-field="historia"
+          placeholder="Por que esse profissional faz o que faz. Se for genuína e diferente do padrão do nicho, a IA inclui um bloco de história.">${B.historia || ''}</textarea>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('casos_resultados', 'Cases e resultados concretos', false, true)}
+        <textarea class="field-textarea" data-field="casos_resultados"
+          placeholder="Números, comparações antes/depois, projetos específicos.
+Ex: 120 cães atendidos nos últimos 2 anos. 97% dos tutores relataram melhora em 30 dias.">${B.casos_resultados || ''}</textarea>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Prova Social</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('depoimentos', 'Tem depoimentos reais?', true)}
+        <div class="chip-group">
+          <button class="chip ${B.depoimentos === 'sim' ? 'on' : ''}" data-field="depoimentos" data-chip="sim">Sim</button>
+          <button class="chip ${B.depoimentos === 'nao' ? 'on' : ''}" data-field="depoimentos" data-chip="nao">Não</button>
+        </div>
+        <span class="field-hint">Nunca inventamos depoimentos. Se \"Não\", o bloco de prova social não é incluído.</span>
+      </div>
+
+      ${B.depoimentos === 'sim' ? `
+        <div class="form-row">
+          <div class="field-group">
+            ${this.fieldLabel('depoimentos_qtd', 'Quantidade disponível', false)}
+            <input type="number" class="field-input" data-field="depoimentos_qtd"
+              placeholder="Ex: 6" value="${B.depoimentos_qtd || ''}">
+          </div>
+          <div class="field-group">
+            ${this.fieldLabel('depoimentos_formato', 'Formato', false)}
+            <div class="chip-group">
+              ${['Texto', 'Print WhatsApp', 'Print Google', 'Vídeo'].map(f => `
+                <button class="chip ${(B.depoimentos_formato || []).includes(f) ? 'on' : ''}"
+                  data-field="depoimentos_formato" data-chip="${f}" data-multi="true">${f}</button>
+              `).join('')}
+            </div>
           </div>
         </div>
+      ` : ''}
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Google Business</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('google_business', 'Tem perfil no Google Meu Negócio?', false)}
+        <div class="chip-group">
+          <button class="chip ${B.google_business === 'sim' ? 'on' : ''}" data-field="google_business" data-chip="sim">Sim</button>
+          <button class="chip ${B.google_business === 'nao' ? 'on' : ''}" data-field="google_business" data-chip="nao">Não</button>
+        </div>
+      </div>
 
       ${B.google_business === 'sim' ? `
         <div class="form-row">
           <div class="field-group">
-            ${this.fieldLabel('google_nota', 'Nota média no Google', true)}
-            <input type="number" step="0.1" min="1" max="5" class="field-input" data-field="google_nota" placeholder="Ex: 4.9" value="${B.google_nota || ''}">
+            ${this.fieldLabel('google_nota', 'Nota média', false)}
+            <input type="number" step="0.1" min="1" max="5" class="field-input"
+              data-field="google_nota" placeholder="Ex: 4.9" value="${B.google_nota || ''}">
             <span class="field-hint">Mínimo 4.5 para incluir o bloco de reviews.</span>
           </div>
           <div class="field-group">
-            ${this.fieldLabel('google_qtd', 'Número de avaliações', true)}
-            <input type="number" class="field-input" data-field="google_qtd" placeholder="Ex: 127" value="${B.google_qtd || ''}">
-            <span class="field-hint">Mínimo 10 para incluir o bloco de reviews.</span>
+            ${this.fieldLabel('google_qtd', 'Número de avaliações', false)}
+            <input type="number" class="field-input"
+              data-field="google_qtd" placeholder="Ex: 127" value="${B.google_qtd || ''}">
+            <span class="field-hint">Mínimo 10 para incluir o bloco.</span>
           </div>
         </div>
       ` : ''}
     `;
   },
 
-  buildStep8() {
-    const B = this.B;
-    return `
-      <p class="form-section-title">Tom de Voz e Copy</p>
 
-      <div class="field-group">
-        ${this.fieldLabel('estilo_desejado', 'Como o site deve ser percebido?', true)}
-        <textarea class="field-textarea" data-field="estilo_desejado"
-          placeholder="Descreva com precisão. Não apenas 'moderno' ou 'clean' — diga o quê.
-Ex: Sóbrio, técnico e confiante. Próximo de Linear ou Stripe. Autoridade sem frieza.">${B.estilo_desejado || ''}</textarea>
-        <span class="field-hint">Evite 'profissional', 'moderno', 'clean' sem contexto. Esses termos significam coisas diferentes para pessoas diferentes.</span>
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('sensacao_visitante', 'O que o visitante deve sentir ao entrar?', true)}
-        <input type="text" class="field-input" data-field="sensacao_visitante"
-          placeholder="Ex: Segurança imediata — essa é a pessoa certa, entende o meu problema."
-          value="${B.sensacao_visitante || ''}">
-      </div>
-
-      <div class="form-row">
-        <div class="field-group">
-          ${this.fieldLabel('vocabulario_usa', 'Vocabulário que o cliente usa', false, true)}
-          <textarea class="field-textarea" data-field="vocabulario_usa"
-            placeholder="Termos técnicos ou expressões do cliente que devem aparecer na copy.
-Ex: 'manejo', 'vínculo', 'marcadores', 'cão'.">${B.vocabulario_usa || ''}</textarea>
-        </div>
-        <div class="field-group">
-          ${this.fieldLabel('vocabulario_nunca', 'Vocabulário que o cliente NUNCA usaria', false, true)}
-          <textarea class="field-textarea" data-field="vocabulario_nunca"
-            placeholder="Expressões que quebram a autenticidade da marca.
-Ex: 'pet', 'fofo', 'amiguinho', 'tutor consciente'.">${B.vocabulario_nunca || ''}</textarea>
-        </div>
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('frase_tom', 'Uma frase que resume o tom de voz', false, true)}
-        <input type="text" class="field-input" data-field="frase_tom"
-          placeholder="Ex: Especialista que já viu tudo e fala sem rodeios."
-          value="${B.frase_tom || ''}">
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('restricoes', 'O que NÃO quer de forma alguma no site', false, true)}
-        <textarea class="field-textarea" data-field="restricoes"
-          placeholder="Termos, abordagens, elementos visuais ou textuais que o cliente quer evitar.">${B.restricoes || ''}</textarea>
-      </div>
-
-      <div class="form-divider"></div>
-      <p class="form-section-title">Instruções Adicionais</p>
-
-      <div class="field-group">
-        ${this.fieldLabel('instrucoes_adicionais', 'Informações extras', false, true)}
-        <textarea class="field-textarea" data-field="instrucoes_adicionais"
-          placeholder="Qualquer coisa que não coube nos campos anteriores — nuances da conversa, contexto extra, observações suas.">${B.instrucoes_adicionais || ''}</textarea>
-      </div>
-    `;
-  },
 
   /* ─────────────────────────────────────────────────────
      BUILD: ART DIRECTION SCREEN
@@ -871,7 +1288,7 @@ Ex: 'pet', 'fofo', 'amiguinho', 'tutor consciente'.">${B.vocabulario_nunca || ''
   buildArtScreen() {
     const B = this.B;
     const pessoais = B.arte_referencias_pessoais || [];
-    const nicho    = B.arte_referencias_nicho    || [];
+    const nicho = B.arte_referencias_nicho || [];
 
     return `
     <div class="art-screen">
@@ -904,17 +1321,17 @@ Ex: 'pet', 'fofo', 'amiguinho', 'tutor consciente'.">${B.vocabulario_nunca || ''
             <div class="field-group">
               ${this.fieldLabel('arte_logo', 'Status da logo', true)}
               <div class="chip-group">
-                ${[{v:'svg', l:'SVG disponível'},{v:'png', l:'PNG disponível'},{v:'nao', l:'Sem logo'}].map(o =>
-                  `<button class="chip ${B.arte_logo === o.v ? 'on' : ''}" data-field="arte_logo" data-chip="${o.v}">${o.l}</button>`
-                ).join('')}
+                ${[{ v: 'svg', l: 'SVG disponível' }, { v: 'png', l: 'PNG disponível' }, { v: 'nao', l: 'Sem logo' }].map(o =>
+      `<button class="chip ${B.arte_logo === o.v ? 'on' : ''}" data-field="arte_logo" data-chip="${o.v}">${o.l}</button>`
+    ).join('')}
               </div>
             </div>
             <div class="field-group">
               ${this.fieldLabel('arte_fotos', 'Fotos do profissional/produto', true)}
               <div class="chip-group">
-                ${[{v:'boa', l:'Boa qualidade'},{v:'media', l:'Qualidade média'},{v:'nao', l:'Sem fotos'}].map(o =>
-                  `<button class="chip ${B.arte_fotos === o.v ? 'on' : ''}" data-field="arte_fotos" data-chip="${o.v}">${o.l}</button>`
-                ).join('')}
+                ${[{ v: 'boa', l: 'Boa qualidade' }, { v: 'media', l: 'Qualidade média' }, { v: 'nao', l: 'Sem fotos' }].map(o =>
+      `<button class="chip ${B.arte_fotos === o.v ? 'on' : ''}" data-field="arte_fotos" data-chip="${o.v}">${o.l}</button>`
+    ).join('')}
               </div>
             </div>
           </div>
@@ -998,10 +1415,10 @@ Ex: 'pet', 'fofo', 'amiguinho', 'tutor consciente'.">${B.vocabulario_nunca || ''
             ${this.fieldLabel('arte_tema', 'Tema visual', true)}
             <div class="chip-group">
               ${[
-                { v: 'escuro', l: 'Escuro (dark)' },
-                { v: 'claro',  l: 'Claro (light)' },
-                { v: 'ia',     l: 'IA decide baseado na marca' },
-              ].map(o => `
+        { v: 'escuro', l: 'Escuro (dark)' },
+        { v: 'claro', l: 'Claro (light)' },
+        { v: 'ia', l: 'IA decide baseado na marca' },
+      ].map(o => `
                 <button class="chip ${B.arte_tema === o.v ? 'on' : ''}" data-field="arte_tema" data-chip="${o.v}">${o.l}</button>
               `).join('')}
             </div>
@@ -1011,10 +1428,10 @@ Ex: 'pet', 'fofo', 'amiguinho', 'tutor consciente'.">${B.vocabulario_nunca || ''
             ${this.fieldLabel('arte_intensidade', 'Intensidade visual', true)}
             <div class="sel-cards" data-field-group="arte_intensidade">
               ${[
-                { v: 'contido', icon: 'minus-circle', title: 'Contido', desc: 'Animações sutis, foco no conteúdo. Consultórios, clínicas, B2B.' },
-                { v: 'medio',   icon: 'circle',       title: 'Médio',   desc: 'Presença notável. Profissionais criativos, mentores, premium.' },
-                { v: 'alto',    icon: 'zap-off',      title: 'Alto',    desc: 'Efeito uau total. Imersivo, editorial. Diferença imediata.' },
-              ].map(o => `
+        { v: 'contido', icon: 'minus-circle', title: 'Contido', desc: 'Animações sutis, foco no conteúdo. Consultórios, clínicas, B2B.' },
+        { v: 'medio', icon: 'circle', title: 'Médio', desc: 'Presença notável. Profissionais criativos, mentores, premium.' },
+        { v: 'alto', icon: 'zap-off', title: 'Alto', desc: 'Efeito uau total. Imersivo, editorial. Diferença imediata.' },
+      ].map(o => `
                 <div class="sel-card" data-field="arte_intensidade" data-selcard="${o.v}" tabindex="0">
                   <i data-lucide="${o.icon}" class="sel-card-icon" style="width:18px;height:18px"></i>
                   <div>
@@ -1031,11 +1448,11 @@ Ex: 'pet', 'fofo', 'amiguinho', 'tutor consciente'.">${B.vocabulario_nunca || ''
               ${this.fieldLabel('arte_menu_mobile', 'Menu mobile', false, true)}
               <div class="chip-group">
                 ${[
-                  { v: 'fullscreen', l: 'Fullscreen' },
-                  { v: 'drawer',     l: 'Drawer lateral' },
-                  { v: 'bottom',     l: 'Bottom sheet' },
-                  { v: 'ia',         l: 'IA decide' },
-                ].map(o => `
+        { v: 'fullscreen', l: 'Fullscreen' },
+        { v: 'drawer', l: 'Drawer lateral' },
+        { v: 'bottom', l: 'Bottom sheet' },
+        { v: 'ia', l: 'IA decide' },
+      ].map(o => `
                   <button class="chip ${B.arte_menu_mobile === o.v ? 'on' : ''}" data-field="arte_menu_mobile" data-chip="${o.v}">${o.l}</button>
                 `).join('')}
               </div>
@@ -1147,8 +1564,8 @@ Ex: Sem gradiente roxo. Sem ilustrações infantis. Sem ícones estilo flaticon 
     const canGen = this.canGenerate();
 
     const statusMsg = score >= 80 ? 'Briefing sólido — pronto para gerar' :
-                      score >= 55 ? 'Briefing razoável — revise os avisos antes de gerar' :
-                      'Briefing incompleto — preencha os campos críticos';
+      score >= 55 ? 'Briefing razoável — revise os avisos antes de gerar' :
+        'Briefing incompleto — preencha os campos críticos';
 
     return `
     <div class="review-screen">
@@ -1170,9 +1587,9 @@ Ex: Sem gradiente roxo. Sem ilustrações infantis. Sem ícones estilo flaticon 
       <!-- Steps Grid -->
       <div class="review-steps-grid">
         ${STEPS.map(s => {
-          const ss = this.getStepScore(s.id);
-          const sc = this.getScoreClass(ss);
-          return `
+      const ss = this.getStepScore(s.id);
+      const sc = this.getScoreClass(ss);
+      return `
             <div class="review-step-card" data-goto-step="${s.id}">
               <div class="review-step-card-header">
                 <span class="review-step-card-name">${s.name}</span>
@@ -1187,7 +1604,7 @@ Ex: Sem gradiente roxo. Sem ilustrações infantis. Sem ícones estilo flaticon 
               </span>
             </div>
           `;
-        }).join('')}
+    }).join('')}
       </div>
 
       <!-- Campos críticos faltando -->
@@ -1199,7 +1616,7 @@ Ex: Sem gradiente roxo. Sem ilustrações infantis. Sem ícones estilo flaticon 
           </div>
           ${missing.map(m => `
             <div style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--text-secondary);padding:6px 0">
-              <span>✗ ${m.field.replace(/_/g,' ')}</span>
+              <span>✗ ${m.field.replace(/_/g, ' ')}</span>
               <span class="review-step-card-btn" data-goto-step="${m.step}" style="cursor:pointer;color:var(--accent2)">
                 Step ${m.step} →
               </span>
@@ -1319,7 +1736,7 @@ Ex: Sem gradiente roxo. Sem ilustrações infantis. Sem ícones estilo flaticon 
     } else {
       const isLastStep = this.state.screen === 'step' && this.state.currentStep === 8;
       const nextLabel = isLastStep ? 'Direção de Arte →' :
-                        this.state.screen === 'intake' ? 'Ir para Step 1 →' : 'Próximo →';
+        this.state.screen === 'intake' ? 'Ir para Step 1 →' : 'Próximo →';
       actions.innerHTML = `
         <button class="btn-primary" onclick="App.goNext()">
           ${nextLabel}
@@ -1489,11 +1906,11 @@ ${text}`;
   buildArtPrompt() {
     const B = this.B;
     const pessoais = (B.arte_referencias_pessoais || []).map((r, i) =>
-      `Referência pessoal ${i+1}: ${r.link}\nO que gostei: ${r.gostei}\nO que adaptar: ${r.adaptar}`
+      `Referência pessoal ${i + 1}: ${r.link}\nO que gostei: ${r.gostei}\nO que adaptar: ${r.adaptar}`
     ).join('\n\n');
 
     const nicho = (B.arte_referencias_nicho || []).map((r, i) =>
-      `Referência do nicho ${i+1}: ${r.link}\nO que gostei: ${r.gostei}\nO que adaptar: ${r.adaptar}`
+      `Referência do nicho ${i + 1}: ${r.link}\nO que gostei: ${r.gostei}\nO que adaptar: ${r.adaptar}`
     ).join('\n\n');
 
     return `Você é um Diretor de Arte e UI Designer de elite especializado em landing pages de conversão.
@@ -1831,15 +2248,15 @@ ${B.casos_resultados || 'Não fornecidos.'}
 
 ### Google Business
 ${B.google_business === 'sim'
-  ? `Sim — Nota: **${B.google_nota} ★** com **${B.google_qtd} avaliações**
+        ? `Sim — Nota: **${B.google_nota} ★** com **${B.google_qtd} avaliações**
 ${parseInt(B.google_qtd) >= 10 && parseFloat(B.google_nota) >= 4.5 ? '✅ Incluir bloco de Google Reviews' : '⚠ Avaliações insuficientes ou nota baixa — NÃO incluir bloco de reviews'}`
-  : 'Não possui perfil Google Business.'}
+        : 'Não possui perfil Google Business.'}
 
 ### Depoimentos
 ${B.depoimentos === 'sim'
-  ? `Sim — Formato: ${(B.depoimentos_formato || []).join(', ')} — Quantidade: ${B.depoimentos_qtd || '—'}
+        ? `Sim — Formato: ${(B.depoimentos_formato || []).join(', ')} — Quantidade: ${B.depoimentos_qtd || '—'}
 ✅ Incluir bloco de depoimentos`
-  : 'Não há depoimentos disponíveis — NÃO incluir bloco de depoimentos.'}
+        : 'Não há depoimentos disponíveis — NÃO incluir bloco de depoimentos.'}
 
 ---
 
@@ -1895,7 +2312,7 @@ ${fichaArte.mobile_first}
 ${fichaArte.footer}
 
 ### Decisões Criativas
-${(fichaArte.decisoes || []).map((d, i) => `${i+1}. ${d}`).join('\n')}
+${(fichaArte.decisoes || []).map((d, i) => `${i + 1}. ${d}`).join('\n')}
 ` : `
 ### Ativos da Marca
 - Logo: ${B.arte_logo || '—'}
@@ -1913,14 +2330,14 @@ ${(fichaArte.decisoes || []).map((d, i) => `${i+1}. ${d}`).join('\n')}
 
 ### Referências Pessoais
 ${(B.arte_referencias_pessoais || []).map((r, i) => `
-**Ref. ${i+1}:** ${r.link}
+**Ref. ${i + 1}:** ${r.link}
 - O que atraiu: ${r.gostei}
 - O que adaptar: ${r.adaptar}
 `).join('') || 'Não fornecidas.'}
 
 ### Referências do Nicho
 ${(B.arte_referencias_nicho || []).map((r, i) => `
-**Ref. ${i+1}:** ${r.link}
+**Ref. ${i + 1}:** ${r.link}
 - O que atraiu: ${r.gostei}
 - O que adaptar: ${r.adaptar}
 `).join('') || 'Não fornecidas.'}
@@ -1987,12 +2404,12 @@ ${PROMPT_AUDITORIA}
     lucide.createIcons({ nodes: [document.getElementById('gen-model-badge')] });
 
     const genSteps = [
-      { id: 1, icon: 'file-text',   label: 'Compilando DOC-1...' },
-      { id: 2, icon: 'code',        label: 'Preparando prompt de implementação...' },
-      { id: 3, icon: 'zap',         label: `Chamando ${AI_MODELS[this.state.selectedModel]?.label}...` },
-      { id: 4, icon: 'check-circle',label: 'Processando resposta...' },
-      { id: 5, icon: 'eye',         label: 'Gerando preview...' },
-      { id: 6, icon: 'sparkles',    label: 'Concluído!' },
+      { id: 1, icon: 'file-text', label: 'Compilando DOC-1...' },
+      { id: 2, icon: 'code', label: 'Preparando prompt de implementação...' },
+      { id: 3, icon: 'zap', label: `Chamando ${AI_MODELS[this.state.selectedModel]?.label}...` },
+      { id: 4, icon: 'check-circle', label: 'Processando resposta...' },
+      { id: 5, icon: 'eye', label: 'Gerando preview...' },
+      { id: 6, icon: 'sparkles', label: 'Concluído!' },
     ];
 
     const renderSteps = (activeId, successIds = [], errorId = null) => {
@@ -2009,8 +2426,8 @@ ${PROMPT_AUDITORIA}
         const isDone = successIds.includes(s.id);
         const isError = s.id === errorId;
         const iconCls = isActive ? 'gen-step-icon spin' :
-                        isDone   ? 'gen-step-icon done' :
-                        isError  ? 'gen-step-icon err'  : 'gen-step-icon wait';
+          isDone ? 'gen-step-icon done' :
+            isError ? 'gen-step-icon err' : 'gen-step-icon wait';
         const icon = isActive ? 'loader-2' : isDone ? 'check' : isError ? 'x' : 'circle';
         return `
           <div class="gen-step-item ${isActive ? 'active' : ''}">
@@ -2167,7 +2584,7 @@ ${docImpl.substring(0, 6000)}`;
     const msg = err.message || 'Erro desconhecido';
     const errorInfo = Object.entries(ERROR_MAP).find(([key]) => msg.toLowerCase().includes(key.toLowerCase()));
     const cause = errorInfo?.[1]?.cause || 'Erro inesperado.';
-    const tip   = errorInfo?.[1]?.tip   || 'Tente novamente ou use outro modelo.';
+    const tip = errorInfo?.[1]?.tip || 'Tente novamente ou use outro modelo.';
 
     document.getElementById('error-meta').innerHTML = `
       <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--text-tertiary)">
@@ -2203,115 +2620,25 @@ ${docImpl.substring(0, 6000)}`;
     this.openModal('modal-error');
   },
 
-buildStep8() {
-    const B = this.B;
-    return `
-      <p class="form-section-title">Tom de Voz</p>
-      <p class="form-section-title" style="font-size:12px;font-family:var(--font-body);font-weight:400;color:var(--text-secondary);border:none;padding:0;margin-top:-16px">
-        Estas informações definem como o profissional fala — e o que jamais diria.
-        São as que mais diferenciam a copy de qualquer output genérico de IA.
-      </p>
 
-      <div class="field-group">
-        ${this.fieldLabel('estilo_desejado', 'Como o site deve ser percebido?', true)}
-        <textarea class="field-textarea" data-field="estilo_desejado"
-          placeholder="Fale como descreveria o projeto para o cliente — sem termos técnicos.
-Ex: Sóbrio e técnico, mas sem ser frio. Algo próximo de uma marca premium europeia. Não quero nada que pareça infoproduto ou clínica genérica.">${B.estilo_desejado || ''}</textarea>
-        <span class="field-hint">Esta frase guia todas as decisões visuais e de copy da IA.</span>
-      </div>
 
-      <div class="field-group">
-        ${this.fieldLabel('sensacao_visitante', 'O que o visitante deve SENTIR ao navegar no site?', true)}
-        <textarea class="field-textarea" data-field="sensacao_visitante"
-          placeholder="Ex: Deve sentir que está diante de alguém que domina o assunto, que entende exatamente o problema dele e tem a solução — sem precisar convencer demais.">${B.sensacao_visitante || ''}</textarea>
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('frase_tom', 'Frase que resume o tom de voz da marca', false, true)}
-        <input type="text" class="field-input" data-field="frase_tom"
-          placeholder="Ex: Especialista que já viu tudo e fala sem rodeios / Quem cuida com método, não com emoção"
-          value="${B.frase_tom || ''}">
-        <span class="field-hint">Uma frase curta que captura a personalidade. Será usada no brief para a IA.</span>
-      </div>
-
-      <div class="form-divider"></div>
-      <p class="form-section-title">Vocabulário da Marca</p>
-
-      <div class="field-group">
-        ${this.fieldLabel('vocabulario_usa', 'Termos e expressões que o profissional USA', false, true)}
-        <textarea class="field-textarea" data-field="vocabulario_usa"
-          placeholder="Palavras do campo semântico do cliente — vêm da conversa, não do formulário.
-Ex: 'manejo', 'vínculo', 'marcadores', 'autonomia do animal', 'comportamento funcional'">${B.vocabulario_usa || ''}</textarea>
-        <span class="field-hint">A IA vai incorporar essas palavras naturalmente na copy.</span>
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('vocabulario_nunca', 'Termos que o profissional NUNCA usaria', false, true)}
-        <textarea class="field-textarea" data-field="vocabulario_nunca"
-          placeholder="Palavras que quebram a identidade da marca.
-Ex: 'pet', 'fofo', 'amiguinho', 'tutor consciente', 'jornada', 'transformação', 'missão'">${B.vocabulario_nunca || ''}</textarea>
-        <span class="field-hint">Tão importante quanto o vocabulário correto — a IA evita esses termos.</span>
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('restricoes', 'Restrições visuais e de conteúdo', false, true)}
-        <textarea class="field-textarea" data-field="restricoes"
-          placeholder="Tudo que o cliente NÃO quer de forma alguma no site.
-Ex: Sem rosa. Sem visual de pet shop. Sem estética de infoproduto. Sem fontes cursivas. Não mencionar preço.">${B.restricoes || ''}</textarea>
-      </div>
-
-      <div class="form-divider"></div>
-      <p class="form-section-title">Metadados do Projeto</p>
-
-      <div class="form-row">
-        <div class="field-group">
-          ${this.fieldLabel('dominio', 'Domínio desejado', false, true)}
-          <input type="text" class="field-input" data-field="dominio"
-            placeholder="Ex: beatrizmattos.com.br"
-            value="${B.dominio || ''}">
-          <span class="field-hint">Confirmar disponibilidade antes do go-live.</span>
-        </div>
-        <div class="field-group">
-          ${this.fieldLabel('cnpj', 'CNPJ', false, true)}
-          <input type="text" class="field-input" data-field="cnpj"
-            placeholder="Ex: 00.000.000/0001-00"
-            value="${B.cnpj || ''}">
-        </div>
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('aviso_legal', 'Registro profissional ou aviso legal', false, true)}
-        <input type="text" class="field-input" data-field="aviso_legal"
-          placeholder="Ex: CRM 12345-SP | CRP 06/12345 | OAB/SP 123456"
-          value="${B.aviso_legal || ''}">
-        <span class="field-hint">Obrigatório no footer para algumas categorias (médicos, psicólogos, advogados).</span>
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('instrucoes_adicionais', 'Instruções adicionais para a IA', false, true)}
-        <textarea class="field-textarea" data-field="instrucoes_adicionais"
-          placeholder="Qualquer informação que não coube nos campos anteriores. Campo livre — a IA lê tudo.">${B.instrucoes_adicionais || ''}</textarea>
-      </div>
-    `;
-  },
-
-buildStepReview() {
+  buildStepReview() {
     const B = this.B;
     const score = this.calcGlobalScore();
     const allWarnings = this.getAllWarnings();
     const missingRequired = this.getMissingRequired();
     const scoreClass = score >= 80 ? 'high' : score >= 50 ? 'medium' : 'low';
     const scoreLabel = score >= 80 ? 'Briefing rico — excelente qualidade esperada' :
-                       score >= 50 ? 'Briefing adequado — resultado bom' :
-                       'Briefing incompleto — preencha mais campos';
+      score >= 50 ? 'Briefing adequado — resultado bom' :
+        'Briefing incompleto — preencha mais campos';
 
     const stepCards = STEPS.map(step => {
       const warnings = this.getStepWarnings(step.id);
       const missing = (REQUIRED_FIELDS[step.id] || []).filter(f => !B[f]?.toString().trim());
       const statusIcon = missing.length > 0 ? 'x' :
-                         warnings.length > 0 ? 'alert-triangle' : 'check';
+        warnings.length > 0 ? 'alert-triangle' : 'check';
       const statusColor = missing.length > 0 ? 'var(--danger)' :
-                          warnings.length > 0 ? 'var(--warning)' : 'var(--accent)';
+        warnings.length > 0 ? 'var(--warning)' : 'var(--accent)';
       const cardClass = missing.length > 0 ? 'has-errors' : warnings.length > 0 ? 'has-warnings' : 'complete';
 
       return `
@@ -2323,7 +2650,7 @@ buildStepReview() {
           <div class="review-step-name">${step.label}</div>
           <div class="review-step-detail">
             ${missing.length > 0 ? `${missing.length} campo(s) obrigatório(s) vazio(s)` :
-              warnings.length > 0 ? `${warnings.length} aviso(s)` : 'Completo'}
+          warnings.length > 0 ? `${warnings.length} aviso(s)` : 'Completo'}
           </div>
         </div>
       `;
@@ -2431,7 +2758,7 @@ buildStepReview() {
     `;
   },
 
-buildDoc1() {
+  buildDoc1() {
     const B = this.B;
     const dataAtual = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
@@ -2659,14 +2986,14 @@ ${(arteAprovada.referencias_interpretadas || []).map(r => `- [${r.tipo}] ${r.fon
 
 ### Referências Pessoais
 ${(B.arte_referencias_pessoais || []).map((r, i) => `
-**Ref. ${i+1}:** ${r.link}
+**Ref. ${i + 1}:** ${r.link}
 - O que atraiu: ${r.gostei}
 - O que adaptar: ${r.adaptar}
 `).join('') || 'Não fornecidas.'}
 
 ### Referências do Nicho
 ${(B.arte_referencias_nicho || []).map((r, i) => `
-**Ref. ${i+1}:** ${r.link}
+**Ref. ${i + 1}:** ${r.link}
 - O que atraiu: ${r.gostei}
 - O que adaptar: ${r.adaptar}
 `).join('') || 'Não fornecidas.'}
@@ -2708,7 +3035,7 @@ ${PROMPT_AUDITORIA}
 `;
   },
 
-async callAI(prompt) {
+  async callAI(prompt) {
     const model = AI_MODELS[this.state.selectedModel];
     if (!model) throw new Error(`Modelo ${this.state.selectedModel} não encontrado.`);
 
@@ -2716,9 +3043,9 @@ async callAI(prompt) {
     if (!apiKey?.trim()) throw new Error(`Chave de API para ${model.provider} não configurada.`);
 
     switch (model.provider) {
-      case 'gemini':  return this._callGemini(prompt, model, apiKey);
-      case 'claude':  return this._callClaude(prompt, model, apiKey);
-      case 'grok':    return this._callOpenAICompat(prompt, model, apiKey);
+      case 'gemini': return this._callGemini(prompt, model, apiKey);
+      case 'claude': return this._callClaude(prompt, model, apiKey);
+      case 'grok': return this._callOpenAICompat(prompt, model, apiKey);
       case 'mistral': return this._callOpenAICompat(prompt, model, apiKey);
       default: throw new Error(`Provider ${model.provider} não suportado.`);
     }
@@ -2732,12 +3059,12 @@ async callAI(prompt) {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           maxOutputTokens: model.maxTokens,
-          temperature:     model.temp,
+          temperature: model.temp,
           topP: 0.95,
         },
         safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
           { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
         ],
@@ -2760,13 +3087,13 @@ async callAI(prompt) {
     const response = await fetch(model.endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type':            'application/json',
-        'x-api-key':               apiKey,
-        'anthropic-version':       '2023-06-01',
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model:      this.state.selectedModel,
+        model: this.state.selectedModel,
         max_tokens: model.maxTokens,
         temperature: model.temp,
         system: 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro. Siga as instruções exatamente como especificadas.',
@@ -2791,12 +3118,12 @@ async callAI(prompt) {
     const response = await fetch(model.endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type':  'application/json',
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model:       this.state.selectedModel,
-        max_tokens:  model.maxTokens,
+        model: this.state.selectedModel,
+        max_tokens: model.maxTokens,
         temperature: model.temp,
         messages: [
           {
@@ -2820,10 +3147,10 @@ async callAI(prompt) {
     return text;
   },
 
-calcGlobalScore() {
+  calcGlobalScore() {
     const B = this.B;
     let filled = 0;
-    let total  = 0;
+    let total = 0;
 
     const weights = {
       nome_cliente: 3, segmento: 3, tipo: 2, whatsapp: 3,
@@ -2892,7 +3219,7 @@ calcGlobalScore() {
     if (bar) bar.style.width = score + '%';
   },
 
-fieldLabel(field, label, required = false, optional = false) {
+  fieldLabel(field, label, required = false, optional = false) {
     const tooltip = FIELD_TOOLTIPS[field];
     const req = required ? `<span class="field-required">*</span>` : '';
     const opt = optional ? `<span class="field-optional">opcional</span>` : '';
@@ -2909,7 +3236,7 @@ fieldLabel(field, label, required = false, optional = false) {
     `;
   },
 
-goToScreen(screen) {
+  goToScreen(screen) {
     this.state.screen = screen;
     this.renderScreen();
     this.renderStepsNav();
@@ -2965,7 +3292,7 @@ goToScreen(screen) {
     }
   },
 
-renderScreen() {
+  renderScreen() {
     const content = document.getElementById('screen-content');
     if (!content) return;
 
@@ -3004,14 +3331,14 @@ renderScreen() {
     if (!step) return '';
 
     const builders = {
-      1: () => this.buildStep1(),
-      2: () => this.buildStep3(), // redes sociais
-      3: () => this.buildStep4(), // atendimento
-      4: () => this.buildStep5(), // serviços
-      5: () => this.buildStep5(), // preço (embutido no 4 por conveniência)
-      6: () => this.buildStep6(), // público
-      7: () => this.buildStep7(), // diferenciais
-      8: () => this.buildStep8(), // tom
+      1: () => this.buildStep1(),   // Identificação
+      2: () => this.buildStep2(),   // Contato e conversão
+      3: () => this.buildStep3(),   // Redes sociais e presença
+      4: () => this.buildStep4(),   // Localização e modalidade
+      5: () => this.buildStep5(),   // Serviços e preço
+      6: () => this.buildStep6(),   // Público-alvo
+      7: () => this.buildStep7(),   // Diferenciais e prova social
+      8: () => this.buildStep8(),   // Tom de voz
     };
 
     const content = builders[stepId] ? builders[stepId]() : '';
@@ -3202,7 +3529,7 @@ Quanto mais material, mais preciso o preenchimento automático.">${B.briefing_br
               <div class="field-group">
                 ${this.fieldLabel('arte_tema', 'Tema')}
                 <div class="chip-group">
-                  ${['Claro','Escuro','IA decide'].map(t => `
+                  ${['Claro', 'Escuro', 'IA decide'].map(t => `
                     <button class="chip ${B.arte_tema === t ? 'on' : ''}" data-field="arte_tema" data-chip="${t}">${t}</button>
                   `).join('')}
                 </div>
@@ -3210,7 +3537,7 @@ Quanto mais material, mais preciso o preenchimento automático.">${B.briefing_br
               <div class="field-group">
                 ${this.fieldLabel('arte_intensidade', 'Intensidade visual')}
                 <div class="chip-group">
-                  ${['Contido','Médio','Alto — efeito uau'].map(t => `
+                  ${['Contido', 'Médio', 'Alto — efeito uau'].map(t => `
                     <button class="chip ${B.arte_intensidade === t ? 'on' : ''}" data-field="arte_intensidade" data-chip="${t}">${t}</button>
                   `).join('')}
                 </div>
@@ -3225,7 +3552,7 @@ Quanto mais material, mais preciso o preenchimento automático.">${B.briefing_br
             <div class="field-group">
               ${this.fieldLabel('arte_menu_mobile', 'Menu mobile', false, true)}
               <div class="chip-group">
-                ${['Fullscreen overlay','Drawer lateral','Bottom sheet','IA decide'].map(t => `
+                ${['Fullscreen overlay', 'Drawer lateral', 'Bottom sheet', 'IA decide'].map(t => `
                   <button class="chip ${B.arte_menu_mobile === t ? 'on' : ''}" data-field="arte_menu_mobile" data-chip="${t}">${t}</button>
                 `).join('')}
               </div>
@@ -3268,33 +3595,33 @@ Quanto mais material, mais preciso o preenchimento automático.">${B.briefing_br
     `;
   },
 
-renderStepsNav() {
+  renderStepsNav() {
     const nav = document.getElementById('steps-nav');
     if (!nav) return;
 
     const { screen, currentStep } = this.state;
 
     const items = STEPS.map(step => {
-      const isActive   = screen === 'step' && currentStep === step.id;
-      const isVisited  = this.P?.visitedSteps?.includes(step.id);
-      const warnings   = this.getStepWarnings(step.id);
-      const missing    = (REQUIRED_FIELDS[step.id] || []).filter(f => !this.B[f]?.toString().trim());
+      const isActive = screen === 'step' && currentStep === step.id;
+      const isVisited = this.P?.visitedSteps?.includes(step.id);
+      const warnings = this.getStepWarnings(step.id);
+      const missing = (REQUIRED_FIELDS[step.id] || []).filter(f => !this.B[f]?.toString().trim());
       const isComplete = isVisited && missing.length === 0;
-      const hasError   = isVisited && missing.length > 0;
-      const hasWarn    = isVisited && warnings.length > 0 && missing.length === 0;
+      const hasError = isVisited && missing.length > 0;
+      const hasWarn = isVisited && warnings.length > 0 && missing.length === 0;
 
       const cls = [
         'step-nav-item',
-        isActive  ? 'active'    : '',
+        isActive ? 'active' : '',
         isComplete && !isActive ? 'done' : '',
-        hasError  ? 'has-error' : '',
+        hasError ? 'has-error' : '',
       ].filter(Boolean).join(' ');
 
       const dotContent = isComplete
         ? `<i data-lucide="check" style="width:10px;height:10px;color:var(--accent)"></i>`
         : hasError
-        ? `<i data-lucide="x" style="width:10px;height:10px;color:var(--danger)"></i>`
-        : `<span class="step-dot-inner">${step.id}</span>`;
+          ? `<i data-lucide="x" style="width:10px;height:10px;color:var(--danger)"></i>`
+          : `<span class="step-dot-inner">${step.id}</span>`;
 
       return `
         <button class="${cls}" onclick="App.goToStep(${step.id})">
@@ -3341,14 +3668,14 @@ renderStepsNav() {
     // Score
     const score = this.calcGlobalScore();
     const fill = document.getElementById('project-score-fill');
-    const pct  = document.getElementById('project-score-pct');
+    const pct = document.getElementById('project-score-pct');
     if (fill) fill.style.width = score + '%';
-    if (pct)  pct.textContent = score + '%';
+    if (pct) pct.textContent = score + '%';
 
     // API status
-    const providers = ['gemini','claude','grok','mistral'];
+    const providers = ['gemini', 'claude', 'grok', 'mistral'];
     const configuredCount = providers.filter(p => this.state.apiKeys[p]?.trim()).length;
-    const dot   = document.getElementById('sidebar-api-dot');
+    const dot = document.getElementById('sidebar-api-dot');
     const label = document.getElementById('sidebar-api-label');
     if (dot && label) {
       if (configuredCount === 0) {
@@ -3368,41 +3695,41 @@ renderStepsNav() {
     const { screen, currentStep } = this.state;
     const titles = {
       intake: 'Intake — Material do Cliente',
-      art:    'Direção de Arte',
+      art: 'Direção de Arte',
       review: 'Revisão Final e Geração',
     };
 
     const subs = {
       intake: 'Cole o briefing bruto — a IA analisa e preenche os steps',
-      art:    'Referências visuais e ativos da marca',
+      art: 'Referências visuais e ativos da marca',
       review: 'Confira o briefing e gere a Ficha de Implementação',
     };
 
     let title = titles[screen] || '';
-    let sub   = subs[screen] || '';
+    let sub = subs[screen] || '';
 
     if (screen === 'step') {
       const step = STEPS[currentStep - 1];
       title = step ? `Step ${currentStep} — ${step.label}` : '';
-      sub   = `${currentStep} de ${STEPS.length}`;
+      sub = `${currentStep} de ${STEPS.length}`;
     }
 
     const titleEl = document.getElementById('topbar-title');
-    const subEl   = document.getElementById('topbar-subtitle');
+    const subEl = document.getElementById('topbar-subtitle');
     if (titleEl) titleEl.textContent = title;
-    if (subEl)   subEl.textContent   = sub;
+    if (subEl) subEl.textContent = sub;
 
     // Progress
     let pct = 0;
-    if (screen === 'step')   pct = Math.round((currentStep / (STEPS.length + 2)) * 100);
-    if (screen === 'art')    pct = Math.round(((STEPS.length + 1) / (STEPS.length + 2)) * 100);
+    if (screen === 'step') pct = Math.round((currentStep / (STEPS.length + 2)) * 100);
+    if (screen === 'art') pct = Math.round(((STEPS.length + 1) / (STEPS.length + 2)) * 100);
     if (screen === 'review') pct = 100;
 
     const bar = document.getElementById('topbar-progress-fill');
     if (bar) bar.style.width = pct + '%';
   },
 
-bindFieldEvents(container) {
+  bindFieldEvents(container) {
     // Inputs e textareas
     container.querySelectorAll('[data-field]').forEach(el => {
       const field = el.dataset.field;
@@ -3447,7 +3774,7 @@ bindFieldEvents(container) {
         this.setField(field, value);
 
         // Alguns campos precisam re-render (condicional)
-        if (['objetivo_conversao','modalidade','preco_exibir','depoimentos','google_business'].includes(field)) {
+        if (['objetivo_conversao', 'modalidade', 'preco_exibir', 'depoimentos', 'google_business'].includes(field)) {
           setTimeout(() => { this.renderScreen(); }, 50);
         }
       });
@@ -3460,7 +3787,7 @@ bindFieldEvents(container) {
     if (!content) return;
 
     // Restaurar chips de arrays
-    const arrayFields = ['integracoes','depoimentos_formato'];
+    const arrayFields = ['integracoes', 'depoimentos_formato'];
     arrayFields.forEach(field => {
       const values = B[field] || [];
       content.querySelectorAll(`.chip[data-field="${field}"]`).forEach(chip => {
@@ -3483,7 +3810,7 @@ bindFieldEvents(container) {
     });
   },
 
-toggleArray(field, value) {
+  toggleArray(field, value) {
     if (!this.P) return;
     const arr = this.P.briefing[field] || [];
     const idx = arr.indexOf(value);
@@ -3493,7 +3820,7 @@ toggleArray(field, value) {
     this.autosave();
   },
 
-addArtRef(field) {
+  addArtRef(field) {
     if (!this.P) return;
     const arr = this.P.briefing[field] || [];
     arr.push({ link: '', gostei: '', adaptar: '' });
@@ -3527,7 +3854,7 @@ addArtRef(field) {
     this.renderScreen();
   },
 
-handleIntakeFileSelect(event) {
+  handleIntakeFileSelect(event) {
     const files = Array.from(event.target.files);
     this.state.intakeFiles = [...(this.state.intakeFiles || []), ...files];
     this.renderIntakeFilesList();
@@ -3564,7 +3891,7 @@ handleIntakeFileSelect(event) {
     this.renderIntakeFilesList();
   },
 
-openModal(id) {
+  openModal(id) {
     const overlay = document.getElementById(id);
     if (!overlay) return;
     overlay.classList.add('open');
@@ -3607,9 +3934,9 @@ openModal(id) {
 
   downloadText(content, filename, mime = 'text/plain') {
     const blob = new Blob([content], { type: `${mime};charset=utf-8` });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href     = url;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
@@ -3617,15 +3944,15 @@ openModal(id) {
     URL.revokeObjectURL(url);
   },
 
-renderApiModal() {
+  renderApiModal() {
     const body = document.getElementById('api-modal-body');
     if (!body) return;
 
     const providers = [
-      { key: 'gemini',  name: 'Google Gemini',   link: 'https://aistudio.google.com/app/apikey', models: ['gemini-2.5-pro','gemini-2.5-flash'] },
-      { key: 'claude',  name: 'Anthropic Claude', link: 'https://console.anthropic.com',          models: ['claude-sonnet-4-20250514','claude-haiku-4-5-20251001'] },
-      { key: 'grok',    name: 'xAI Grok',         link: 'https://console.x.ai',                   models: ['grok-3'] },
-      { key: 'mistral', name: 'Mistral AI',        link: 'https://console.mistral.ai',             models: ['mistral-large-latest'] },
+      { key: 'gemini', name: 'Google Gemini', link: 'https://aistudio.google.com/app/apikey', models: ['gemini-2.5-pro', 'gemini-2.5-flash'] },
+      { key: 'claude', name: 'Anthropic Claude', link: 'https://console.anthropic.com', models: ['claude-sonnet-4-20250514', 'claude-haiku-4-5-20251001'] },
+      { key: 'grok', name: 'xAI Grok', link: 'https://console.x.ai', models: ['grok-3'] },
+      { key: 'mistral', name: 'Mistral AI', link: 'https://console.mistral.ai', models: ['mistral-large-latest'] },
     ];
 
     body.innerHTML = providers.map(p => {
@@ -3750,7 +4077,7 @@ renderApiModal() {
     lucide.createIcons({ nodes: [list] });
   },
 
-setupGlobalEvents() {
+  setupGlobalEvents() {
     // ESC fecha modal
     document.addEventListener('keydown', e => {
       if (e.key === 'Escape') {

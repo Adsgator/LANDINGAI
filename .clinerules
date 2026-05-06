@@ -61,9 +61,15 @@
 #    chame lucide.createIcons() no container.
 #
 # 8. Autosave:
-#    Toda alteração de campo chama autosave() com debounce de 1500ms.
-#    NÃO chame saveStorage() diretamente de handlers de input —
-#    sempre passe por autosave().
+    Toda alteração de campo chama autosave() com debounce de 1500ms.
+    NÃO chame saveStorage() diretamente de handlers de input —
+    sempre passe por autosave().
+
+## Regras de edição
+    Sempre declare quais arquivos serão modificados antes de começar
+    Edite no máximo 2 arquivos por tarefa
+    Prefira criar funções novas em vez de reescrever funções existentes
+    Ao adicionar um novo step ou tela, crie um novo arquivo em assets/js/
 
 # ── DIRETÓRIOS PROTEGIDOS ─────────────────────────────────────
 # docs/    → Especificações originais do sistema, NÃO editar

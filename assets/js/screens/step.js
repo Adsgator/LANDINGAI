@@ -219,7 +219,7 @@ Object.assign(window.App, {
   buildStep4() {
     const B = this.B;
     return `
-      <p class="form-section-title">Localização e Modalidade</p>
+      <p class="form-section-title">Modalidade de Atendimento</p>
 
       <div class="field-group">
         ${this.fieldLabel('modalidade', 'Como o cliente atende?', true)}
@@ -227,50 +227,76 @@ Object.assign(window.App, {
           ${[
         { v: 'presencial', label: 'Presencial' },
         { v: 'online', label: 'Online' },
-        { v: 'hibrido', label: 'Híbrido (presencial + online)' },
+        { v: 'hibrido', label: 'Híbrido (ambos)' },
       ].map(o => `
             <button class="chip ${B.modalidade === o.v ? 'on' : ''}" data-field="modalidade" data-chip="${o.v}">
               ${o.label}
             </button>
           `).join('')}
         </div>
-        <span class="field-hint">Define se o site terá seção de mapa (presencial) ou plataforma online.</span>
+        <span class="field-hint">Define se o site terá seção de mapa ou foco em plataforma digital.</span>
       </div>
 
+      <div class="form-divider"></div>
+      
       ${(B.modalidade === 'presencial' || B.modalidade === 'hibrido') ? `
+        <p class="form-section-title">Localização Física</p>
         <div class="field-group">
           ${this.fieldLabel('endereco', 'Endereço completo', true)}
-          <textarea class="field-textarea" data-field="endereco" placeholder="Rua, número, bairro, cidade, estado, CEP. Ponto de referência se útil.">${B.endereco || ''}</textarea>
+          <textarea class="field-textarea" data-field="endereco" placeholder="Rua, número, bairro, cidade, estado, CEP.">${B.endereco || ''}</textarea>
         </div>
 
-        <div class="field-group">
-          ${this.fieldLabel('exibir_localizacao', 'Como exibir a localização no site?', true)}
-          <div class="chip-group">
-            ${[
-          { v: 'completo', label: 'Endereço completo' },
-          { v: 'cidade', label: 'Só cidade / região' },
-          { v: 'nao', label: 'Não exibir' },
-        ].map(o => `
-              <button class="chip ${B.exibir_localizacao === o.v ? 'on' : ''}" data-field="exibir_localizacao" data-chip="${o.v}">
-                ${o.label}
-              </button>
-            `).join('')}
+        <div class="form-row">
+          <div class="field-group">
+            ${this.fieldLabel('maps_link', 'Link do Google Maps', false, true)}
+            <input type="text" class="field-input" data-field="maps_link" placeholder="https://goo.gl/maps/..." value="${B.maps_link || ''}">
           </div>
-          <span class="field-hint">"Só cidade" é mais seguro para quem atende em casa.</span>
+          <div class="field-group">
+            ${this.fieldLabel('exibir_localizacao', 'Exibição no site', true)}
+            <div class="chip-group">
+              ${[
+            { v: 'completo', label: 'Completo' },
+            { v: 'bairro', label: 'Só Bairro/Cidade' },
+            { v: 'nao', label: 'Não exibir' },
+          ].map(o => `
+                <button class="chip ${B.exibir_localizacao === o.v ? 'on' : ''}" data-field="exibir_localizacao" data-chip="${o.v}">
+                  ${o.label}
+                </button>
+              `).join('')}
+            </div>
+          </div>
         </div>
 
         <div class="field-group">
-          ${this.fieldLabel('cidades_atendimento', 'Cidades de atendimento presencial', false, true)}
-          <input type="text" class="field-input" data-field="cidades_atendimento" placeholder="Ex: São Paulo, Guarulhos, Santo André" value="${B.cidades_atendimento || ''}">
+          ${this.fieldLabel('cidades_atendimento', 'Raio / Cidades de atendimento', false, true)}
+          <input type="text" class="field-input" data-field="cidades_atendimento" placeholder="Ex: Atendemos toda a Grande SP e ABC" value="${B.cidades_atendimento || ''}">
         </div>
       ` : ''}
 
       ${(B.modalidade === 'online' || B.modalidade === 'hibrido') ? `
+        <p class="form-section-title">Ambiente Digital</p>
         <div class="field-group">
-          ${this.fieldLabel('plataforma_online', 'Plataforma de atendimento online', false, true)}
-          <input type="text" class="field-input" data-field="plataforma_online" placeholder="Ex: Google Meet, Zoom, Calendly" value="${B.plataforma_online || ''}">
+          ${this.fieldLabel('plataforma_online', 'Plataforma de atendimento', false, true)}
+          <input type="text" class="field-input" data-field="plataforma_online" placeholder="Ex: Zoom, Google Meet, WhatsApp Video" value="${B.plataforma_online || ''}">
         </div>
       ` : ''}
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">FAQ e Quebra de Objeções</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('faq', 'Perguntas Frequentes (FAQ)', false, true)}
+        <textarea class="field-textarea tall" data-field="faq" 
+          placeholder="Quais as 3 a 5 perguntas que o cliente sempre faz no primeiro contato?&#10;Ex: 'Aceita convênio?', 'Tem estacionamento?', 'Como funciona a primeira sessão?'">${B.faq || ''}</textarea>
+        <span class="field-hint">A IA usará isso para criar um bloco de FAQ que economiza tempo do atendimento.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('objecoes_atendimento', 'Principais objeções / medos', false, true)}
+        <textarea class="field-textarea" data-field="objecoes_atendimento" 
+          placeholder="O que o cliente costuma falar para NÃO fechar? Ex: 'Achei caro', 'Tenho medo de doer', 'Não sei se serve para mim'.">${B.objecoes_atendimento || ''}</textarea>
+        <span class="field-hint">Crucial para a IA criar uma copy que antecipa e resolve esses problemas.</span>
+      </div>
     `;
   },
 

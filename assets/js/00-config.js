@@ -146,8 +146,12 @@ const FIELD_TOOLTIPS = {
 
   // Step 4
   modalidade: 'Define quais blocos aparecem: Presencial → inclui endereço + mapa. Online → sem mapa. Híbrido → ambos.',
-  endereco: 'Endereço completo com ponto de referência. Só incluir se autorizado pelo cliente. Ex: Rua das Flores, 123 – Jardins, SP – Próximo ao Shopping X.',
+  endereco: 'Endereço completo com ponto de referência. Só incluir se autorizado pelo cliente.',
   exibir_localizacao: 'Como exibir o endereço: completo, só o bairro, ou apenas a cidade.',
+  maps_link: 'URL do Google Maps (compartilhar → copiar link). Usado para criar o link de rotas no site.',
+  cidades_atendimento: 'Cidades ou bairros onde o cliente atua. Ajuda no SEO local e na autoridade da região.',
+  faq: 'Perguntas frequentes. Economizam tempo do suporte e aumentam a taxa de conversão.',
+  objecoes_atendimento: 'Dores de cabeça comuns do cliente antes de fechar. A IA usará isso para criar argumentos de venda.',
   cidades_atendimento: 'Regiões atendidas — importante para SEO local. Ex: São Paulo e Grande ABC.',
   plataforma_online: 'Plataforma usada para atendimento online. Ex: Google Meet, Zoom, WhatsApp Vídeo.',
 

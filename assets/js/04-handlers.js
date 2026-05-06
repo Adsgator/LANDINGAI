@@ -100,6 +100,12 @@ Object.assign(window.App, {
           this.setField(field, value);
           chip.classList.add('on');
         }
+        
+        // Re-renderiza para campos que mudam o layout
+        const structural = ['modalidade', 'exibir_localizacao', 'objetivo_conversao', 'preco_exibir', 'depoimentos', 'google_business'];
+        if (structural.includes(field)) {
+          this.renderScreen();
+        }
       });
     });
 
@@ -108,13 +114,21 @@ Object.assign(window.App, {
       card.addEventListener('click', () => {
         const field = card.dataset.field;
         const value = card.dataset.selcard;
-        container.querySelectorAll(`[data-field-group="${field}"] [data-selcard]`).forEach(c => c.classList.remove('on'));
+        
+        // Remove 'on' de todos os cards do mesmo grupo
+        container.querySelectorAll(`[data-field="${field}"][data-selcard]`).forEach(c => {
+          c.classList.remove('on');
+          c.setAttribute('aria-selected', 'false');
+        });
+
         this.setField(field, value);
         card.classList.add('on');
+        card.setAttribute('aria-selected', 'true');
         
-        // Conditional re-renders
-        if (['objetivo_conversao', 'modalidade', 'preco_exibir', 'depoimentos', 'google_business'].includes(field)) {
-            this.renderScreen();
+        // Sempre re-renderiza se for um campo estrutural
+        const structural = ['tipo', 'objetivo_conversao', 'modalidade', 'preco_exibir', 'depoimentos', 'google_business'];
+        if (structural.includes(field)) {
+          this.renderScreen();
         }
       });
     });
@@ -163,9 +177,9 @@ Object.assign(window.App, {
     if (screen === 'intake') { this.goToStep(1); }
     else if (screen === 'step') {
       if (currentStep < STEPS.length) this.goToStep(currentStep + 1);
-      else this.goToScreen('estrutura'); // Vai para estrutura antes da arte
+      else this.goToScreen('structure'); // Vai para estrutura antes da arte
     }
-    else if (screen === 'estrutura') { this.goToScreen('art'); }
+    else if (screen === 'structure') { this.goToScreen('art'); }
     else if (screen === 'art') { this.goToScreen('review'); }
     else if (screen === 'review') { this.showToast('Briefing pronto para geração!', 'success'); }
   },
@@ -173,8 +187,8 @@ Object.assign(window.App, {
   goPrev() {
     const { screen, currentStep } = this.state;
     if (screen === 'review') { this.goToScreen('art'); }
-    else if (screen === 'art') { this.goToScreen('estrutura'); }
-    else if (screen === 'estrutura') { this.goToStep(STEPS.length); }
+    else if (screen === 'art') { this.goToScreen('structure'); }
+    else if (screen === 'structure') { this.goToStep(STEPS.length); }
     else if (screen === 'step') {
       if (currentStep > 1) this.goToStep(currentStep - 1);
       else this.goToScreen('intake');

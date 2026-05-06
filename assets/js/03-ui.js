@@ -46,6 +46,9 @@ Object.assign(window.App, {
     } else if (this.state.screen === 'art') {
       title.textContent = 'Direção de Arte';
       subtitle.textContent = 'Identidade visual e referências';
+    } else if (this.state.screen === 'structure') {
+      title.textContent = 'Estrutura da LP';
+      subtitle.textContent = 'Organização das seções e blocos';
     } else if (this.state.screen === 'review') {
       title.textContent = 'Revisão Final';
       subtitle.textContent = 'Pronto para gerar documentação';
@@ -56,6 +59,7 @@ Object.assign(window.App, {
     let current = 0;
     if (this.state.screen === 'intake') current = 1;
     else if (this.state.screen === 'step') current = 1 + this.state.currentStep;
+    else if (this.state.screen === 'structure') current = total - 2;
     else if (this.state.screen === 'art') current = total - 1;
     else if (this.state.screen === 'review') current = total;
     
@@ -143,13 +147,19 @@ Object.assign(window.App, {
     });
 
     // Seção especial: Etapas Finais
+    const specialLabel = document.createElement('div');
+    specialLabel.className = 'sidebar-label';
+    specialLabel.style.marginTop = '8px';
+    specialLabel.textContent = 'Etapas Finais';
+    nav.appendChild(specialLabel);
+
     const specialItems = [
       {
-        key: 'estrutura',
+        key: 'structure',
         icon: 'layout',
         label: 'Estrutura da LP',
         done: !!this.B.estrutura_aprovada,
-        active: this.state.screen === 'estrutura',
+        active: this.state.screen === 'structure',
       },
       {
         key: 'art',
@@ -166,12 +176,6 @@ Object.assign(window.App, {
         active: this.state.screen === 'review',
       },
     ];
-
-    const specialLabel = document.createElement('div');
-    specialLabel.className = 'sidebar-label';
-    specialLabel.style.marginTop = '8px';
-    specialLabel.textContent = 'Etapas Finais';
-    nav.appendChild(specialLabel);
 
     specialItems.forEach(item => {
       const el = document.createElement('button');

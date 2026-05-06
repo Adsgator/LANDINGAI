@@ -17,16 +17,7 @@ Object.assign(window.App, {
     return builders[step] ? `<div class="step-inner">${builders[step]()}</div>` : '';
   },
 
-  fieldLabel(field, text, required = false, optional = false) {
-    const req = required ? '<span class="field-required">*</span>' : '';
-    const opt = optional ? '<span class="field-optional">(opcional)</span>' : '';
-    const tip = FIELD_TOOLTIPS[field] ? `
-      <span class="field-tooltip">
-        <i data-lucide="help-circle" class="field-tooltip-icon"></i>
-        <span class="field-tooltip-bubble">${FIELD_TOOLTIPS[field]}</span>
-      </span>` : '';
-    return `<label class="field-label">${text}${req}${opt}${tip}</label>`;
-  },
+
 
   buildStep1() {
     const B = this.B;
@@ -128,6 +119,13 @@ Object.assign(window.App, {
         ${this.fieldLabel('gtm_id', 'ID do Google Tag Manager', false, true)}
         <input type="text" class="field-input" data-field="gtm_id" placeholder="Ex: GTM-XXXXXXX" value="${B.gtm_id || ''}">
         <span class="field-hint">Fornecido pelo gestor de tráfego. Formato: GTM- seguido de 7 caracteres.</span>
+      </div>
+      
+      <div class="field-group">
+        ${this.fieldLabel('google_analytics_id', 'ID do Google Analytics', false)}
+        <input type="text" class="field-input" data-field="google_analytics_id"
+          placeholder="G-XXXXXXXXXX" value="${B.google_analytics_id || ''}">
+        <span class="field-hint">ID da propriedade GA4. Formato: G-XXXXXXXXXX</span>
       </div>
 
       <div class="form-divider"></div>

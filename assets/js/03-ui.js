@@ -11,6 +11,23 @@ Object.assign(window.App, {
     this.renderBottombar();
   },
 
+  fieldLabel(field, text, required = false, optional = false) {
+    const tip = FIELD_TOOLTIPS?.[field];
+    return `
+      <label class="field-label">
+        ${text}
+        ${required ? '<span class="field-required">*</span>' : ''}
+        ${optional ? '<span class="field-optional">opcional</span>' : ''}
+        ${tip ? `
+          <span class="field-tooltip">
+            <i data-lucide="info" style="width:13px;height:13px"></i>
+            <span class="field-tooltip-content">${tip}</span>
+          </span>
+        ` : ''}
+      </label>
+    `;
+  },
+
   renderScreen() {
     const container = document.getElementById('screen-content');
     if (!this.state.screen || !container) return;
@@ -89,7 +106,7 @@ Object.assign(window.App, {
 
     // API status
     const hasKey = this.state.apiKeys['gemini'] || this.state.apiKeys['openrouter'];
-    if (apiDot) apiDot.className = `status-dot ${hasKey ? 'online' : ''}`;
+    if (apiDot) apiDot.className = `status-dot ${hasKey ? 'ok' : ''}`;
     if (apiLabel) apiLabel.textContent = hasKey ? 'API Conectada' : 'Sem API';
   },
 
@@ -342,8 +359,24 @@ Object.assign(window.App, {
       new Date(b.updatedAt) - new Date(a.updatedAt)
     );
 
+    // Cabeçalho com contagem e botão excluir tudo
+    const header = document.getElementById('projects-list-header');
+    if (header) {
+      header.innerHTML = projects.length > 0 ? `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+          <span style="font-size:12px;color:var(--text-tertiary)">${projects.length} projeto(s)</span>
+          <button class="btn-ghost btn-sm" style="color:var(--danger);font-size:11px"
+            onclick="App.confirmDeleteAll()">
+            <i data-lucide="trash-2" style="width:12px;height:12px"></i>
+            Excluir todos
+          </button>
+        </div>
+      ` : '';
+      lucide.createIcons({ nodes: [header] });
+    }
+
     if (projects.length === 0) {
-      list.innerHTML = `<p style="font-size:13px;color:var(--text-tertiary);text-align:center;padding:20px">Nenhum projeto ainda</p>`;
+      list.innerHTML = `<p style="font-size:13px;color:var(--text-tertiary);text-align:center;padding:20px 0">Nenhum projeto ainda</p>`;
       return;
     }
 
@@ -351,23 +384,24 @@ Object.assign(window.App, {
       const date = new Date(p.updatedAt).toLocaleDateString('pt-BR');
       const isActive = p.id === this.state.activeId;
       return `
-        <div class="project-list-item ${isActive ? 'active-project' : ''}"
+        <div class="project-list-item ${isActive ? 'active' : ''}"
           onclick="App.loadProject('${p.id}')">
+          <i data-lucide="folder" class="project-list-icon" style="width:16px;height:16px;flex-shrink:0"></i>
           <div class="project-list-info">
             <div class="project-list-name">${p.name || 'Sem nome'}</div>
             <div class="project-list-meta">${p.briefing?.segmento || '—'} · ${date}</div>
           </div>
           <div class="project-list-actions" onclick="event.stopPropagation()">
-            <button class="project-list-action" onclick="App.state.activeId='${p.id}'; App.openRenameModal();" title="Renomear">
+            <button class="project-list-btn" onclick="App.state.activeId='${p.id}'; App.openRenameModal();" title="Renomear">
               <i data-lucide="edit-3" style="width:13px;height:13px"></i>
             </button>
-            <button class="project-list-action" onclick="App.cloneProject('${p.id}')" title="Duplicar">
+            <button class="project-list-btn" onclick="App.cloneProject('${p.id}')" title="Duplicar">
               <i data-lucide="copy" style="width:13px;height:13px"></i>
             </button>
-            <button class="project-list-action" onclick="App.exportProject('${p.id}')" title="Exportar JSON">
+            <button class="project-list-btn" onclick="App.exportProject('${p.id}')" title="Exportar JSON">
               <i data-lucide="download" style="width:13px;height:13px"></i>
             </button>
-            <button class="project-list-action danger" onclick="App.deleteProject('${p.id}')" title="Excluir">
+            <button class="project-list-btn danger" onclick="App.deleteProject('${p.id}')" title="Excluir">
               <i data-lucide="trash-2" style="width:13px;height:13px"></i>
             </button>
           </div>
@@ -376,6 +410,19 @@ Object.assign(window.App, {
     }).join('');
 
     lucide.createIcons({ nodes: [list] });
+  },
+
+  confirmDeleteAll() {
+    const count = Object.keys(this.state.projects).length;
+    if (!count) return;
+    if (confirm(`Excluir todos os ${count} projeto(s)? Esta ação não pode ser desfeita.`)) {
+      this.state.projects = {};
+      this.state.activeId = null;
+      this.autosave();
+      this.createProject('Novo Projeto');
+      this.closeModal('modal-projects');
+      this.showToast('Todos os projetos foram excluídos.', 'success');
+    }
   },
 
   /* ── AI Log System (V3 Delta) ────────────────────────────────── */

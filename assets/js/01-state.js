@@ -104,6 +104,8 @@ Object.assign(window.App, {
     if (!this.state.projects[id]) return;
     this.state.activeId = id;
     this.state.screen = 'intake';
+    this.autosave(); // salvar o activeId
+    this.closeModal('modal-projects');
     if (this.renderAll) this.renderAll();
   },
 

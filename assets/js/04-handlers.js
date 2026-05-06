@@ -155,6 +155,105 @@ Object.assign(window.App, {
         this.goToStep(parseInt(step));
       });
     });
+
+    // ── Upload de arquivos (Intake) ──────────────────────────
+    const intakeZone = container.querySelector('#intake-upload-zone');
+    const intakeInput = container.querySelector('#intake-upload-input');
+    if (intakeZone && intakeInput) {
+      // Clique na zona abre o file picker
+      intakeZone.addEventListener('click', () => intakeInput.click());
+
+      // Drag & Drop
+      intakeZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        intakeZone.classList.add('drag-over');
+      });
+      intakeZone.addEventListener('dragleave', () => {
+        intakeZone.classList.remove('drag-over');
+      });
+      intakeZone.addEventListener('drop', e => {
+        e.preventDefault();
+        intakeZone.classList.remove('drag-over');
+        const files = Array.from(e.dataTransfer.files);
+        this.handleIntakeFiles(files);
+      });
+
+      // Seleção via input
+      intakeInput.addEventListener('change', () => {
+        const files = Array.from(intakeInput.files);
+        this.handleIntakeFiles(files);
+        intakeInput.value = '';
+      });
+    }
+
+    // ── Upload de arquivos (Arte) ────────────────────────────
+    const artZone = container.querySelector('#art-upload-zone');
+    const artInput = artZone?.querySelector('input[type="file"]');
+    if (artZone && artInput) {
+      artZone.addEventListener('click', (e) => {
+        if (e.target !== artInput) artInput.click();
+      });
+      artZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        artZone.classList.add('drag-over');
+      });
+      artZone.addEventListener('dragleave', () => {
+        artZone.classList.remove('drag-over');
+      });
+      artZone.addEventListener('drop', e => {
+        e.preventDefault();
+        artZone.classList.remove('drag-over');
+        const files = Array.from(e.dataTransfer.files);
+        this.handleArtFiles(files);
+      });
+      artInput.addEventListener('change', () => {
+        const files = Array.from(artInput.files);
+        this.handleArtFiles(files);
+        artInput.value = '';
+      });
+    }
+
+    // ── Referências de Arte (add/remove) ────────────────────
+    container.querySelectorAll('[data-add-ref]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.addRef; // 'pessoais' ou 'nicho'
+        this.addArtRef(type);
+      });
+    });
+    container.querySelectorAll('[data-remove-ref]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.removeRef;
+        const idx = parseInt(btn.dataset.refIdx);
+        this.removeArtRef(type, idx);
+      });
+    });
+
+    // ── Color picker sync ────────────────────────────────────
+    container.querySelectorAll('input[type="color"][data-field]').forEach(picker => {
+      picker.addEventListener('input', () => {
+        const field = picker.dataset.field;
+        // Sincronizar com o input de texto ao lado
+        const textInput = container.querySelector(`input[type="text"][data-field="${field}"]`);
+        if (textInput) textInput.value = picker.value;
+        this.setField(field, picker.value);
+      });
+    });
+
+    // ── Aprovar Arte ─────────────────────────────────────────
+    const approveArtBtn = container.querySelector('#btn-approve-art');
+    if (approveArtBtn) approveArtBtn.addEventListener('click', () => this.aprovarArte());
+
+    // ── Aprovar Estrutura ────────────────────────────────────
+    const approveEstruturaBtn = container.querySelector('#btn-approve-estrutura');
+    if (approveEstruturaBtn) approveEstruturaBtn.addEventListener('click', () => this.aprovarEstrutura());
+  },
+
+  aprovarArte() {
+    if (!this.B) return;
+    this.setField('arte_ficha_aprovada', this.B.ficha_direcao_arte || '');
+    this.closeModal('modal-art-result');
+    this.showToast('Direção de Arte aprovada!', 'success');
+    this.renderScreen();
   },
 
   goToScreen(screen) {
@@ -343,5 +442,90 @@ Object.assign(window.App, {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(title, { body });
     }
+  },
+
+  handleIntakeFiles(files) {
+    if (!files.length) return;
+    this.state.intakeFiles = [...(this.state.intakeFiles || []), ...files];
+    
+    const list = document.getElementById('intake-files-list');
+    if (!list) return;
+    
+    list.innerHTML = this.state.intakeFiles.map((f, i) => `
+      <div class="upload-preview-item">
+        <i data-lucide="file-text" style="width:14px;height:14px"></i>
+        <span>${f.name}</span>
+        <button onclick="App.removeIntakeFile(${i})" title="Remover">
+          <i data-lucide="x" style="width:12px;height:12px"></i>
+        </button>
+      </div>
+    `).join('');
+    lucide.createIcons({ nodes: [list] });
+    this.showToast(`${files.length} arquivo(s) adicionado(s)`, 'success');
+  },
+
+  removeIntakeFile(index) {
+    this.state.intakeFiles.splice(index, 1);
+    const list = document.getElementById('intake-files-list');
+    if (list) {
+      list.innerHTML = this.state.intakeFiles.map((f, i) => `
+        <div class="upload-preview-item">
+          <i data-lucide="file-text" style="width:14px;height:14px"></i>
+          <span>${f.name}</span>
+          <button onclick="App.removeIntakeFile(${i})" title="Remover">
+            <i data-lucide="x" style="width:12px;height:12px"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons({ nodes: [list] });
+    }
+  },
+
+  handleArtFiles(files) {
+    if (!files.length) return;
+    if (!this.P) return;
+    
+    const existing = this.B.arte_arquivos || [];
+    const novos = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
+    this.setField('arte_arquivos', [...existing, ...novos]);
+    
+    const list = document.getElementById('art-files-list');
+    if (list) {
+      const all = this.B.arte_arquivos || [];
+      list.innerHTML = all.map((f, i) => `
+        <div class="upload-preview-item">
+          <i data-lucide="file" style="width:14px;height:14px"></i>
+          <span>${f.name}</span>
+          <button onclick="App.removeArtFile(${i})" title="Remover">
+            <i data-lucide="x" style="width:12px;height:12px"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons({ nodes: [list] });
+    }
+    this.showToast(`${files.length} arquivo(s) adicionado(s)`, 'success');
+  },
+
+  removeArtFile(index) {
+    const all = [...(this.B.arte_arquivos || [])];
+    all.splice(index, 1);
+    this.setField('arte_arquivos', all);
+    this.renderScreen();
+  },
+
+  addArtRef(type) {
+    const field = type === 'pessoais' ? 'arte_referencias_pessoais' : 'arte_referencias_nicho';
+    const arr = [...(this.B[field] || [])];
+    arr.push({ url: '', notas: '' });
+    this.setField(field, arr);
+    this.renderScreen();
+  },
+
+  removeArtRef(type, index) {
+    const field = type === 'pessoais' ? 'arte_referencias_pessoais' : 'arte_referencias_nicho';
+    const arr = [...(this.B[field] || [])];
+    arr.splice(index, 1);
+    this.setField(field, arr);
+    this.renderScreen();
   }
 });

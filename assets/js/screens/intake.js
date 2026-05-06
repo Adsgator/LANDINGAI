@@ -45,7 +45,7 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
           <div class="intake-or">ou anexe arquivos</div>
 
           <div id="intake-upload-zone" class="upload-zone">
-            <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.md,.txt">
+            <input type="file" id="intake-upload-input" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.md,.txt">
             <i data-lucide="upload-cloud" class="upload-zone-icon"></i>
             <p class="upload-zone-label">Arraste ou clique para enviar</p>
             <p class="upload-zone-hint">PDF, imagens, .md, .txt — até 10MB por arquivo</p>

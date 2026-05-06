@@ -1,84 +1,69 @@
 # ============================================================
-# LandingAI v2 — Regras para Cline / AI Assistants
+# AIGator (LandingAI) — Regras de Projeto e Comportamento
 # ============================================================
 
 # ── Projeto ───────────────────────────────────────────────────
-# Sistema interno Adsgator — assistente de briefing para
-# criação de landing pages. Single-page app (HTML + CSS + JS).
-# Sem framework, sem build step, sem backend.
+# Sistema interno Adsgator para criação de briefings de landing pages.
+# Arquitetura: Vanilla JS Modular (Browser-only, sem Node.js runtime).
+# Frameworks: Nenhum. Bibliotecas: Lucide, Canvas-confetti.
 
-# ── Arquitetura dos arquivos ──────────────────────────────────
-# index.html     → Estrutura HTML estática (sidebar, topbar, modais)
-# assets/app.css → Design system completo (tokens, componentes, layout)
-# assets/app.js  → Lógica completa do app (state, rendering, API calls)
-# assets/app-patch.js → Constantes de compatibilidade (carregado ANTES do app.js)
+# ── Arquitetura de Arquivos (MODULAR - NÃO ALTERAR) ─────────────
+# index.html         → Estrutura HTML principal (Sidebar, Topbar, Modais).
+# assets/app.js      → Entry point (Orquestrador do window.App).
+# assets/js/         → Lógica modular:
+#   ├── 00-config.js   → Constantes (STEPS, AI_MODELS, PROMPTS).
+#   ├── 01-state.js    → Gerenciamento de estado (App.state, App.P).
+#   ├── 02-api.js      → Handlers de API (Gemini, Mistral, OpenRouter).
+#   ├── 03-ui.js       → Renderização dinâmica e manipulação de DOM.
+#   ├── 04-handlers.js → Listeners de eventos e lógica de interação.
+#   └── screens/       → Lógica específica de cada tela (ex: structure.js).
+# assets/css/        → Estilos modulares (00-vars.css a 04-system.css).
 
-# ── REGRAS OBRIGATÓRIAS ──────────────────────────────────────
+# ── REGRAS DE OURO (CRÍTICO) ──────────────────────────────────
 
-# 1. NÃO MODIFIQUE sem instrução explícita:
-#    - Os design tokens CSS (:root { ... })
-#    - A constante STEPS[] e seu formato
-#    - A constante AI_MODELS{} e endpoints
-#    - A função defaultBriefing() e seus campos
-#    - A função defaultProject() e sua estrutura
-#    - As chaves de STORAGE_KEYS
-#
-# 2. IDs do HTML → JS:
-#    O HTML usa IDs específicos que o JS espera. Se renomear um
-#    id no HTML, atualize TODAS as referências no JS e vice-versa.
-#    IDs críticos que não podem ser removidos:
-#    - project-name, project-segment, project-score-fill, project-score-pct
-#    - topbar-title, topbar-subtitle, topbar-progress-fill
-#    - screen-content, steps-nav
-#    - sidebar-api-dot, sidebar-api-label, sidebar-save-indicator
-#    - btn-model-selector, btn-model-label, model-dropdown
-#    - btn-prev, btn-next, bottombar
-#    - Todos os modal-* IDs (modal-projects, modal-api, modal-gen, etc)
-#
-# 3. Fluxo de telas:
-#    intake → step(1-8) → art → review
-#    NÃO altere essa ordem sem permissão explícita.
-#
-# 4. Storage:
-#    Tudo persiste em localStorage com as chaves landingai_v2_*.
-#    NÃO mude os nomes das chaves — isso apagaria dados dos usuários.
-#
-# 5. Chamadas de API:
-#    Cada provider (gemini, claude, grok, mistral) tem seu handler
-#    específico (_callGemini, _callClaude, _callOpenAICompat).
-#    NÃO unifique em um handler genérico — cada API tem headers e
-#    formatos de resposta diferentes.
-#
-# 6. CSS:
-#    O design system é dark-mode-only com tokens em :root.
-#    NÃO adicione !important.
-#    NÃO use Tailwind classes — todo estilo é vanilla CSS.
-#    NÃO altere cores de --accent (verde Adsgator) nem --accent2 (azul).
-#
-# 7. Lucide Icons:
-#    Icons são renderizados via lucide.createIcons().
-#    Após inserir HTML dinâmico com <i data-lucide="...">, SEMPRE
-#    chame lucide.createIcons() no container.
-#
-# 8. Autosave:
-    Toda alteração de campo chama autosave() com debounce de 1500ms.
-    NÃO chame saveStorage() diretamente de handlers de input —
-    sempre passe por autosave().
+# 1. MODULARIDADE ESTRITA:
+#    - NUNCA unifique os módulos de volta em um único arquivo app.js.
+#    - Funções de UI devem ficar no 03-ui.js ou no screen correspondente.
+#    - Lógica de persistência deve ficar no 01-state.js.
+#    - NUNCA utilize "require" ou "import" (o projeto usa script tags no HTML).
 
-## Regras de edição
-    Sempre declare quais arquivos serão modificados antes de começar
-    Edite no máximo 2 arquivos por tarefa
-    Prefira criar funções novas em vez de reescrever funções existentes
-    Ao adicionar um novo step ou tela, crie um novo arquivo em assets/js/
+# 2. INTEGRIDADE DO DOM:
+#    - SEMPRE verifique os IDs no index.html antes de tentar manipulá-los no JS.
+#    - Se adicionar um novo elemento ao HTML, documente o ID aqui se for crítico.
+#    - IDs Intocáveis: project-name, project-segment, screen-content, steps-nav, btn-next.
+
+# 3. PRESERVAÇÃO DE BACKUPS:
+#    - NUNCA edite ou apague arquivos com ".BACKUP." no nome. Eles são referências de segurança.
+
+# 4. DESIGN SYSTEM (AESTHETICS):
+#    - Use apenas CSS Vanilla em assets/css/.
+#    - NUNCA use TailwindCSS a menos que explicitamente solicitado.
+#    - Mantenha o padrão Dark Mode e os tokens de cores de 00-vars.css.
+#    - WOW factor: Transições suaves, micro-interações e glassmorphism são obrigatórios.
+
+# 5. STORAGE E PERSISTÊNCIA:
+#    - Chaves de localStorage começam com "landingai_v2_". NÃO mude para não quebrar dados.
+#    - Use autosave() com debounce sempre que houver input do usuário.
+
+# 6. LOG DE IA (V3 DELTA):
+#    - Mantenha o sistema de logs em App.state.aiLogs. Toda chamada de API deve ser logada.
+
+# 7. ÍCONES (LUCIDE):
+#    - Após injetar HTML com <i data-lucide="...">, você DEVE rodar lucide.createIcons().
+
+# 8. ORDEM DOS SCRIPTS (index.html):
+#    - Os scripts devem seguir a ordem de dependência: 
+#      00-config -> 01-state -> 02-api -> screens/* -> 03-ui -> 04-handlers -> assets/app.js.
+#    - NUNCA mude essa ordem, pois os módulos dependem dos objetos inicializados nos anteriores.
+
+# ── REGRAS DE EDIÇÃO ──────────────────────────────────────────
+# - Analise o contexto global antes de sugerir mudanças estruturais.
+# - Se o código ficar complexo demais, quebre em um novo arquivo em assets/js/screens/.
+# - Mantenha comentários em PT-BR para consistência com o código original.
+# - Ao criar imagens, use generate_image. Não use placeholders.
 
 # ── DIRETÓRIOS PROTEGIDOS ─────────────────────────────────────
-# docs/    → Especificações originais do sistema, NÃO editar
-# scratch/ → Scripts de debug temporários, NÃO committar
-
-# ── CONVENÇÕES ────────────────────────────────────────────────
-# Linguagem: pt-BR em toda interface e comentários
-# Encoding: UTF-8
-# Line endings: LF (normalizar para LF, não CRLF)
-# Indentação: 2 espaços
-# Strings JS: aspas simples (')
-# Template literals: backticks (`) para HTML dinâmico
+# docs/    → Especificações originais. NÃO EDITAR.
+# output/  → Resultados de geração.
+# .git/    → Óbvio.
+# ──────────────────────────────────────────────────────────────

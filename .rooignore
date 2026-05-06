@@ -1,27 +1,32 @@
 # ============================================================
-# LandingAI v2 — .rooignore
-# Arquivos que o Roo Code NÃO deve ler nem editar
+# AIGator — .rooignore
 # ============================================================
+
+# ── Backups (Proibido editar/ler para evitar confusão) ───────
+assets/*.BACKUP.*
+*.BACKUP.*
+*.old
+*.tmp
 
 # ── Git ───────────────────────────────────────────────────────
 .git/
 
-# ── Documentação de specs (somente leitura, não editar) ───────
-docs/LANDINGAI-V3-IMPLEMENTAÇÃO.md
-docs/LANDINGAI-V3-COMPLEMENTO.md
-
-# ── Snapshots e dumps (pesados, irrelevantes para edição) ─────
+# ── Snapshots e Dumps (Pesados e redundantes) ─────────────────
 project_snapshot.md
 dump_project_v2.py
 
-# ── Scratch / debug ───────────────────────────────────────────
+# ── Scratch / Debug ───────────────────────────────────────────
 scratch/
+temp/
 
-# ── Briefing pessoal ──────────────────────────────────────────
-briefing-luc.md
-
-# ── Output gerado ─────────────────────────────────────────────
+# ── Output Gerado ─────────────────────────────────────────────
 output/
+
+# ── Documentação de Specs (Somente leitura - via .clinerules) ─
+# docs/ (Não ignoramos para permitir leitura, mas .clinerules proíbe escrita)
+
+# ── Briefings Pessoais ────────────────────────────────────────
+briefing-luc.md
 
 # ── OS / Editor ───────────────────────────────────────────────
 .DS_Store
@@ -30,6 +35,8 @@ Thumbs.db
 .idea/
 *.log
 
-# ── AI cache ──────────────────────────────────────────────────
+# ── AI Cache & Meta ───────────────────────────────────────────
 .gemini/
 .cursor/
+.history/
+.clinerules.bak

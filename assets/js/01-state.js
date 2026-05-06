@@ -25,8 +25,7 @@ Object.assign(window.App, {
     },
   },
 
-  get P() { return this.state.projects[this.state.activeId]; },
-  get B() { return this.P ? this.P.briefing : {}; },
+  },
 
   loadStorage() {
     try {
@@ -192,3 +191,6 @@ Object.assign(window.App, {
     this.saveStorage();
   }
 });
+
+Object.defineProperty(window.App, 'P', { get() { return this.state.projects[this.state.activeId]; } });
+Object.defineProperty(window.App, 'B', { get() { return this.P ? this.P.briefing : {}; } });

@@ -1,1043 +1,593 @@
-/**
- * LandingAI - Logic Core
- */
+const REGRAS_FIXAS_ADSGATOR = `
+> A PARTE 11 contém as Regras Fixas da Adsgator. Não altere ou resumo.
+> Utilize integralmente ao gerar a Ficha de Implementação.
+
+1. O layout deve ser mobile-first, pensado para 375px e expandido para desktop.
+2. A tipografia deve seguir uma hierarquia clara e funcional (H1, H2, H3, P).
+3. Todo formulário deve ter validação inline visual.
+4. Animações devem focar no UX e conversão, sem excessos gratuitos.
+5. Cores devem respeitar contraste de acessibilidade (WCAG AA).
+`;
+
+const AI_MODELS = {
+  'gemini-3-flash': { name: 'Gemini 3.0 Flash', provider: 'gemini', endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', maxTokens: 65536, temp: 0.65 },
+  'gemini-3-pro': { name: 'Gemini 3.0 Pro', provider: 'gemini', endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent', maxTokens: 65536, temp: 0.65 },
+  'claude-sonnet': { name: 'Claude Sonnet 3.5', provider: 'claude', endpoint: 'https://api.anthropic.com/v1/messages', maxTokens: 8192, temp: 0.7 },
+  'grok-3': { name: 'Grok 3', provider: 'grok', endpoint: 'https://api.x.ai/v1/chat/completions', maxTokens: 32000, temp: 0.7 },
+  'mistral-large': { name: 'Mistral Large', provider: 'mistral', endpoint: 'https://api.mistral.ai/v1/chat/completions', maxTokens: 32000, temp: 0.6 }
+};
+
+const defaultBriefing = {
+  nome_cliente: '', nome_marca: '', slug: '', segmento: '', tipo: '',
+  whatsapp: '', email: '', horarios: '', gtm_id: '',
+  instagram: '', tiktok: '', youtube: '', outras_redes: '',
+  modalidade: '', endereco: '', exibir_localizacao: '', cidades_atendimento: '', plataforma_online: '',
+  servicos_lista: '', servicos_descricao: '', servico_principal: '', objetivo_conversao: '', objetivo_outro: '', preco_exibir: '', preco_valor: '', preco_condicao: '', oferta_especial: '',
+  publico_primario: '', publico_dor: '', publico_resultado: '', publico_secundario: '', faq: '',
+  diferencial: '', historia: '', frase_impacto: '', depoimentos: '', depoimentos_formato: [], depoimentos_qtd: '', google_business: '', google_nota: '', google_qtd: '', casos_resultados: '',
+  estilo_desejado: '', sensacao_visitante: '', referencias_pessoais: '', referencias_nicho: '', cor_principal: '', cor_secundaria: '', logo_disponivel: '', tema: '', intensidade_visual: '', footer_tom: '', footer_elemento: '', footer_sensacao: '', menu_mobile_estilo: '', menu_mobile_especial: '', o_que_nao_quero: '', referencia_marca: '',
+  foto_profissional: '', assets_outros: '', dominio: '', cnpj: '', aviso_legal: '', restricoes: '', integracoes: [], instrucoes_adicionais: '', briefing_bruto: ''
+};
+
+const criticalFields = {
+  1: ['nome_cliente', 'tipo', 'segmento'],
+  2: ['whatsapp', 'objetivo_conversao'],
+  4: ['modalidade'],
+  5: ['servico_principal', 'servicos_descricao'],
+  6: ['publico_primario', 'publico_dor', 'publico_resultado'],
+  7: ['diferencial', 'frase_impacto'],
+  8: ['estilo_desejado', 'tema', 'intensidade_visual'],
+  9: ['dominio']
+};
+
+const STEP_TITLES = {
+  1: "Identificação", 2: "Contato", 3: "Redes Sociais", 4: "Localização", 5: "Serviços",
+  6: "Público", 7: "Diferenciais", 8: "Direção Visual", 9: "Revisão e Assets"
+};
 
 const App = {
-  currentStep: 1,
-  totalSteps: 9,
-  apiKey: localStorage.getItem('landingai_gemini_key') || '',
-  mode: 'prompt', // 'api' | 'prompt'
-  generatedDoc3: '',
-  
-  // Briefing state
-  briefing: {
-    // Etapa 1
-    tipo: '', nome_cliente: '', slug: '', dominio: '', data: new Date().toISOString().split('T')[0],
-    
-    // Etapa 2
-    nicho: '', servico_produto: '', objetivo_conversao: '',
-    cidade: '', modalidade: '', incluso: '', duracao: '',
-    garantia: '', apresentacao: '', contexto_extra: '',
-    
-    // Etapa 3
-    publico_primario: '', publico_secundario: '',
-    faixa_etaria: '', perfil_socioeconomico: '', maturidade: '',
-    dores: '', palavras_busca: '', resultado_desejado: '', objecoes: '',
-    
-    // Etapa 4
-    tipo_cta: '', whatsapp: '', mensagem_whatsapp: '',
-    email_formulario: '', web3forms_key: '', campos_formulario: [],
-    gtm_id: '', telefone: '', texto_botao: '',
-    micro_garantias: '', ctas_rastreamento: [], link_agendamento: '', agendamento_tipo: '',
-    
-    // Etapa 5
-    personalidade: '', vocab_usa: '', vocab_proibido: '', frase_tom: '',
-    
-    // Etapa 6
-    intensidade: '', tema: '', referencias: '', cor_principal: '',
-    cor_secundaria: '', logo_status: '', estilo_geral: '',
-    o_que_nao_quero: '', menu_mobile: '', elemento_menu: '',
-    
-    // Etapa 7
-    foto: '', logo_arquivo: '', depoimentos: '',
-    google_business: '', nota_google: '', instagram: '',
-    instagram_handle: '', endereco: '', endereco_completo: '',
-    outros_assets: '',
-    
-    // Etapa 8
-    integracoes: [], info_precos: '', obs_tecnicas: '',
+  state: {
+    currentStep: 1, totalSteps: 9, projects: {}, activeProjectId: null,
+    visitedSteps: new Set(),
+    apiKeys: { gemini: '', claude: '', grok: '', mistral: '' },
+    selectedModel: 'gemini-3-flash', isGenerating: false
   },
-
-  visitedSteps: new Set([1]),
+  briefing: { ...defaultBriefing },
+  _saveTimeout: null, _toastTimeout: null,
 
   init() {
-    this.renderSidebar();
-    this.goToStep(1);
-    this.setupEventListeners();
-    this.checkAPIStatus();
     this.checkDraft();
+    const storedKeys = localStorage.getItem('landingai_keys');
+    if (storedKeys) this.state.apiKeys = JSON.parse(storedKeys);
+    const storedModel = localStorage.getItem('landingai_model');
+    if (storedModel) this.state.selectedModel = storedModel;
+    
+    this.requestNotificationPermission();
+    this.renderApp();
+    this.setupEvents();
+    
+    // Create first project if empty
+    if (!this.state.activeProjectId) this.createProject();
   },
 
-  renderSidebar() {
-    const navSteps = document.getElementById('nav-steps');
-    navSteps.innerHTML = '';
-    
-    const steps = [
-      'Identificação', 'Negócio', 'Público', 'Conversão',
-      'Tom de Voz', 'Direção Visual', 'Assets', 'Integrações'
-    ];
-
-    steps.forEach((name, i) => {
-      const stepNum = i + 1;
-      const item = document.createElement('a');
-      item.href = '#';
-      item.className = `nav-item ${this.currentStep === stepNum ? 'active' : ''} ${this.visitedSteps.has(stepNum) ? 'visited' : ''}`;
-      item.dataset.step = stepNum;
-      item.innerHTML = `
-        <div class="step-num">${this.visitedSteps.has(stepNum) && this.currentStep !== stepNum ? '✓' : stepNum}</div>
-        <span>${name}</span>
-      `;
-      item.onclick = (e) => {
-        e.preventDefault();
-        if (this.visitedSteps.has(stepNum)) this.goToStep(stepNum);
-      };
-      navSteps.appendChild(item);
-    });
-
-    // Update Step 9 separately
-    const step9 = document.getElementById('nav-step-9');
-    step9.className = `nav-item ${this.currentStep === 9 ? 'active' : ''} ${this.visitedSteps.has(9) ? 'visited' : ''}`;
-    step9.querySelector('.step-num').textContent = this.visitedSteps.has(9) && this.currentStep !== 9 ? '✓' : '9';
-    step9.onclick = (e) => {
-      e.preventDefault();
-      if (this.visitedSteps.has(9)) this.goToStep(9);
+  createProject() {
+    const id = crypto.randomUUID();
+    this.state.projects[id] = {
+      id, name: 'Novo Projeto', slug: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
+      status: 'rascunho', briefing: { ...defaultBriefing }, visitedSteps: [], versions: []
     };
-  },
-
-  goToStep(step) {
-    if (step < 1 || step > this.totalSteps) return;
-    
-    this.currentStep = step;
-    this.visitedSteps.add(step);
-    
-    this.renderSidebar();
-    this.renderStepContent();
-    this.updateTopbar();
-    this.updateNavigationButtons();
-    
-    // Scroll to top
-    document.querySelector('.scroll-area').scrollTop = 0;
-  },
-
-  updateTopbar() {
-    const titles = {
-      1: ['Identificação do Projeto', 'Defina a identidade base e os nomes do projeto'],
-      2: ['Negócio & Serviço', 'Contextualize o que é oferecido e o posicionamento'],
-      3: ['Público & Intenção', 'Mapeie quem compra e como pensa antes de pesquisar'],
-      4: ['Conversão & Rastreamento', 'Defina os dados técnicos de conversão e eventos'],
-      5: ['Tom de Voz', 'Capture a voz da marca e diretrizes de copy'],
-      6: ['Direção Visual & Design', 'Defina a identidade visual e experiência do usuário'],
-      7: ['Assets Disponíveis', 'Informe os materiais existentes para o projeto'],
-      8: ['Integrações', 'Confirme os blocos técnicos que entram no projeto'],
-      9: ['Revisar & Gerar', 'Valide os dados e acione a geração do Doc 3']
-    };
-
-    const [title, subtitle] = titles[this.currentStep];
-    document.getElementById('current-step-title').textContent = title;
-    document.getElementById('current-step-subtitle').textContent = subtitle;
-    
-    const progress = ((this.currentStep - 1) / (this.totalSteps - 1)) * 100;
-    document.getElementById('main-progress-bar').style.width = `${progress}%`;
-  },
-
-  updateNavigationButtons() {
-    const btnPrev = document.getElementById('btn-prev');
-    const btnNext = document.getElementById('btn-next');
-    
-    btnPrev.disabled = this.currentStep === 1;
-    
-    if (this.currentStep === this.totalSteps) {
-      btnNext.style.display = 'none';
-    } else {
-      btnNext.style.display = 'flex';
-      btnNext.textContent = 'Próximo →';
-    }
-  },
-
-  renderStepContent() {
-    const container = document.getElementById('step-content');
-    
-    // Se mudou o passo, resetamos o scroll e limpamos o container
-    if (this._lastRenderedStep !== this.currentStep) {
-      container.innerHTML = '';
-      this._lastRenderedStep = this.currentStep;
-      
-      switch(this.currentStep) {
-        case 1: this.renderStep1(container); break;
-        case 2: this.renderStep2(container); break;
-        case 3: this.renderStep3(container); break;
-        case 4: this.renderStep4(container); break;
-        case 5: this.renderStep5(container); break;
-        case 6: this.renderStep6(container); break;
-        case 7: this.renderStep7(container); break;
-        case 8: this.renderStep8(container); break;
-        case 9: this.renderStep9(container); break;
-      }
-      document.querySelector('.scroll-area').scrollTop = 0;
-    }
-
-    this.syncFieldValues(container);
-  },
-
-  syncFieldValues(container) {
-    if (!container) return;
-
-    // PROTEÇÃO CRÍTICA DE FOCO: Nunca alteramos o valor do campo que o usuário está digitando agora
-    const activeEl = document.activeElement;
-
-    container.querySelectorAll('input[data-field], textarea[data-field], select[data-field]').forEach(el => {
-      if (el === activeEl) return; // Pula o campo focado
-      
-      const val = this.briefing[el.dataset.field] || '';
-      if (el.value !== val) el.value = val;
-    });
-    
-    // Atualiza estados visuais de chips e cards sem re-renderizar
-    container.querySelectorAll('.chip, .sel-card').forEach(el => {
-      const onclick = el.getAttribute('onclick') || '';
-      const match = onclick.match(/setField\('([^']*)', '([^']*)'/) || 
-                    onclick.match(/toggleArrayField\('([^']*)', '([^']*)'/);
-      
-      if (match) {
-        const [_, field, value] = match;
-        const state = this.briefing[field];
-        const isActive = Array.isArray(state) ? state.includes(value) : state === value;
-        el.classList.toggle('on', isActive);
-      }
-    });
-
-    // Atualiza labels dinâmicas (ex: Step 2 Serviço/Produto)
-    container.querySelectorAll('.dynamic-label-tipo').forEach(label => {
-      label.textContent = this.briefing.tipo === 'Serviço' ? 'Serviço' : 'Produto';
-    });
-  },
-
-  // --- Step Renders ---
-
-  renderStep1(container) {
-    container.innerHTML = `
-      <div class="field-group full" style="margin-bottom:32px;">
-        <label>Tipo de Projeto</label>
-        <div class="selection-grid">
-          <div class="sel-card" onclick="App.setField('tipo', 'Serviço', true)">
-            <div class="card-title">SERVIÇO</div>
-            <div class="card-desc">Prestação de serviço ou resultado. Ex: clínica, coach, advocacia, adestramento.</div>
-          </div>
-          <div class="sel-card" onclick="App.setField('tipo', 'Produto', true)">
-            <div class="card-title">PRODUTO</div>
-            <div class="card-desc">Venda de produto físico ou digital. Ex: curso online, software, e-book.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="form-grid">
-        <div class="field-group">
-          <label>Nome do Cliente / Projeto *</label>
-          <input type="text" data-field="nome_cliente" placeholder="ex: Beatriz Mattos, Clínica Vita">
-        </div>
-        <div class="field-group">
-          <label>Slug do Projeto *</label>
-          <input type="text" id="field-slug" data-field="slug" placeholder="ex: beatriz-mattos">
-        </div>
-        <div class="field-group">
-          <label>Agência Responsável</label>
-          <input type="text" data-field="agencia">
-        </div>
-        <div class="field-group">
-          <label>Data do Briefing</label>
-          <input type="date" data-field="data">
-        </div>
-        <div class="field-group full">
-          <label>Domínio Final</label>
-          <input type="text" data-field="dominio" placeholder="ex: beatrizmattos.com.br">
-        </div>
-      </div>
-    `;
-  },
-
-  renderStep2(container) {
-    container.innerHTML = `
-      <div class="form-grid">
-        <div class="field-group">
-          <label>Nicho / Segmento *</label>
-          <input type="text" data-field="nicho" placeholder="ex: Adestramento comportamental">
-        </div>
-        <div class="field-group">
-          <label><span class="dynamic-label-tipo">Serviço</span> Principal *</label>
-          <input type="text" data-field="servico_produto" placeholder="ex: Mentoria online">
-        </div>
-        <div class="field-group">
-          <label>Objetivo de Conversão *</label>
-          <input type="text" data-field="objetivo_conversao" placeholder="ex: Mensagem no WhatsApp">
-        </div>
-        <div class="field-group">
-          <label>Cidade / Região *</label>
-          <input type="text" data-field="cidade" placeholder="ex: São Paulo SP, Online Brasil">
-        </div>
-        <div class="field-group full">
-          <label>Modalidade *</label>
-          <div class="chips-container">
-            ${['Presencial', 'Online', 'Híbrido', 'Domiciliar'].map(m => `
-              <div class="chip" onclick="App.setField('modalidade', '${m}', true)">${m}</div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="field-group">
-          <label>O que está incluso *</label>
-          <input type="text" data-field="incluso" placeholder="ex: 4 sessões, relatório...">
-        </div>
-        <div class="field-group">
-          <label><span class="dynamic-label-tipo">Duração / Formato</span> *</label>
-          <input type="text" data-field="duracao" placeholder="ex: 8 semanas, 3 dias úteis">
-        </div>
-        <div class="field-group">
-          <label>Garantia</label>
-          <input type="text" data-field="garantia" placeholder="ex: 7 dias incondicional">
-        </div>
-        <div class="field-group">
-          <label>Extra / Contexto</label>
-          <input type="text" data-field="extra_negocio" placeholder="ex: Cão > 6 meses, Hotmart">
-        </div>
-
-        <div class="field-group full">
-          <label>Apresentação do Negócio *</label>
-          <textarea data-field="apresentacao" placeholder="Descreva o negócio com suas próprias palavras..."></textarea>
-        </div>
-        <div class="field-group full">
-          <label>Contexto Extra / Observações</label>
-          <textarea data-field="contexto_extra" placeholder="Nuances, detalhes do cliente, prints..."></textarea>
-        </div>
-      </div>
-    `;
-  },
-
-  renderStep3(container) {
-    container.innerHTML = `
-      <div class="form-grid">
-        <div class="field-group">
-          <label>Público Primário *</label>
-          <input type="text" data-field="publico_primario">
-        </div>
-        <div class="field-group">
-          <label>Público Secundário</label>
-          <input type="text" data-field="publico_secundario">
-        </div>
-        <div class="field-group">
-          <label>Faixa Etária *</label>
-          <input type="text" data-field="faixa_etaria">
-        </div>
-        <div class="field-group">
-          <label>Perfil Socioeconômico *</label>
-          <input type="text" data-field="perfil_socioeconomico">
-        </div>
-        <div class="field-group full">
-          <label>Maturidade do Público</label>
-          <div class="selection-grid">
-            ${['FRIO', 'MORNO', 'QUENTE', 'MUITO QUENTE'].map(m => `
-              <div class="sel-card" onclick="App.setField('maturidade', '${m}', true)">
-                <div class="card-title">${m}</div>
-                <div class="card-desc">${this.getMaturityDesc(m)}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="field-group full">
-          <label>Dores Principais *</label>
-          <textarea data-field="dores" placeholder="Liste as principais dores..."></textarea>
-        </div>
-        <div class="field-group full">
-          <label>Palavras de Busca *</label>
-          <textarea data-field="palavras_busca" placeholder="ex: 'adestrador de cão online'..."></textarea>
-        </div>
-        <div class="field-group full">
-          <label>Resultado Desejado *</label>
-          <textarea data-field="resultado_desejado" placeholder="O que o cliente imagina conquistar..."></textarea>
-        </div>
-        <div class="field-group full">
-          <label>Objeções Principais *</label>
-          <textarea data-field="objecoes" placeholder="Por que ainda não comprou?"></textarea>
-        </div>
-      </div>
-    `;
-  },
-
-  getMaturityDesc(m) {
-    const descs = {
-      'FRIO': 'Não sabe que tem o problema. Precisa ser educado.',
-      'MORNO': 'Sabe do problema, não conhece a solução.',
-      'QUENTE': 'Conhece a solução, compara opções.',
-      'MUITO QUENTE': 'Pronto para comprar — precisa do gatilho.'
-    };
-    return descs[m] || '';
-  },
-
-  renderStep4(container) {
-    container.innerHTML = `
-      <div class="field-group full" style="margin-bottom:32px;">
-        <label>Tipo de CTA Principal *</label>
-        <div class="selection-grid">
-          <div class="sel-card" onclick="App.setField('tipo_cta', 'WHATSAPP', true)">
-            <div class="card-title">WHATSAPP</div>
-            <div class="card-desc">Link wa.me com mensagem pré-preenchida.</div>
-          </div>
-          <div class="sel-card" onclick="App.setField('tipo_cta', 'FORMULÁRIO', true)">
-            <div class="card-title">FORMULÁRIO</div>
-            <div class="card-desc">Web3Forms com email de destino.</div>
-          </div>
-          <div class="sel-card" onclick="App.setField('tipo_cta', 'AGENDAMENTO', true)">
-            <div class="card-title">AGENDAMENTO</div>
-            <div class="card-desc">Link externo Calendly ou embed.</div>
-          </div>
-        </div>
-      </div>
-
-      <div id="cta-dynamic-fields">
-        ${this.renderCTAFelds()}
-      </div>
-
-      <div class="form-grid">
-        <div class="field-group">
-          <label>ID do Google Tag Manager</label>
-          <input type="text" data-field="gtm_id" placeholder="ex: GTM-XXXXXXX">
-        </div>
-        <div class="field-group">
-          <label>Telefone para ligação</label>
-          <input type="text" data-field="telefone" placeholder="ex: (11) 99999-0000">
-        </div>
-        <div class="field-group full">
-          <label>CTAs de Rastreamento</label>
-          <div class="chips-container">
-            ${['contato_wpp', 'view_content', 'view_links', 'agendamento_iniciado', 'formulario_enviado', 'ligacao_mobile', 'download'].map(c => `
-              <div class="chip" onclick="App.toggleArrayField('ctas_rastreamento', '${c}')">${c}</div>
-            `).join('')}
-          </div>
-        </div>
-        <div class="field-group">
-          <label>Texto do Botão Principal *</label>
-          <input type="text" data-field="texto_botao" placeholder="ex: Quero Iniciar a Mentoria">
-        </div>
-        <div class="field-group">
-          <label>Micro-garantias do CTA</label>
-          <input type="text" data-field="micro_garantias" placeholder="ex: ✓ Resposta em até 1h">
-        </div>
-      </div>
-    `;
-  },
-
-  renderCTAFelds() {
-    const b = this.briefing;
-    if (b.tipo_cta === 'WHATSAPP') {
-      return `
-        <div class="form-grid">
-          <div class="field-group">
-            <label>Número WhatsApp *</label>
-            <input type="text" data-field="whatsapp" placeholder="5511918952921">
-          </div>
-          <div class="field-group">
-            <label>Mensagem Pré-preenchida *</label>
-            <input type="text" data-field="mensagem_whatsapp">
-          </div>
-        </div>
-      `;
-    }
-    if (b.tipo_cta === 'FORMULÁRIO') {
-      return `
-        <div class="form-grid">
-          <div class="field-group">
-            <label>Email de Destino *</label>
-            <input type="email" data-field="email_formulario">
-          </div>
-          <div class="field-group">
-            <label>Access Key Web3Forms</label>
-            <input type="text" data-field="web3forms_key">
-          </div>
-        </div>
-      `;
-    }
-    if (b.tipo_cta === 'AGENDAMENTO') {
-      return `
-        <div class="form-grid">
-          <div class="field-group">
-            <label>Link de Agendamento *</label>
-            <input type="url" data-field="link_agendamento">
-          </div>
-          <div class="field-group">
-            <label>Abrir em</label>
-            <div class="chips-container">
-              <div class="chip" onclick="App.setField('agendamento_tipo', 'Nova aba', true)">Nova aba</div>
-              <div class="chip" onclick="App.setField('agendamento_tipo', 'Embed', true)">Embed na página</div>
-            </div>
-          </div>
-        </div>
-      `;
-    }
-    return '';
-  },
-
-  renderStep5(container) {
-    container.innerHTML = `
-      <div class="form-grid">
-        <div class="field-group full">
-          <label>Personalidade da Marca *</label>
-          <input type="text" data-field="personalidade" placeholder="ex: Técnico e direto / Acolhedor...">
-        </div>
-        <div class="field-group full">
-          <label>Vocabulário que DEVE aparecer na copy</label>
-          <textarea data-field="vocab_usa" placeholder="Palavras e expressões que o cliente usa..."></textarea>
-        </div>
-        <div class="field-group full">
-          <label>Vocabulário PROIBIDO</label>
-          <textarea data-field="vocab_proibido" placeholder="O que o cliente jamais diria..."></textarea>
-        </div>
-        <div class="field-group full">
-          <label>Frase que resume o tom</label>
-          <input type="text" data-field="frase_tom">
-        </div>
-      </div>
-      <!-- DNA Blocks remained as static -->
-      <div class="dna-block">
-        <div class="dna-header"><span class="pulse">●</span> DNA ADSGATOR — SEMPRE APLICADO</div>
-        <div class="dna-grid">
-          <div class="dna-column">
-            <h4>PROIBIDO</h4>
-            <ul class="dna-list">
-              <li class="proibido">✗ "inovador", "excelência", "missão"</li>
-              <li class="proibido">✗ "saiba mais", "clique aqui"</li>
-            </ul>
-          </div>
-          <div class="dna-column">
-            <h4>OBRIGATÓRIO</h4>
-            <ul class="dna-list">
-              <li class="permitido">✓ H1 espelha a dor da busca</li>
-              <li class="permitido">✓ Vender alívio, não técnica</li>
-            </ul>
-          </div>
-        </div>
-      </div>
-    `;
-  },
-
-  renderStep6(container) {
-    container.innerHTML = `
-      <div class="field-group full" style="margin-bottom:32px;">
-        <label>Intensidade Visual *</label>
-        <div class="selection-grid">
-          ${['CONTIDO', 'MÉDIO', 'ALTO'].map(v => `
-            <div class="sel-card" onclick="App.setField('intensidade', '${v}', true)">
-              <div class="card-title">${v}</div>
-              <div class="card-desc">${this.getIntensityDesc(v)}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>
-
-      <div class="form-grid">
-        <div class="field-group full">
-          <label>Tema</label>
-          <div class="chips-container">
-            ${['Claro', 'Escuro', 'IA decide'].map(t => `
-              <div class="chip" onclick="App.setField('tema', '${t}', true)">${t}</div>
-            `).join('')}
-          </div>
-        </div>
-        <div class="field-group full">
-          <label>Referências Visuais *</label>
-          <textarea data-field="referencias" placeholder="Link ou descrição + o que atraiu..."></textarea>
-        </div>
-        <div class="field-group">
-          <label>Cor Principal</label>
-          <input type="text" data-field="cor_principal" placeholder="ex: #1A4731">
-        </div>
-        <div class="field-group">
-          <label>Cor Secundária</label>
-          <input type="text" data-field="cor_secundaria">
-        </div>
-        <div class="field-group">
-          <label>Logo Disponível</label>
-          <div class="chips-container">
-            ${['SVG', 'PNG', 'Não tem'].map(l => `
-              <div class="chip" onclick="App.setField('logo_status', '${l}', true)">${l}</div>
-            `).join('')}
-          </div>
-        </div>
-        <div class="field-group full">
-          <label>Estilo Geral *</label>
-          <input type="text" data-field="estilo_geral" placeholder="ex: Sóbrio e técnico, premium europeu...">
-        </div>
-        <div class="field-group full">
-          <label>O que NÃO quero *</label>
-          <input type="text" data-field="o_que_nao_quero" placeholder="ex: Nada que pareça clínica genérica...">
-        </div>
-        <div class="field-group full">
-          <label>Menu Mobile</label>
-          <div class="selection-grid">
-            ${['FULLSCREEN', 'DRAWER', 'BOTTOM SHEET', 'IA DECIDE'].map(m => `
-              <div class="sel-card" onclick="App.setField('menu_mobile', '${m}', true)">
-                <div class="card-title">${m}</div>
-                <div class="card-desc">${this.getMenuDesc(m)}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>
-    `;
-  },
-
-  getIntensityDesc(v) {
-    const d = {
-      'CONTIDO': 'Animações sutis. Foco na copy.',
-      'MÉDIO': 'Presença notável. Personalidade clara.',
-      'ALTO': 'Efeito uau total. Scroll experience.'
-    };
-    return d[v] || '';
-  },
-
-  getMenuDesc(m) {
-    const d = {
-      'FULLSCREEN': 'Impacto máximo em tela cheia.',
-      'DRAWER': 'Desliza da lateral. Mais familiar.',
-      'BOTTOM SHEET': 'Sobe do rodapé. Mobile-first.',
-      'IA DECIDE': 'Baseado nas referências.'
-    };
-    return d[m] || '';
-  },
-
-  renderStep7(container) {
-    container.innerHTML = `
-      <div class="form-grid">
-        <div class="field-group">
-          <label>Foto Profissional/Produto</label>
-          <select data-field="foto">
-            <option value="">Selecione...</option>
-            <option value="Sim — Alta qualidade">Sim — Alta qualidade</option>
-            <option value="Sim — Média qualidade">Sim — Média qualidade</option>
-            <option value="Não tem">Não tem</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label>Depoimentos</label>
-          <select data-field="depoimentos">
-            <option value="">Selecione...</option>
-            <option value="Texto">Texto</option>
-            <option value="Print">Print</option>
-            <option value="Vídeo">Vídeo</option>
-            <option value="Não tem">Não tem</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label>Google Business</label>
-          <select data-field="google_business">
-            <option value="Sim">Sim</option>
-            <option value="Não">Não</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label>Nota / Nº Avaliações</label>
-          <input type="text" data-field="nota_google" placeholder="ex: 4.8 (127 avaliações)">
-        </div>
-        <div class="field-group">
-          <label>Instagram</label>
-          <select data-field="instagram">
-            <option value="Ativo">Ativo e relevante</option>
-            <option value="Pouco ativo">Pouco ativo</option>
-            <option value="Não tem">Não tem</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label>@ Instagram</label>
-          <input type="text" data-field="instagram_handle">
-        </div>
-        <div class="field-group">
-          <label>Endereço Físico</label>
-          <select data-field="endereco">
-            <option value="Sim">Sim</option>
-            <option value="Não">Não</option>
-          </select>
-        </div>
-        <div class="field-group">
-          <label>Endereço Completo</label>
-          <input type="text" data-field="endereco_completo">
-        </div>
-        <div class="field-group full">
-          <label>Outros Assets</label>
-          <textarea data-field="outros_assets"></textarea>
-        </div>
-      </div>
-    `;
-    
-    // Sincroniza selects manualmente
-    container.querySelectorAll('select[data-field]').forEach(el => {
-      el.value = this.briefing[el.dataset.field] || '';
-    });
-  },
-
-  renderStep8(container) {
-    const options = [
-      ['Google Maps', 'endereco', 'Sim'],
-      ['Google Reviews', 'google_business', 'Sim'],
-      ['Feed Instagram', 'instagram', 'Ativo'],
-      ['Formulário', 'tipo_cta', 'FORMULÁRIO'],
-      ['WhatsApp Flutuante', 'default', true],
-      ['Botão Ligação', 'telefone', 'val'],
-      ['Planos e Preços', 'check', true],
-      ['Seção FAQ', 'check', true],
-      ['Contador Regressivo', 'check', true],
-      ['Como Funciona', 'check', true]
-    ];
-
-    container.innerHTML = `
-      <div class="field-group full" style="margin-bottom:24px;">
-        <label>Integrações Confirmadas</label>
-        <div class="chips-container">
-          ${options.map(([label, ref, val]) => {
-            return `<div class="chip" onclick="App.toggleArrayField('integracoes', '${label}')">${label}</div>`;
-          }).join('')}
-        </div>
-      </div>
-
-      <div id="integracao-precos-container">
-        ${this.briefing.integracoes.includes('Planos e Preços') ? `
-          <div class="field-group full" style="margin-bottom:24px;">
-            <label>Informações de Preço / Planos</label>
-            <textarea data-field="info_precos" placeholder="Descreva os planos com valores..."></textarea>
-          </div>
-        ` : ''}
-      </div>
-
-      <div class="field-group full">
-        <label>Observações Técnicas Finais</label>
-        <textarea data-field="obs_tecnicas" placeholder="Redirecionamentos, subdomínios, etc..."></textarea>
-      </div>
-    `;
-  },
-
-  renderStep9(container) {
-    const missing = this.getMissingFields();
-    
-    container.innerHTML = `
-      ${missing.length > 0 ? `
-        <div style="background:var(--danger-dim); border:1px solid var(--danger); padding:20px; border-radius:var(--r-md); margin-bottom:32px;">
-          <h4 style="color:var(--danger); margin-bottom:12px;">Campos Obrigatórios Pendentes</h4>
-          <ul style="font-size:13px; color:var(--text-secondary); padding-left:20px;">
-            ${missing.map(f => `<li>${f}</li>`).join('')}
-          </ul>
-        </div>
-      ` : ''}
-
-      <div style="margin-bottom:40px;">
-        <label>Resumo do Briefing</label>
-        <div class="form-grid" style="grid-template-columns: repeat(3, 1fr); gap:12px;">
-          <div class="sel-card" onclick="App.goToStep(1)">
-            <div class="card-desc">Cliente</div>
-            <div class="card-title">${this.briefing.nome_cliente || '---'}</div>
-          </div>
-          <div class="sel-card" onclick="App.goToStep(2)">
-            <div class="card-desc">Nicho</div>
-            <div class="card-title">${this.briefing.nicho || '---'}</div>
-          </div>
-          <div class="sel-card" onclick="App.goToStep(4)">
-            <div class="card-desc">CTA</div>
-            <div class="card-title">${this.briefing.tipo_cta || '---'}</div>
-          </div>
-        </div>
-      </div>
-
-      <div style="background:var(--bg-raised); padding:32px; border-radius:var(--r-lg); border:1px solid var(--border-muted);">
-        <h3 style="margin-bottom:24px;">Configuração da API</h3>
-        
-        <div class="field-group" style="margin-bottom:20px;">
-          <label>Gemini API Key</label>
-          <div style="display:flex; gap:10px;">
-            <input type="password" id="api-key-input" value="${this.apiKey}" placeholder="Coloque sua chave aqui...">
-            <button class="btn btn-primary" onclick="App.saveAPIKey()">Salvar</button>
-          </div>
-          <p style="font-size:11px; color:var(--text-tertiary); margin-top:8px;">
-            Obter chave em: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent2)">aistudio.google.com</a>
-          </p>
-        </div>
-
-        <div style="display:flex; gap:16px;">
-          <button class="btn btn-ghost" style="flex:1" onclick="App.downloadBriefing()">⬇ Baixar Briefing.md</button>
-          <button class="btn btn-primary" style="flex:1" id="btn-generate-doc3" ${!this.apiKey ? 'disabled' : ''} onclick="App.generateDoc3()">⚡ Gerar Doc 3</button>
-        </div>
-      </div>
-    `;
-  },
-
-  // --- Logic Functions ---
-
-  setField(field, val, shouldUpdateUI = false) {
-    this.briefing[field] = val;
+    this.state.activeProjectId = id;
+    this.briefing = { ...defaultBriefing };
+    this.state.visitedSteps = new Set();
+    this.state.currentStep = 1;
     this.autosave();
-    if (shouldUpdateUI) {
-       // Se o campo mudar drasticamente a estrutura (tipo ou tipo_cta), forçamos re-render
-       if (field === 'tipo' || field === 'tipo_cta') {
-          this._lastRenderedStep = null;
-          this.renderStepContent();
-       } else {
-          this.syncFieldValues(document.getElementById('step-content'));
-       }
+    this.renderApp();
+  },
+
+  loadProject(id) {
+    if (this.state.projects[id]) {
+      this.state.activeProjectId = id;
+      this.briefing = { ...this.state.projects[id].briefing };
+      this.state.visitedSteps = new Set(this.state.projects[id].visitedSteps);
+      this.state.currentStep = 1;
+      this.renderApp();
+      this.closeModal('modal-projects');
     }
-  },
-
-  toggleArrayField(field, val) {
-    const arr = this.briefing[field];
-    const idx = arr.indexOf(val);
-    if (idx > -1) arr.splice(idx, 1);
-    else arr.push(val);
-    this.autosave();
-    
-    // Especial para o Step 8 que mostra/esconde campos baseados em integracoes
-    if (field === 'integracoes') {
-       this._lastRenderedStep = null;
-       this.renderStepContent();
-    } else {
-       this.syncFieldValues(document.getElementById('step-content'));
-    }
-  },
-
-  updateName(val) {
-    this.briefing.nome_cliente = val;
-    this.briefing.slug = this.sanitizeSlug(val);
-    const slugInput = document.getElementById('field-slug');
-    // Só atualiza o slugInput se ele não for o elemento ativo
-    if (slugInput && slugInput !== document.activeElement) {
-       slugInput.value = this.briefing.slug;
-    }
-    this.autosave();
-  },
-
-  sanitizeSlug(val) {
-    return val.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
-  },
-
-  saveAPIKey() {
-    const val = document.getElementById('api-key-input').value;
-    this.apiKey = val;
-    localStorage.setItem('landingai_gemini_key', val);
-    this.checkAPIStatus();
-    this.showToast('API Key salva!', 'success');
-  },
-
-  checkAPIStatus() {
-    const dot = document.getElementById('api-status-dot');
-    const text = document.getElementById('api-status-text');
-    if (!dot || !text) return;
-    if (this.apiKey) {
-      dot.classList.add('active');
-      text.textContent = 'Modo: Gemini API';
-    } else {
-      dot.classList.remove('active');
-      text.textContent = 'Modo: Prompt';
-    }
-  },
-
-  getMissingFields() {
-    const req = {
-      1: ['tipo', 'nome_cliente', 'slug'],
-      2: ['nicho', 'servico_produto', 'objetivo_conversao', 'cidade', 'apresentacao'],
-      3: ['publico_primario', 'dores', 'palavras_busca', 'resultado_desejado', 'objecoes'],
-      4: ['tipo_cta', 'texto_botao'],
-      5: ['personalidade'],
-      6: ['referencias', 'estilo_geral', 'o_que_nao_quero']
-    };
-    
-    let missing = [];
-    Object.keys(req).forEach(step => {
-      req[step].forEach(field => {
-        if (!this.briefing[field]) missing.push(`${step}. ${field.replace('_', ' ')}`);
-      });
-    });
-    return missing;
   },
 
   autosave() {
     clearTimeout(this._saveTimeout);
     this._saveTimeout = setTimeout(() => {
-      localStorage.setItem('landingai_draft', JSON.stringify({
-        savedAt: new Date().toISOString(),
-        briefing: this.briefing,
-        visitedSteps: Array.from(this.visitedSteps)
-      }));
-    }, 2000); // 2 segundos de debounce para paz total
+      const p = this.state.projects[this.state.activeProjectId];
+      if (!p) return;
+      p.briefing = { ...this.briefing };
+      p.name = this.briefing.nome_cliente || 'Novo Projeto';
+      p.slug = this.briefing.slug;
+      p.visitedSteps = Array.from(this.state.visitedSteps);
+      p.updatedAt = new Date().toISOString();
+      localStorage.setItem('landingai_projects', JSON.stringify(this.state.projects));
+      localStorage.setItem('landingai_active', this.state.activeProjectId);
+      this.renderSidebar(); // update name
+    }, 1500);
   },
 
   checkDraft() {
-    const raw = localStorage.getItem('landingai_draft');
+    const raw = localStorage.getItem('landingai_projects');
+    const activeId = localStorage.getItem('landingai_active');
     if (raw) {
-      const data = JSON.parse(raw);
-      this.briefing = data.briefing;
-      this.visitedSteps = new Set(data.visitedSteps);
-      this.renderSidebar();
-      this.renderStepContent();
-      this.showToast('Draft restaurado!', 'default');
+      this.state.projects = JSON.parse(raw);
+      if (activeId && this.state.projects[activeId]) {
+        this.state.activeProjectId = activeId;
+        this.briefing = { ...this.state.projects[activeId].briefing };
+        this.state.visitedSteps = new Set(this.state.projects[activeId].visitedSteps || []);
+      }
     }
   },
 
-  setupEventListeners() {
-    document.getElementById('btn-prev').onclick = () => this.goToStep(this.currentStep - 1);
-    document.getElementById('btn-next').onclick = () => this.goToStep(this.currentStep + 1);
-    document.getElementById('close-modal').onclick = () => document.getElementById('gen-modal').classList.remove('active');
-
-    const content = document.getElementById('step-content');
-    
-    content.addEventListener('input', (e) => {
-      const el = e.target;
-      const field = el.dataset.field;
-      if (!field) return;
-
-      if (field === 'nome_cliente') {
-        this.updateName(el.value);
-      } else {
-        this.briefing[field] = el.value;
-        this.autosave();
-      }
-    });
-
-    content.addEventListener('change', (e) => {
-      const el = e.target;
-      const field = el.dataset.field;
-      if (field && (el.tagName === 'SELECT' || el.type === 'date')) {
-         this.setField(field, el.value);
-      }
-    });
-  },
-
-  showToast(msg, type = 'default') {
-    const t = document.getElementById('toast');
-    if (!t) return;
-    t.textContent = msg;
-    t.className = `toast toast-${type} visible`;
-    setTimeout(() => t.classList.remove('visible'), 3000);
-  },
-
-  // --- Generation Logic ---
-
-  async generateDoc3() {
-    const modal = document.getElementById('gen-modal');
-    const progressBar = document.getElementById('gen-progress-bar');
-    modal.classList.add('active');
-    
-    try {
-      this.updateGenProgress(1, 10);
-      const prompt = this.buildMasterPrompt();
-      
-      this.updateGenProgress(2, 30);
-      const doc3 = await this.callGemini(this.apiKey, prompt);
-      
-      this.updateGenProgress(5, 100);
-      this.generatedDoc3 = doc3;
-      
-      this.showToast('Doc 3 gerado com sucesso!', 'success');
-      this.downloadFile(doc3, `doc3-${this.briefing.slug}.md`);
-      
-    } catch (err) {
-      this.showToast(err.message, 'error');
-      console.error(err);
+  setField(field, val) {
+    this.briefing[field] = val;
+    if (field === 'nome_cliente' && !this.briefing.slug) {
+      this.briefing.slug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+      document.getElementById('field_slug').value = this.briefing.slug;
     }
+    this.autosave();
+    if (this.state.currentStep === 9) this.renderStep9();
   },
 
-  updateGenProgress(step, percent) {
-    document.getElementById('gen-progress-bar').style.width = `${percent}%`;
-    document.querySelectorAll('.gen-step').forEach(s => {
-      const sNum = parseInt(s.dataset.genStep);
-      if (sNum < step) {
-        s.classList.add('done');
-        s.querySelector('.gen-step-icon').textContent = '✓';
-      } else if (sNum === step) {
-        s.classList.add('active');
-        s.querySelector('.gen-step-icon').textContent = '⟳';
-      }
-    });
+  toggleArrayField(field, val) {
+    if (!this.briefing[field]) this.briefing[field] = [];
+    if (!Array.isArray(this.briefing[field])) this.briefing[field] = [this.briefing[field]];
+    const idx = this.briefing[field].indexOf(val);
+    if (idx > -1) this.briefing[field].splice(idx, 1);
+    else this.briefing[field].push(val);
+    this.autosave();
+    this.renderStepContent();
   },
 
-  async callGemini(apiKey, prompt) {
-    const GEMINI_MODEL = 'gemini-1.5-pro';
-    const ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  goToStep(n) {
+    this.state.visitedSteps.add(this.state.currentStep);
+    this.state.currentStep = n;
+    this.renderApp();
+    document.getElementById('step-content').scrollTop = 0;
+  },
+
+  renderApp() {
+    this.renderSidebar();
+    this.renderTopbar();
+    this.renderBottombar();
+    this.renderStepContent();
+    lucide.createIcons();
+  },
+
+  renderSidebar() {
+    const sb = document.getElementById('sidebar');
+    const p = this.state.projects[this.state.activeProjectId];
+    const name = p ? p.name : 'Novo Projeto';
+    const hasKeys = Object.values(this.state.apiKeys).some(k => k.length > 0);
     
-    const response = await fetch(ENDPOINT, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 16000, temperature: 0.65 }
-      })
-    });
-
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error?.message || 'Erro na API Gemini');
+    let stepsHtml = '';
+    for(let i=1; i<=9; i++) {
+      const active = i === this.state.currentStep ? 'active' : '';
+      const visited = this.state.visitedSteps.has(i) ? 'visited' : '';
+      let icon = 'circle';
+      if (i === this.state.currentStep) icon = 'circle-dot';
+      else if (visited) icon = 'check-circle';
+      
+      stepsHtml += `
+        <div class="nav-item ${active} ${visited}" onclick="App.goToStep(${i})">
+          <i data-lucide="${icon}" class="icon"></i> ${i}. ${STEP_TITLES[i]}
+        </div>
+      `;
     }
 
-    const data = await response.json();
-    return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    sb.innerHTML = `
+      <div class="logo">
+        <h2 class="syne text-accent">LandingAI</h2>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Projeto Ativo</div>
+        <div class="project-active-card" onclick="App.openModal('modal-projects')">
+          <div class="project-active-title">${name}</div>
+          <div class="project-active-meta">Clique para trocar</div>
+        </div>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-section-title">Briefing</div>
+        ${stepsHtml}
+      </div>
+      <div style="margin-top: auto; padding: 24px;">
+        <button class="btn btn-ghost" style="width: 100%; margin-bottom: 12px;" onclick="App.openModal('modal-api')">
+          <i data-lucide="key" class="icon"></i> Config. API
+        </button>
+        <div class="api-status">
+          <span class="status-dot ${hasKeys ? 'active' : ''}"></span>
+          ${hasKeys ? 'API Configurada' : 'Sem API'}
+        </div>
+      </div>
+    `;
   },
 
-  buildMasterPrompt() {
-    // This is the core interpolation logic
+  renderTopbar() {
+    const tb = document.getElementById('topbar');
+    tb.innerHTML = `
+      <div>
+        <h2 class="syne">${STEP_TITLES[this.state.currentStep]}</h2>
+        <div style="font-size: 12px; color: var(--text-secondary)">Step ${this.state.currentStep} de 9</div>
+      </div>
+    `;
+    const pct = ((this.state.currentStep - 1) / 8) * 100;
+    document.getElementById('progress-fill').style.width = `${pct}%`;
+  },
+
+  renderBottombar() {
+    const bb = document.getElementById('bottombar');
+    let html = '';
+    if (this.state.currentStep > 1) {
+      html += `<button class="btn btn-ghost" onclick="App.goToStep(${this.state.currentStep - 1})">Anterior</button>`;
+    } else {
+      html += `<div></div>`;
+    }
+    if (this.state.currentStep < 9) {
+      html += `<button class="btn btn-primary" onclick="App.goToStep(${this.state.currentStep + 1})">Próximo</button>`;
+    } else {
+      html += `<div></div>`;
+    }
+    bb.innerHTML = html;
+  },
+
+  renderStepContent() {
+    const sc = document.getElementById('step-content');
     const b = this.briefing;
-    let p = `Você é um Diretor de Arte, UI Designer de elite e Engenheiro Front-end Sênior, trabalhando para a agência Adsgator... [INSTRUCTIONS REMOVED FOR BREVITY IN CHUNK]`;
-    
-    // Actually build it fully as requested in the MD
-    // I'll use the template from the MD file
-    return `Você é um Diretor de Arte, UI Designer de elite e Engenheiro Front-end Sênior, trabalhando para a agência Adsgator.
-Sua missão é ler o briefing abaixo na íntegra e gerar como output o **Documento 3 — Ficha de Implementação**, completo, específico e pronto para ser enviado ao Roo Code implementar a landing page.
+    let html = '<div class="content-inner">';
 
-REGRAS QUE VOCÊ NUNCA VIOLA:
-1. Você toma todas as decisões de design que não estão explicitadas: tipografia, escala, tokens, animações, layout de cada seção.
-2. Você preenche TODOS os campos do Doc 3 com valores concretos. Sem placeholders.
-3. O output deve poder ser copiado e enviado ao Roo sem nenhuma edição.
-4. Padrão de qualidade: design editorial de alto padrão.
-5. DNA ADSGATOR — REGRAS INEGOCIÁVEIS DE COPY.
-6. STACK TÉCNICA FIXA: Astro + Tailwind CSS + GSAP + ScrollTrigger + Framer Motion + Lenis.
-7. FORMULÁRIO: usar Web3Forms.
-8. DEPLOY ALVO: Vercel (output: 'static').
-9. REGRAS ABSOLUTAS DE CÓDIGO.
+    const input = (id, label, ph, req=false) => `
+      <div class="field-group">
+        <label class="field-label">${label} ${req?'<span class="required">*</span>':''}</label>
+        <input class="field-input" id="field_${id}" value="${b[id]||''}" placeholder="${ph}" oninput="App.setField('${id}', this.value)">
+      </div>
+    `;
+    const textarea = (id, label, ph, req=false) => `
+      <div class="field-group">
+        <label class="field-label">${label} ${req?'<span class="required">*</span>':''}</label>
+        <textarea class="field-textarea" id="field_${id}" placeholder="${ph}" oninput="App.setField('${id}', this.value)">${b[id]||''}</textarea>
+      </div>
+    `;
+    const selcard = (id, label, opts, req=false) => {
+      let c = `<div class="field-group"><label class="field-label">${label} ${req?'<span class="required">*</span>':''}</label><div class="sel-cards">`;
+      opts.forEach(o => {
+        const on = b[id] === o.val ? 'on' : '';
+        c += `<div class="sel-card ${on}" onclick="App.setField('${id}', '${o.val}'); App.renderStepContent();">
+          <div class="card-title">${o.title}</div><div class="card-desc">${o.desc}</div>
+        </div>`;
+      });
+      return c + `</div></div>`;
+    };
+    const chips = (id, label, opts, isArray=false, req=false) => {
+      let c = `<div class="field-group"><label class="field-label">${label} ${req?'<span class="required">*</span>':''}</label><div class="chip-group">`;
+      opts.forEach(o => {
+        const isOn = isArray ? (b[id] && b[id].includes(o)) : b[id] === o;
+        const action = isArray ? `App.toggleArrayField('${id}', '${o}')` : `App.setField('${id}', '${o}'); App.renderStepContent();`;
+        c += `<div class="chip ${isOn?'on':''}" onclick="${action}">${o}</div>`;
+      });
+      return c + `</div></div>`;
+    };
 
-BRIEFING COMPLETO:
-- Cliente: ${b.nome_cliente}
-- Slug: ${b.slug}
-- Tipo: ${b.tipo}
-- Domínio: ${b.dominio}
-- Nicho: ${b.nicho}
-- Serviço/Produto: ${b.servico_produto}
-- Objetivo: ${b.objetivo_conversao}
-- Cidade: ${b.cidade}
-- Modalidade: ${b.modalidade}
-- Incluso: ${b.incluso}
-- Duração: ${b.duracao}
-- Garantia: ${b.garantia}
-- Apresentação: ${b.apresentacao}
-- Contexto: ${b.contexto_extra}
-- Público: ${b.publico_primario} / ${b.publico_secundario}
-- Dores: ${b.dores}
-- Palavras de busca: ${b.palavras_busca}
-- Resultado: ${b.resultado_desejado}
-- Objeções: ${b.objecoes}
-- CTA: ${b.tipo_cta} (${b.texto_botao})
-- WhatsApp: ${b.whatsapp} / ${b.mensagem_whatsapp}
-- Email: ${b.email_formulario}
-- Personalidade: ${b.personalidade}
-- Estilo: ${b.estilo_geral}
-- Cores: ${b.cor_principal} / ${b.cor_secundaria}
-- Referências: ${b.referencias}
-- Integrações: ${b.integracoes.join(', ')}
-
-Gere o Documento 3 seguindo a estrutura exata especificada no manual da Adsgator.`;
+    switch(this.state.currentStep) {
+      case 1:
+        html += input('nome_cliente', 'Nome do Cliente', 'ex: Adsgator', true);
+        html += input('nome_marca', 'Nome da Marca', 'ex: Adsgator LLC', true);
+        html += input('slug', 'Slug', 'ex: adsgator', true);
+        html += input('segmento', 'Segmento', 'ex: Marketing', true);
+        html += selcard('tipo', 'Tipo de Projeto', [
+          {val:'Serviço', title:'Serviço', desc:'Prestação de serviço'},
+          {val:'Produto', title:'Produto', desc:'Produto físico ou digital'},
+          {val:'Mentoria', title:'Mentoria', desc:'Mentoria ou programa'}
+        ], true);
+        break;
+      case 2:
+        html += input('whatsapp', 'WhatsApp', '5511999999999', true);
+        html += selcard('objetivo_conversao', 'Objetivo de Conversão', [
+          {val:'whatsapp', title:'WhatsApp', desc:''},
+          {val:'formulario', title:'Formulário', desc:''},
+          {val:'agendamento', title:'Agendamento', desc:''}
+        ], true);
+        html += input('email', 'E-mail', 'contato@email.com');
+        html += input('gtm_id', 'GTM ID', 'GTM-XXXXXX');
+        break;
+      case 3:
+        html += input('instagram', 'Instagram', '@perfil');
+        html += input('tiktok', 'TikTok', '@perfil');
+        html += input('youtube', 'YouTube', 'URL do canal');
+        break;
+      case 4:
+        html += chips('modalidade', 'Modalidade', ['Presencial', 'Online', 'Híbrido'], false, true);
+        if (b.modalidade === 'Presencial' || b.modalidade === 'Híbrido') {
+          html += textarea('endereco', 'Endereço', 'Rua X...');
+        }
+        break;
+      case 5:
+        html += input('servico_principal', 'Serviço Principal', '', true);
+        html += textarea('servicos_descricao', 'Descrição', '', true);
+        html += textarea('servicos_lista', 'Lista', '');
+        break;
+      case 6:
+        html += textarea('publico_primario', 'Público Primário', '', true);
+        html += textarea('publico_dor', 'Dor do Público', '', true);
+        html += textarea('publico_resultado', 'Resultado Esperado', '', true);
+        break;
+      case 7:
+        html += textarea('diferencial', 'Diferencial', '', true);
+        html += input('frase_impacto', 'Frase de Impacto', '', true);
+        html += chips('depoimentos', 'Depoimentos', ['Sim', 'Não']);
+        html += chips('google_business', 'Google Business', ['Sim', 'Não']);
+        break;
+      case 8:
+        html += textarea('estilo_desejado', 'Estilo', '', true);
+        html += chips('tema', 'Tema', ['Claro', 'Escuro', 'IA Decide'], false, true);
+        html += selcard('intensidade_visual', 'Intensidade Visual', [
+          {val:'Contido', title:'Contido', desc:''},
+          {val:'Médio', title:'Médio', desc:''},
+          {val:'Alto', title:'Alto', desc:''}
+        ], true);
+        break;
+      case 9:
+        html += input('dominio', 'Domínio', 'ex: adsgator.com', true);
+        html += chips('integracoes', 'Integrações', ['Google Maps embed', 'Formulário de Contato', 'WhatsApp flutuante'], true);
+        html += `<div style="margin-top: 40px; padding: 24px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--r-md);">
+          <h3 class="syne" style="margin-bottom: 16px;">Finalizar e Gerar</h3>
+          <div style="display: flex; gap: 16px;">
+            <button class="btn btn-ghost" onclick="App.downloadDoc1()"><i data-lucide="download" class="icon"></i> Baixar DOC-1</button>
+            <button class="btn btn-primary" onclick="App.generateDocImpl()"><i data-lucide="zap" class="icon"></i> Gerar DOC-IMPL via IA</button>
+          </div>
+        </div>`;
+        break;
+    }
+    html += '</div>';
+    sc.innerHTML = html;
+    lucide.createIcons();
   },
 
-  downloadBriefing() {
+  buildDoc1() {
     const b = this.briefing;
-    const content = `# Briefing — ${b.nome_cliente}
-**Slug:** ${b.slug}
-**Data:** ${b.data}
+    const modelUsed = this.state.apiKeys[AI_MODELS[this.state.selectedModel].provider] ? AI_MODELS[this.state.selectedModel].name : 'manual';
+    
+    return `---
+title: ${b.nome_cliente || 'Projeto'} — Brainstorm Visual
+date: ${new Date().toISOString()}
+tags: [adsgator, design, doc-2]
+status: pronto-para-ia
+gerado_por: LandingAI v2
+modelo_ia: ${modelUsed}
+---
 
-## Dados do Projeto
-- Tipo: ${b.tipo}
-- Domínio: ${b.dominio}
-- Nicho: ${b.nicho}
-- Serviço: ${b.servico_produto}
+# ${b.nome_cliente || 'Projeto'} — Brainstorm Visual
 
-## Público
-- Primário: ${b.publico_primario}
-- Dores: ${b.dores}
+> **Documento 1 de 2 — Adsgator (gerado pelo LandingAI v2)**
+> Preencha este documento e envie para a IA gerar a Ficha de Implementação.
 
-## Prompt
-${this.buildMasterPrompt()}
+---
+
+## INSTRUÇÃO MESTRE PARA A IA
+
+Você é um Diretor de Arte, UI Designer de elite e Engenheiro Front-end Sênior, trabalhando para a agência Adsgator.
+
+Sua missão é ler este documento inteiro e gerar como output a **Ficha de Implementação**, completa, específica e pronta para ser enviada diretamente ao Claude, Roo Code ou outro agente implementador construir a landing page.
+
+**O que isso significa na prática:**
+- Você toma todas as decisões de design que não estão explicitadas — tipografia, escala, tokens, animações, layout de cada seção.
+- Você preenche cada campo da Ficha de Implementação com valores concretos. Sem placeholders. Sem [definir depois]. Sem [a combinar].
+- Você transforma a direção criativa e a copy abaixo em especificações técnicas de implementação.
+- O output que você entrega deve poder ser copiado e enviado para outra IA sem nenhuma edição adicional.
+
+**Padrão de qualidade esperado:**
+O documento gerado deve orquestrar uma landing page com design editorial de alto padrão — atípico, com personalidade visual forte, fora do visual genérico de IA. Pense Raycast, Linear, Family.co. Layouts com intenção. Tipografia com personalidade. Animações que têm razão de existir. Cada decisão de tipografia, espaçamento, cor e animação deve ser intencional e coesa.
+
+**Sobre o viewport:**
+O site não fica preso em um container central. Seções que se beneficiam de ocupar o viewport completo devem fazê-lo — backgrounds que sangram até as bordas, tipografia que respira, imagens que não ficam comprimidas. O container é uma ferramenta de legibilidade, não uma prisão de layout.
+
+**Sobre o mobile:**
+Mobile não é adaptação — é o ponto de partida. O design começa em 375px. Cada decisão de tipografia, espaçamento, hierarquia e layout é tomada primeiro para mobile e expandida para desktop.
+
+**Sobre o footer:**
+O footer não é um afterthought — é a última impressão. Deve ter identidade visual clara, conectada ao tom da landing page. Hierarquia tipográfica real. Personalidade.
+
+**DNA ADSGATOR — REGRAS INEGOCIÁVEIS DE COPY:**
+- Intenção de Busca em Primeiro Lugar — a H1 justifica o clique no anúncio nos primeiros 3 segundos
+- Primeira Pessoa Sempre — "eu", "meu", "com você" — nunca terceira pessoa
+- Zero Institucional — proibido: "inovador", "excelência", "missão", "visão"
+- Comunicação Direta e Realista — sem promessas milagrosas
+- Tom Conversacional com Autoridade
+- Foco na Ação — cada palavra tem função persuasiva
+
+**STACK TÉCNICA FIXA:**
+Astro + Tailwind CSS + GSAP + ScrollTrigger + Framer Motion + Lenis + Web3Forms
+Deploy: Vercel (output: 'static')
+
+---
+
+## PARTE 1 — IDENTIDADE DO PROJETO
+
+### Resumo do Projeto
+
+| Campo | Valor |
+|---|---|
+| **Cliente** | ${b.nome_cliente || '—'} |
+| **Marca** | ${b.nome_marca || '—'} |
+| **Slug** | ${b.slug || '—'} |
+| **Segmento** | ${b.segmento || '—'} |
+| **Tipo** | ${b.tipo || '—'} |
+| **Objetivo de conversão** | ${b.objetivo_conversao || '—'} |
+| **WhatsApp** | ${b.whatsapp || '—'} |
+| **E-mail** | ${b.email || '—'} |
+| **Horários** | ${b.horarios || '—'} |
+| **GTM ID** | ${b.gtm_id || '—'} |
+| **Domínio** | ${b.dominio || '—'} |
+| **Modalidade** | ${b.modalidade || '—'} |
+| **CNPJ** | ${b.cnpj || '—'} |
+| **Aviso legal** | ${b.aviso_legal || '—'} |
+
+---
+
+## PARTE 2 — SERVIÇOS E PRODUTO
+
+### Serviço Principal
+${b.servico_principal || '—'}
+
+### Todos os Serviços
+${b.servicos_lista || '—'}
+
+### Descrição Detalhada
+${b.servicos_descricao || '—'}
+
+### Preço
+${b.preco_exibir === 'Sim' ? `Exibir preço: ${b.preco_valor || ''} — ${b.preco_condicao || ''}` : 'Não exibir preço'}
+
+### Oferta Especial
+${b.oferta_especial || 'Não há'}
+
+---
+
+## PARTE 3 — PÚBLICO-ALVO
+
+### Público Primário
+${b.publico_primario || '—'}
+
+### Dor Principal
+${b.publico_dor || '—'}
+
+### Resultado Desejado
+${b.publico_resultado || '—'}
+
+### Público Secundário
+${b.publico_secundario || 'Não definido'}
+
+---
+
+## PARTE 4 — COPY E PERSUASÃO
+
+### Diferencial Real
+${b.diferencial || '—'}
+
+### Frase de Impacto
+${b.frase_impacto || '—'}
+
+### História / Origem
+${b.historia || 'Não fornecida'}
+
+### FAQ — Principais Dúvidas
+${b.faq || 'Não fornecido — IA decide baseado no nicho'}
+
+---
+
+## PARTE 5 — PRESENÇA DIGITAL
+
+### Redes Sociais
+| Rede | Handle/Link |
+|---|---|
+| Instagram | ${b.instagram || '—'} |
+| TikTok | ${b.tiktok || '—'} |
+| YouTube | ${b.youtube || '—'} |
+| Outras | ${b.outras_redes || '—'} |
+
+### Google Business
+${b.google_business === 'Sim' ? `Sim — Nota: ${b.google_nota || '?'} ★ com ${b.google_qtd || '?'} avaliações` : 'Não possui'}
+
+### Depoimentos
+${b.depoimentos === 'Sim' ? `Sim — Formato: ${(b.depoimentos_formato || []).join(', ')} — Quantidade: ${b.depoimentos_qtd || '?'}` : 'Não há depoimentos disponíveis'}
+
+### Cases / Resultados Concretos
+${b.casos_resultados || 'Não fornecidos'}
+
+---
+
+## PARTE 6 — LOCALIZAÇÃO
+
+### Modalidade de Atendimento
+${b.modalidade || '—'}
+
+${b.modalidade === 'Presencial' || b.modalidade === 'Híbrido' ? `### Endereço\n${b.endereco || '—'}\n\n### Exibir Localização\n${b.exibir_localizacao || '—'}\n\n### Cidades de Atendimento\n${b.cidades_atendimento || '—'}` : ''}
+
+${b.modalidade === 'Online' || b.modalidade === 'Híbrido' ? `### Plataforma Online\n${b.plataforma_online || '—'}` : ''}
+
+---
+
+## PARTE 7 — DIREÇÃO DE DESIGN
+
+### Como o site deve ser percebido
+${b.estilo_desejado || '—'}
+
+### Sensação do visitante
+${b.sensacao_visitante || '—'}
+
+### Referências Pessoais
+${b.referencias_pessoais || '—'}
+
+### Referências do Nicho
+${b.referencias_nicho || 'Não fornecidas'}
+
+### Cores da Marca
+| Cor | Valor |
+|---|---|
+| Principal | ${b.cor_principal || 'Não definida'} |
+| Secundária | ${b.cor_secundaria || 'Não definida'} |
+
+### Direção Geral
+| Parâmetro | Valor |
+|---|---|
+| Tema | ${b.tema || '—'} |
+| Intensidade Visual | ${b.intensidade_visual || '—'} |
+| Referência de marca | ${b.referencia_marca || 'Não definida'} |
+| O que NÃO quero | ${b.o_que_nao_quero || 'Não especificado'} |
+
+### Footer
+| Parâmetro | Valor |
+|---|---|
+| Tom visual | ${b.footer_tom || 'IA decide'} |
+| Elemento âncora | ${b.footer_elemento || 'IA decide'} |
+| Sensação | ${b.footer_sensacao || 'IA decide'} |
+
+### Menu Mobile
+${b.menu_mobile_estilo || 'IA decide'} — ${b.menu_mobile_especial || 'Padrão'}
+
+---
+
+## PARTE 8 — ASSETS E INTEGRAÇÕES
+
+### Assets Disponíveis
+| Asset | Status |
+|---|---|
+| Logo | ${b.logo_disponivel || '—'} |
+| Foto do profissional/produto | ${b.foto_profissional || '—'} |
+| Outros | ${b.assets_outros || '—'} |
+
+### Integrações Ativas
+${(b.integracoes || []).map(i => `[x] ${i}`).join('\n')}
+
+---
+
+## PARTE 9 — BRIEFING BRUTO DO CLIENTE
+
+> Cole abaixo o briefing exatamente como veio do cliente. A IA usa como fonte primária.
+
+${b.briefing_bruto || 'Não fornecido — usar dados dos campos acima'}
+
+---
+
+## PARTE 10 — INSTRUÇÕES ADICIONAIS
+
+${b.instrucoes_adicionais || 'Nenhuma instrução adicional'}
+
+---
+
+## PARTE 11 — REGRAS FIXAS ADSGATOR
+
+${REGRAS_FIXAS_ADSGATOR}
 `;
-    this.downloadFile(content, `briefing-${b.slug}.md`);
+  },
+
+  downloadDoc1() {
+    const content = this.buildDoc1();
+    this.downloadFile(content, `doc1-${this.briefing.slug||'projeto'}.md`);
   },
 
   downloadFile(content, filename) {
@@ -1048,7 +598,268 @@ ${this.buildMasterPrompt()}
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    this.showToast('Download concluído', 'success');
+  },
+
+  async generateDocImpl() {
+    if (!this.state.apiKeys.gemini && !this.state.apiKeys.claude && !this.state.apiKeys.grok && !this.state.apiKeys.mistral) {
+      this.showToast('Configure uma API Key primeiro', 'error');
+      this.openModal('modal-api');
+      return;
+    }
+    
+    // Check critical fields
+    const missing = [];
+    for (const step in criticalFields) {
+      criticalFields[step].forEach(f => {
+        if (!this.briefing[f] || String(this.briefing[f]).trim() === '') missing.push(f);
+      });
+    }
+    if (missing.length > 0) {
+      this.showToast('Preencha os campos obrigatórios', 'warning');
+      return;
+    }
+
+    this.state.isGenerating = true;
+    this.openModal('modal-gen');
+    const statusBox = document.getElementById('modal-gen');
+    statusBox.innerHTML = `<div class="modal"><div class="modal-body">
+      <h3 class="syne" style="margin-bottom:20px"><i data-lucide="zap" class="icon icon--accent"></i> Gerando DOC-IMPL...</h3>
+      <div id="gen-logs" style="font-family: var(--font-mono); font-size: 12px; color: var(--text-secondary);"></div>
+    </div></div>`;
+    lucide.createIcons();
+    const log = (msg) => { document.getElementById('gen-logs').innerHTML += `<div>> ${msg}</div>`; };
+
+    try {
+      log('Compilando DOC-1...');
+      const doc1 = this.buildDoc1();
+      
+      const prompt = `Você é um Diretor de Arte e UI Designer da Adsgator.
+Baseado neste documento, crie a Ficha de Implementação completa (DOC-IMPL).
+Documento:
+${doc1}`;
+
+      log(`Chamando modelo: ${AI_MODELS[this.state.selectedModel].name}...`);
+      
+      const modelInfo = AI_MODELS[this.state.selectedModel];
+      const apiKey = this.state.apiKeys[modelInfo.provider];
+      
+      if (!apiKey) throw new Error(`Chave de API ausente para ${modelInfo.provider}`);
+      
+      let docImpl = '';
+      if (modelInfo.provider === 'gemini') {
+        const resp = await fetch(`${modelInfo.endpoint}?key=${apiKey}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        if (!resp.ok) throw new Error('Erro na API Gemini: ' + resp.status);
+        const data = await resp.json();
+        docImpl = data.candidates[0].content.parts[0].text;
+      } else if (modelInfo.provider === 'claude') {
+        const resp = await fetch(modelInfo.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey,
+            'anthropic-version': '2023-06-01',
+            'anthropic-dangerous-direct-browser-access': 'true'
+          },
+          body: JSON.stringify({
+            model: 'claude-3-5-sonnet-20240620',
+            max_tokens: modelInfo.maxTokens,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        if (!resp.ok) throw new Error('Erro na API Claude: ' + resp.status);
+        const data = await resp.json();
+        docImpl = data.content[0].text;
+      } else if (modelInfo.provider === 'grok') {
+        const resp = await fetch(modelInfo.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'grok-3',
+            max_tokens: modelInfo.maxTokens,
+            temperature: modelInfo.temp,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        if (!resp.ok) throw new Error('Erro na API Grok: ' + resp.status);
+        const data = await resp.json();
+        docImpl = data.choices[0].message.content;
+      } else if (modelInfo.provider === 'mistral') {
+        const resp = await fetch(modelInfo.endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${apiKey}`
+          },
+          body: JSON.stringify({
+            model: 'mistral-large-latest',
+            max_tokens: modelInfo.maxTokens,
+            temperature: modelInfo.temp,
+            messages: [{ role: 'user', content: prompt }]
+          })
+        });
+        if (!resp.ok) throw new Error('Erro na API Mistral: ' + resp.status);
+        const data = await resp.json();
+        docImpl = data.choices[0].message.content;
+      } else {
+        throw new Error('Provedor não implementado');
+      }
+
+      log('Concluído! Baixando arquivo...');
+      this.downloadFile(docImpl, `doc-impl-${this.briefing.slug||'projeto'}.md`);
+      this.showNotification('LandingAI', 'DOC-IMPL gerado com sucesso!');
+      setTimeout(() => this.closeModal('modal-gen'), 2000);
+
+    } catch (e) {
+      log(`<span style="color:var(--danger)">ERRO: ${e.message}</span>`);
+      this.showToast('Falha na geração', 'error');
+    } finally {
+      this.state.isGenerating = false;
+    }
+  },
+
+  openModal(id) {
+    if (id === 'modal-api') this.renderApiModal();
+    if (id === 'modal-projects') this.renderProjectsModal();
+    document.getElementById(id).classList.remove('hidden');
+  },
+  
+  closeModal(id) {
+    document.getElementById(id).classList.add('hidden');
+  },
+
+  renderApiModal() {
+    const m = document.getElementById('modal-api');
+    m.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="syne">Configuração de APIs</h3>
+          <button class="btn btn-ghost" style="padding:4px" onclick="App.closeModal('modal-api')"><i data-lucide="x" class="icon"></i></button>
+        </div>
+        <div class="modal-body">
+          <div class="field-group">
+            <label class="field-label">Modelo Padrão para Geração</label>
+            <select class="field-select" id="sel-model">
+              ${Object.entries(AI_MODELS).map(([k,v]) => `<option value="${k}" ${this.state.selectedModel===k?'selected':''}>${v.name}</option>`).join('')}
+            </select>
+          </div>
+          <hr style="border:0; border-top:1px solid var(--border-default); margin: 24px 0;">
+          <div class="field-group">
+            <label class="field-label">Gemini API Key</label>
+            <input type="password" class="field-input" id="key-gemini" value="${this.state.apiKeys.gemini}">
+            <div class="field-hint">Obter em: aistudio.google.com</div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Claude API Key</label>
+            <input type="password" class="field-input" id="key-claude" value="${this.state.apiKeys.claude}">
+            <div class="field-hint">Obter em: console.anthropic.com</div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Grok API Key</label>
+            <input type="password" class="field-input" id="key-grok" value="${this.state.apiKeys.grok}">
+            <div class="field-hint">Obter em: console.x.ai</div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Mistral API Key</label>
+            <input type="password" class="field-input" id="key-mistral" value="${this.state.apiKeys.mistral}">
+            <div class="field-hint">Obter em: console.mistral.ai</div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button class="btn btn-primary" onclick="App.saveApiKeys()">Salvar</button>
+        </div>
+      </div>
+    `;
+    lucide.createIcons();
+  },
+
+  saveApiKeys() {
+    this.state.apiKeys.gemini = document.getElementById('key-gemini').value;
+    this.state.apiKeys.claude = document.getElementById('key-claude').value;
+    this.state.apiKeys.grok = document.getElementById('key-grok').value;
+    this.state.apiKeys.mistral = document.getElementById('key-mistral').value;
+    this.state.selectedModel = document.getElementById('sel-model').value;
+    localStorage.setItem('landingai_keys', JSON.stringify(this.state.apiKeys));
+    localStorage.setItem('landingai_model', this.state.selectedModel);
+    this.closeModal('modal-api');
+    this.showToast('Configurações salvas', 'success');
+    this.renderSidebar();
+  },
+
+  renderProjectsModal() {
+    const m = document.getElementById('modal-projects');
+    const list = Object.values(this.state.projects).map(p => `
+      <div class="project-list-item">
+        <div class="project-list-info">
+          <div class="project-list-name">${p.name}</div>
+          <div class="project-list-meta">${new Date(p.updatedAt).toLocaleString()}</div>
+        </div>
+        <div class="project-list-actions">
+          <button class="btn btn-ghost" onclick="App.loadProject('${p.id}')">Abrir</button>
+          <button class="btn btn-danger" onclick="App.deleteProject('${p.id}')">Excluir</button>
+        </div>
+      </div>
+    `).join('');
+
+    m.innerHTML = `
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="syne">Meus Projetos</h3>
+          <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="App.createProject(); App.closeModal('modal-projects')">+ Novo</button>
+          <button class="btn btn-ghost" style="padding:4px" onclick="App.closeModal('modal-projects')"><i data-lucide="x" class="icon"></i></button>
+        </div>
+        <div class="modal-body">
+          ${list || '<p style="color:var(--text-secondary)">Nenhum projeto salvo.</p>'}
+        </div>
+      </div>
+    `;
+    lucide.createIcons();
+  },
+
+  deleteProject(id) {
+    if (confirm('Excluir este projeto?')) {
+      delete this.state.projects[id];
+      if (this.state.activeProjectId === id) {
+        this.state.activeProjectId = null;
+        localStorage.removeItem('landingai_active');
+      }
+      localStorage.setItem('landingai_projects', JSON.stringify(this.state.projects));
+      if (!this.state.activeProjectId) this.createProject();
+      else this.renderProjectsModal();
+    }
+  },
+
+  showToast(msg, type='default') {
+    const t = document.getElementById('toast');
+    const icons = { success: 'check-circle', error: 'alert-circle', warning: 'alert-triangle', default: 'info' };
+    t.innerHTML = `<i data-lucide="${icons[type]}" class="icon icon--${type}"></i> <span>${msg}</span>`;
+    t.className = `toast toast--${type} toast--visible`;
+    lucide.createIcons();
+    clearTimeout(this._toastTimeout);
+    this._toastTimeout = setTimeout(() => t.classList.remove('toast--visible'), 3000);
+  },
+
+  async requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission !== 'granted') {
+      await Notification.requestPermission();
+    }
+  },
+
+  showNotification(title, body) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  },
+
+  setupEvents() {
+    // any global events here
   }
 };
 
-window.onload = () => App.init();
+window.App = App;

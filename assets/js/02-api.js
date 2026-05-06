@@ -14,7 +14,7 @@ Object.assign(window.App, {
       case 'gemini':      return this._callGemini(prompt, model, apiKey);
       case 'claude':      return this._callClaude(prompt, model, apiKey);
       case 'grok':        return this._callOpenAICompat(prompt, model, apiKey);
-      case 'mistral':     return this._callOpenAICompat(prompt, model, apiKey);
+      case 'mistral':     return this._callMistral(prompt, model, apiKey);
       case 'openrouter':  return this._callOpenRouter(prompt, model, apiKey);
       default: throw new Error(`Provider "${model.provider}" não implementado.`);
     }
@@ -88,6 +88,32 @@ Object.assign(window.App, {
     const text = data.content?.[0]?.text;
     if (!text) throw new Error('Resposta vazia do Claude.');
     return text;
+  },
+
+  async _callMistral(prompt, model, apiKey) {
+    const key = apiKey || this.state.apiKeys['mistral'];
+    if (!key) throw new Error('API Key Mistral não configurada.');
+
+    const resp = await fetch(model.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${key}`
+      },
+      body: JSON.stringify({
+        model: model.model,
+        messages: [{ role: 'user', content: prompt }],
+        temperature: model.temp || 0.7
+      })
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Erro Mistral: ${resp.status}`);
+    }
+
+    const data = await resp.json();
+    return data.choices[0].message.content;
   },
 
   async _callOpenRouter(prompt, model, apiKey) {

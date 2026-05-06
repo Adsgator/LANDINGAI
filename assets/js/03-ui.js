@@ -230,10 +230,11 @@ Object.assign(window.App, {
     if (!body) return;
 
     const providers = [
-      { id: 'gemini', label: 'Google Gemini', icon: 'zap', hint: 'Recomendado (Flash é grátis)' },
-      { id: 'openrouter', label: 'OpenRouter', icon: 'globe', hint: 'Acesso a Claude, DeepSeek, Llama' },
-      { id: 'claude', label: 'Anthropic Claude', icon: 'cpu', hint: 'Direto (requer proxy ou tier pago)' },
-      { id: 'xai', label: 'xAI (Grok)', icon: 'terminal', hint: 'Acesso direto ao Grok' },
+      { id: 'gemini', label: 'Google Gemini', icon: 'zap', hint: 'Recomendado (Flash é grátis)', link: 'https://aistudio.google.com/app/apikey' },
+      { id: 'openrouter', label: 'OpenRouter', icon: 'globe', hint: 'Acesso a Claude, DeepSeek, Llama', link: 'https://openrouter.ai/keys' },
+      { id: 'claude', label: 'Anthropic Claude', icon: 'cpu', hint: 'Direto (requer proxy ou tier pago)', link: 'https://console.anthropic.com/' },
+      { id: 'xai', label: 'xAI (Grok)', icon: 'terminal', hint: 'Acesso direto ao Grok', link: 'https://console.x.ai/' },
+      { id: 'mistral', label: 'Mistral AI', icon: 'wind', hint: 'Acesso direto à Mistral', link: 'https://console.mistral.ai/api-keys/' },
     ];
 
     body.innerHTML = `
@@ -243,33 +244,48 @@ Object.assign(window.App, {
             <div class="api-field-label">
               <i data-lucide="${p.icon}" style="width:14px;height:14px"></i>
               <span>${p.label}</span>
+              <a href="${p.link}" target="_blank" class="api-link" title="Obter Chave">
+                <i data-lucide="external-link" style="width:12px;height:12px"></i>
+              </a>
               <span class="api-field-hint">${p.hint}</span>
             </div>
-            <div class="api-input-wrap">
-              <input type="password" class="field-input" id="api-key-${p.id}" 
-                value="${this.state.apiKeys[p.id] || ''}" placeholder="Cole sua chave aqui...">
-              <button class="btn-icon" onclick="App.toggleKeyVisibility('api-key-${p.id}')">
-                <i data-lucide="eye" style="width:16px;height:16px"></i>
+            <div class="api-input-row">
+              <div class="api-input-wrap" style="flex:1">
+                <input type="password" class="field-input" id="api-key-${p.id}" 
+                  value="${this.state.apiKeys[p.id] || ''}" placeholder="Cole sua chave aqui...">
+                <button class="btn-icon" onclick="App.toggleKeyVisibility('api-key-${p.id}')">
+                  <i data-lucide="eye" style="width:16px;height:16px"></i>
+                </button>
+              </div>
+              <button class="btn-primary btn-sm" onclick="App.saveIndividualApiKey('${p.id}')">
+                Salvar
               </button>
             </div>
           </div>
         `).join('')}
       </div>
-      <div class="modal-footer" style="margin-top:20px;padding:0">
-        <button class="btn-primary" onclick="App.saveAllApiKeys()" style="width:100%">
-          Salvar Configurações
-        </button>
+      <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border-subtle); display:flex; justify-content:center;">
+        <button class="btn-ghost btn-sm" onclick="App.closeModal('modal-api')">Fechar Configurações</button>
       </div>
     `;
     lucide.createIcons({ nodes: [body] });
   },
 
+  saveIndividualApiKey(provider) {
+    const val = document.getElementById(`api-key-${provider}`)?.value;
+    if (val !== undefined) {
+      this.saveApiKey(provider, val);
+      this.showToast(`${provider.toUpperCase()} salva!`, 'success');
+      this.updateSidebar();
+    }
+  },
+
   saveAllApiKeys() {
-    ['gemini', 'openrouter', 'claude', 'xai'].forEach(p => {
+    ['gemini', 'openrouter', 'claude', 'xai', 'mistral'].forEach(p => {
       const val = document.getElementById(`api-key-${p}`)?.value;
       if (val !== undefined) this.saveApiKey(p, val);
     });
-    this.showToast('Configurações salvas!', 'success');
+    this.showToast('Todas as chaves salvas!', 'success');
     this.closeModal('modal-api');
     this.updateSidebar();
   },

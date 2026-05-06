@@ -8,6 +8,8 @@ Object.assign(window.App, {
     const isReady = this.checkReady();
     const fichaArte = B.ficha_direcao_arte ? JSON.parse(B.ficha_direcao_arte) : null;
 
+    const score = this.calcGlobalScore();
+
     return `
     <div class="review-screen">
       <div class="review-header">
@@ -15,103 +17,123 @@ Object.assign(window.App, {
         <p class="review-subtitle">Confira os dados coletados e gere a documentação técnica para implementação.</p>
       </div>
 
+      <!-- Barra de Progresso (Termômetro) -->
+      <div class="review-score-banner">
+        <div class="review-score-circle">${score}%</div>
+        <div class="review-score-info">
+          <div class="review-score-label">Completude do Briefing</div>
+          <div class="review-score-bar-wrap">
+            <div class="review-score-bar-fill" style="width:${score}%"></div>
+          </div>
+          <div class="review-score-sub">${score < 100 ? 'Preencha os campos obrigatórios para atingir 100%.' : 'Briefing completo e pronto para geração!'}</div>
+        </div>
+      </div>
+
+      <!-- Progresso dos Steps (Agora no topo) -->
+      <div class="review-steps-preview">
+        <div class="review-steps-grid">
+          ${STEPS.map(s => {
+            const missingCount = (REQUIRED_FIELDS[s.id] || []).filter(f => !B[f]).length;
+            const isDone = missingCount === 0;
+            return `
+              <div class="review-step-card ${isDone ? 'done' : 'incomplete'}" onclick="App.goToStep(${s.id})">
+                <div class="step-card-header">
+                  <span class="step-card-num">${s.id}</span>
+                  <i data-lucide="${isDone ? 'check-circle' : 'circle'}" class="step-card-status"></i>
+                </div>
+                <div class="step-card-body">
+                  <span class="step-card-label">${s.label}</span>
+                  <span class="step-card-sub">${isDone ? 'Completo' : `${missingCount} pendente(s)`}</span>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </div>
+
       <div class="review-grid">
-        <!-- Coluna Esquerda: Status e Avisos -->
+        <!-- Coluna Esquerda: Status, Sumário e Ações -->
         <div class="review-main">
           ${isReady.ok ? `
-            <div class="review-card ready">
-              <div class="review-card-icon"><i data-lucide="check-circle"></i></div>
-              <div class="review-card-content">
-                <h3>Briefing Pronto</h3>
+            <div class="review-card-status ready">
+              <i data-lucide="check-circle" class="status-icon"></i>
+              <div class="status-content">
+                <h3>Briefing Completo</h3>
                 <p>Todos os campos obrigatórios foram preenchidos. Você pode gerar a Ficha de Implementação agora.</p>
               </div>
             </div>
           ` : `
-            <div class="review-card warning">
-              <div class="review-card-icon"><i data-lucide="alert-circle"></i></div>
-              <div class="review-card-content">
+            <div class="review-card-status warning">
+              <i data-lucide="alert-circle" class="status-icon"></i>
+              <div class="status-content">
                 <h3>Briefing Incompleto</h3>
                 <p>Alguns campos obrigatórios estão vazios. A IA pode ter alucinações se faltar contexto.</p>
-                <ul class="review-missing-list">
-                  ${isReady.missing.map(m => `<li data-goto-step-warn="${m.step}">${m.label}</li>`).join('')}
-                </ul>
+                <div class="review-missing-list">
+                  ${isReady.missing.map(m => `
+                    <div class="review-missing-item" onclick="App.goToStep(${m.step})" style="cursor:pointer;">
+                      <i data-lucide="arrow-right-circle" style="width:14px;height:14px"></i>
+                      <span>${m.label}</span>
+                    </div>
+                  `).join('')}
+                </div>
               </div>
             </div>
           `}
 
-          <div class="review-actions-big">
+          <!-- Sumário do Projeto (Movido para cima do botão) -->
+          <div class="review-summary-box">
+            <div class="summary-header">Sumário do Projeto</div>
+            <div class="summary-grid-compact">
+              <div class="summary-item">
+                <span class="label">Cliente</span>
+                <span class="value">${B.nome_cliente || '—'}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Segmento</span>
+                <span class="value">${B.segmento || '—'}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Modelo IA</span>
+                <span class="value">${AI_MODELS[this.state.selectedModel]?.label || '—'}</span>
+              </div>
+              <div class="summary-item">
+                <span class="label">Direção de Arte</span>
+                <span class="value">${fichaArte ? `<span class="val-approved">Aprovada (${fichaArte.tema})</span>` : '<span class="val-pending">Pendente</span>'}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="review-actions-hero">
             <button id="btn-generate-docimpl" class="btn-primary btn-xl" ${this.state.isGenerating ? 'disabled' : ''}>
               <i data-lucide="sparkles"></i>
-              ${this.state.isGenerating ? 'Gerando...' : 'Gerar Ficha de Implementação (DOC-IMPL)'}
+              ${this.state.isGenerating ? 'Gerando Ficha de Implementação...' : 'Gerar Ficha de Implementação (DOC-IMPL)'}
             </button>
             <p class="review-action-hint">A IA vai ler o briefing completo e criar todo o código base, design system e copy.</p>
           </div>
 
           <div class="review-doc1-box">
-             <div class="review-doc1-header">
-                <i data-lucide="file-text" style="width:18px;height:18px;color:var(--text-secondary)"></i>
+             <div class="doc1-header">
+                <i data-lucide="file-text"></i>
                 <span>Documento de Briefing (DOC-1)</span>
              </div>
-             <div class="review-doc1-body">
+             <div class="doc1-body">
                 <p>O DOC-1 é a versão textual organizada de tudo que foi coletado. Útil para documentação e aprovação do cliente.</p>
                 <button id="btn-download-doc1" class="btn-ghost btn-sm">
-                  <i data-lucide="download" style="width:14px;height:14px"></i>
+                  <i data-lucide="download"></i>
                   Baixar DOC-1 (.md)
                 </button>
              </div>
           </div>
-        </div>
 
-        <!-- Coluna Direita: Sumário Rápido -->
-        <aside class="review-sidebar">
-          <div class="review-summary-card">
-            <h3>Sumário do Projeto</h3>
-            <div class="review-summary-item">
-              <span class="label">Cliente:</span>
-              <span class="value">${B.nome_cliente || '—'}</span>
-            </div>
-            <div class="review-summary-item">
-              <span class="label">Segmento:</span>
-              <span class="value">${B.segmento || '—'}</span>
-            </div>
-            <div class="review-summary-item">
-              <span class="label">Modelo IA:</span>
-              <span class="value">${AI_MODELS[this.state.selectedModel]?.label || '—'}</span>
-            </div>
-            
-            <div class="form-divider"></div>
-            
-            <h3>Direção de Arte</h3>
-            ${fichaArte ? `
-              <div class="art-badge approved">Aprovada</div>
-              <div class="review-summary-item">
-                <span class="label">Tema:</span>
-                <span class="value">${fichaArte.tema || '—'}</span>
-              </div>
-            ` : `
-              <div class="art-badge pending">Pendente</div>
-              <p style="font-size:11px;color:var(--text-tertiary);margin-top:4px">Gere a ficha de arte para melhores resultados visuais.</p>
-            `}
+          <!-- Dicas da Adsgator (Movido para o final da lista principal) -->
+          <div class="review-tips-box">
+            <div class="summary-header">Dicas da Adsgator</div>
+            <ul class="tips-list">
+              <li>Use <b>Gemini 2.5 Pro</b> ou <b>Claude</b> para projetos mais complexos.</li>
+              <li>Aprovar a <b>Direção de Arte</b> ajuda a IA a ser mais precisa no design.</li>
+              <li>Revise o <b>DOC-1</b> antes de enviar o link de preview para o cliente.</li>
+            </ul>
           </div>
-        </aside>
-      </div>
-
-      <div class="review-steps-preview">
-        <h3>Preview dos Steps</h3>
-        <div class="review-steps-grid">
-          ${STEPS.map(s => {
-            const missingCount = (REQUIRED_FIELDS[s.id] || []).filter(f => !B[f]).length;
-            return `
-              <div class="review-step-card ${missingCount > 0 ? 'incomplete' : 'complete'}" data-goto-step="${s.id}">
-                <div class="review-step-num">${s.id}</div>
-                <div class="review-step-info">
-                  <span class="label">${s.label}</span>
-                  <span class="status">${missingCount > 0 ? `${missingCount} campo(s) pendente(s)` : 'Completo'}</span>
-                </div>
-                <i data-lucide="chevron-right" style="width:14px;height:14px;opacity:0.5"></i>
-              </div>
-            `;
-          }).join('')}
         </div>
       </div>
     </div>

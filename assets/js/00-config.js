@@ -74,6 +74,20 @@ const AI_MODELS = {
     model: 'meta-llama/llama-4-maverick',
     maxTokens: 12000, temp: 0.65,
   },
+  'mistral-large': {
+    id: 'mistral-large', label: 'Mistral Large 2',
+    provider: 'mistral', group: 'Mistral AI', tier: 'paid',
+    endpoint: 'https://api.mistral.ai/v1/chat/completions',
+    model: 'mistral-large-latest',
+    maxTokens: 16000, temp: 0.7,
+  },
+  'mistral-small': {
+    id: 'mistral-small', label: 'Mistral Small',
+    provider: 'mistral', group: 'Mistral AI', tier: 'paid',
+    endpoint: 'https://api.mistral.ai/v1/chat/completions',
+    model: 'mistral-small-latest',
+    maxTokens: 12000, temp: 0.7,
+  },
 };
 
 const STEPS = [

@@ -19,13 +19,13 @@ const AI_MODELS = {
   'gemini-2.5-flash': {
     id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash',
     provider: 'gemini', group: 'Google', tier: 'free',
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent',
     maxTokens: 12000, temp: 0.7,
   },
   'gemini-2.5-pro': {
     id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro',
     provider: 'gemini', group: 'Google', tier: 'paid',
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro-preview-05-06:generateContent',
     maxTokens: 16000, temp: 0.65,
   },
   'claude-sonnet-4': {
@@ -77,14 +77,14 @@ const AI_MODELS = {
 };
 
 const STEPS = [
-  { id: 1, label: 'Identificação', sub: 'Nome, nicho e tipo de projeto', icon: 'user', fields: ['nome_cliente', 'nome_marca', 'segmento', 'tipo', 'dominio', 'cnpj', 'aviso_legal'] },
-  { id: 2, label: 'Contato e CTA', sub: 'WhatsApp, e-mail e conversão', icon: 'phone', fields: ['whatsapp', 'email', 'horarios', 'gtm_id', 'objetivo_conversao', 'objetivo_outro'] },
-  { id: 3, label: 'Presença Digital', sub: 'Redes sociais e plataformas', icon: 'globe', fields: ['instagram', 'tiktok', 'youtube', 'outras_redes', 'integracoes'] },
-  { id: 4, label: 'Atendimento', sub: 'Modalidade, endereço, cidades', icon: 'map-pin', fields: ['modalidade', 'endereco', 'exibir_localizacao', 'cidades_atendimento', 'plataforma_online'] },
-  { id: 5, label: 'Serviço / Produto', sub: 'O que é vendido e como funciona', icon: 'briefcase', fields: ['servico_principal', 'servicos_lista', 'servicos_descricao', 'preco_exibir', 'preco_valor', 'preco_condicao', 'oferta_especial'] },
-  { id: 6, label: 'Público-Alvo', sub: 'Perfil, dores e resultado', icon: 'target', fields: ['publico_primario', 'publico_dor', 'publico_resultado', 'publico_secundario', 'faq'] },
-  { id: 7, label: 'Autoridade', sub: 'Diferenciais e prova social', icon: 'star', fields: ['diferencial', 'frase_impacto', 'historia', 'casos_resultados', 'depoimentos', 'depoimentos_qtd', 'depoimentos_formato', 'google_business', 'google_nota', 'google_qtd'] },
-  { id: 8, label: 'Tom e Identidade', sub: 'Estilo, vocabulário e restrições', icon: 'palette', fields: ['estilo_desejado', 'sensacao_visitante', 'frase_tom', 'vocabulario_usa', 'vocabulario_nunca', 'restricoes'] },
+  { id: 1, label: 'Identificação',      sub: 'Nome, nicho e tipo de projeto',   icon: 'user' },
+  { id: 2, label: 'Contato e CTA',      sub: 'WhatsApp, e-mail e conversão',    icon: 'phone' },
+  { id: 3, label: 'Presença Digital',   sub: 'Redes sociais e plataformas',     icon: 'globe' },
+  { id: 4, label: 'Atendimento',        sub: 'Modalidade, endereço, cidades',   icon: 'map-pin' },
+  { id: 5, label: 'Serviço / Produto',  sub: 'O que é vendido e como funciona', icon: 'briefcase' },
+  { id: 6, label: 'Público-Alvo',       sub: 'Perfil, dores e resultado',       icon: 'target' },
+  { id: 7, label: 'Autoridade',         sub: 'Diferenciais e prova social',     icon: 'star' },
+  { id: 8, label: 'Tom e Identidade',   sub: 'Estilo, vocabulário e restrições',icon: 'palette' },
 ];
 
 const REQUIRED_FIELDS = {

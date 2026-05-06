@@ -10,7 +10,11 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@400..800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="assets/app.css">
+  <link rel="stylesheet" href="assets/css/00-vars.css">
+  <link rel="stylesheet" href="assets/css/01-layout.css">
+  <link rel="stylesheet" href="assets/css/02-components.css">
+  <link rel="stylesheet" href="assets/css/03-screens.css">
+  <link rel="stylesheet" href="assets/css/04-system.css">
 </head>
 <body>
 
@@ -25,7 +29,7 @@
         <i data-lucide="zap" class="logo-icon"></i>
       </div>
       <div class="logo-text">
-        <span class="logo-name">LandingAI</span>
+        <span class="logo-name">AIGator</span>
         <span class="logo-sub">by Adsgator</span>
       </div>
     </div>
@@ -33,22 +37,21 @@
     <!-- Projeto ativo -->
     <div class="sidebar-section">
       <div class="sidebar-label">Projeto Ativo</div>
-      <button class="project-card" id="btn-open-projects" onclick="App.renderProjectsList(); App.openModal('modal-projects');" style="width:100%;">
+      <div class="project-card" id="btn-open-projects" onclick="App.renderProjectsList(); App.openModal('modal-projects');" style="cursor:pointer;">
         <i data-lucide="folder" class="project-card-icon"></i>
         <div class="project-card-info">
-          <!-- ID esperado pelo JS complementar: project-name -->
-          <!-- ID esperado pelo JS original: sidebar-project-name -->
           <span class="project-card-name" id="project-name">Novo Projeto</span>
           <span class="project-card-segment" id="project-segment">—</span>
         </div>
-        <i data-lucide="chevron-right" class="project-card-chevron"></i>
-      </button>
+        <button class="project-rename-btn" title="Renomear" onclick="event.stopPropagation(); App.openRenameModal();">
+          <i data-lucide="edit-3" style="width:14px;height:14px"></i>
+        </button>
+      </div>
+      
       <div class="project-score-row">
         <div class="project-score-bar">
-          <!-- ID: project-score-fill (complemento) -->
           <div class="project-score-fill" id="project-score-fill" style="width:0%"></div>
         </div>
-        <!-- ID: project-score-pct (complemento) -->
         <span class="project-score-pct" id="project-score-pct">0%</span>
       </div>
     </div>
@@ -288,6 +291,31 @@
       <button class="btn-ghost" onclick="App.closeModal('modal-art-result')">Revisar</button>
       <button class="btn-primary" id="btn-art-approve">
         <i data-lucide="check" style="width:16px;height:16px"></i> Aprovar Direção
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Renomear Projeto -->
+<div class="modal-overlay" id="modal-rename">
+  <div class="modal modal--sm">
+    <div class="modal-header">
+      <i data-lucide="edit-3" style="width:18px;height:18px;color:var(--accent2);"></i>
+      <span class="modal-title">Nome do Projeto</span>
+    </div>
+    <div class="modal-body" style="padding-top:8px">
+      <div class="field-group">
+        <label class="field-label">Nome do cliente ou projeto</label>
+        <input type="text" class="field-input" id="rename-input"
+          placeholder="Ex: Beatriz Mattos — Adestramento"
+          onkeydown="if(event.key==='Enter') App.saveProjectName()">
+        <span class="field-hint">Aparece no card da sidebar e no nome dos arquivos gerados.</span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="App.closeModal('modal-rename')">Cancelar</button>
+      <button class="btn-primary" onclick="App.saveProjectName()">
+        <i data-lucide="check" style="width:15px;height:15px"></i> Salvar
       </button>
     </div>
   </div>

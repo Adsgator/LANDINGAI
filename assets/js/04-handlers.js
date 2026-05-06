@@ -36,17 +36,44 @@ Object.assign(window.App, {
 
     // Sidebar footer
     document.getElementById('btn-new-project')?.addEventListener('click', () => {
-        this.createProject();
-        this.showToast('Novo projeto criado', 'success');
+      this.createProject();
+      this.showToast('Novo projeto criado', 'success');
     });
 
-    // Shortcuts
+    // Shortcuts and Global Keys
     document.addEventListener('keydown', e => {
-      if (e.ctrlKey && e.key === 's') { 
-          e.preventDefault(); 
-          this.saveStorage(); 
-          this.showToast('Salvo manualmente', 'success'); 
+      // Fechar modais com Escape
+      if (e.key === 'Escape') {
+        ['modal-projects', 'modal-api', 'modal-gen', 'modal-error', 'modal-preview', 'modal-rename', 'modal-art-result'].forEach(id => {
+          if (id !== 'modal-gen') this.closeModal(id); // gen não fecha com Esc
+        });
       }
+
+      // Ctrl/Cmd + S — Salvar manual
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        this.saveStorage();
+        this.showToast('Salvo manualmente', 'success');
+      }
+
+      // Ctrl/Cmd + → próximo step | ← anterior
+      if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowRight') {
+        e.preventDefault();
+        this.goNext();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'ArrowLeft') {
+        e.preventDefault();
+        this.goPrev();
+      }
+    });
+
+    // Fechar modal clicando no overlay
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay && overlay.id !== 'modal-gen') {
+          this.closeModal(overlay.id);
+        }
+      });
     });
   },
 
@@ -133,20 +160,21 @@ Object.assign(window.App, {
 
   goNext() {
     const { screen, currentStep } = this.state;
-    if (screen === 'intake') this.goToStep(1);
+    if (screen === 'intake') { this.goToStep(1); }
     else if (screen === 'step') {
       if (currentStep < STEPS.length) this.goToStep(currentStep + 1);
-      else this.goToScreen('art');
-    } else if (screen === 'art') this.goToScreen('structure');
-    else if (screen === 'structure') this.goToScreen('review');
-    else if (screen === 'review') this.showToast('Briefing concluído!', 'success');
+      else this.goToScreen('estrutura'); // Vai para estrutura antes da arte
+    }
+    else if (screen === 'estrutura') { this.goToScreen('art'); }
+    else if (screen === 'art') { this.goToScreen('review'); }
+    else if (screen === 'review') { this.showToast('Briefing pronto para geração!', 'success'); }
   },
 
   goPrev() {
     const { screen, currentStep } = this.state;
-    if (screen === 'review') this.goToScreen('structure');
-    else if (screen === 'structure') this.goToScreen('art');
-    else if (screen === 'art') this.goToStep(STEPS.length);
+    if (screen === 'review') { this.goToScreen('art'); }
+    else if (screen === 'art') { this.goToScreen('estrutura'); }
+    else if (screen === 'estrutura') { this.goToStep(STEPS.length); }
     else if (screen === 'step') {
       if (currentStep > 1) this.goToStep(currentStep - 1);
       else this.goToScreen('intake');

@@ -91,44 +91,102 @@ Object.assign(window.App, {
 
   calcGlobalScore() {
     if (!this.B) return 0;
-    const fields = Object.values(REQUIRED_FIELDS).flat();
-    const filled = fields.filter(f => !!this.B[f]).length;
-    return Math.round((filled / fields.length) * 100);
+    const weights = {
+      // Campos obrigatórios do briefing têm peso 1
+      ...Object.fromEntries(Object.values(REQUIRED_FIELDS).flat().map(f => [f, 1])),
+      // Novas aprovações têm peso maior
+      estrutura_aprovada: 4,
+      arte_ficha_aprovada: 3,
+    };
+    
+    const fields = Object.keys(weights);
+    let totalWeight = 0;
+    let currentScore = 0;
+    
+    fields.forEach(f => {
+      const weight = weights[f];
+      totalWeight += weight;
+      if (this.B[f]) currentScore += weight;
+    });
+    
+    return totalWeight > 0 ? Math.round((currentScore / totalWeight) * 100) : 0;
   },
 
   renderStepsNav() {
     const nav = document.getElementById('steps-nav');
     if (!nav) return;
 
-    nav.innerHTML = `
-      <div class="nav-item ${this.state.screen === 'intake' ? 'active' : ''}" onclick="App.goToScreen('intake')">
-        <i data-lucide="zap" class="nav-icon"></i>
-        <span>Intake IA</span>
-      </div>
-      ${STEPS.map(s => {
-        const isActive = this.state.screen === 'step' && this.state.currentStep === s.id;
-        const isDone = (REQUIRED_FIELDS[s.id] || []).every(f => !!this.B[f]);
-        return `
-          <div class="nav-item ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}" onclick="App.goToStep(${s.id})">
-            <i data-lucide="${s.icon}" class="nav-icon"></i>
-            <span>${s.label}</span>
-            ${isDone ? '<i data-lucide="check" class="nav-done-icon"></i>' : ''}
-          </div>
-        `;
-      }).join('')}
-      <div class="nav-item ${this.state.screen === 'art' ? 'active' : ''}" onclick="App.goToScreen('art')">
-        <i data-lucide="palette" class="nav-icon"></i>
-        <span>Direção de Arte</span>
-      </div>
-      <div class="nav-item ${this.state.screen === 'structure' ? 'active' : ''}" onclick="App.goToScreen('structure')">
-        <i data-lucide="layout" class="nav-icon"></i>
-        <span>Estrutura LP</span>
-      </div>
-      <div class="nav-item ${this.state.screen === 'review' ? 'active' : ''}" onclick="App.goToScreen('review')">
-        <i data-lucide="file-check" class="nav-icon"></i>
-        <span>Revisão Final</span>
-      </div>
+    nav.innerHTML = '';
+
+    // Intake IA
+    const intakeBtn = document.createElement('button');
+    intakeBtn.className = `steps-nav-item ${this.state.screen === 'intake' ? 'active' : ''} ${this.B.briefing_bruto ? 'visited' : ''}`;
+    intakeBtn.innerHTML = `
+      <i data-lucide="zap" class="steps-nav-icon"></i>
+      <span class="steps-nav-label">Intake IA</span>
     `;
+    intakeBtn.onclick = () => this.goToScreen('intake');
+    nav.appendChild(intakeBtn);
+
+    // Steps 1-8
+    STEPS.forEach(s => {
+      const isActive = this.state.screen === 'step' && this.state.currentStep === s.id;
+      const isDone = (REQUIRED_FIELDS[s.id] || []).every(f => !!this.B[f]);
+      const btn = document.createElement('button');
+      btn.className = `steps-nav-item ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`;
+      btn.innerHTML = `
+        <i data-lucide="${isDone && !isActive ? 'check-circle' : s.icon}" class="steps-nav-icon ${isDone && !isActive ? 'done' : ''}"></i>
+        <span class="steps-nav-label">${s.label}</span>
+      `;
+      btn.onclick = () => this.goToStep(s.id);
+      nav.appendChild(btn);
+    });
+
+    // Seção especial: Etapas Finais
+    const specialItems = [
+      {
+        key: 'estrutura',
+        icon: 'layout',
+        label: 'Estrutura da LP',
+        done: !!this.B.estrutura_aprovada,
+        active: this.state.screen === 'estrutura',
+      },
+      {
+        key: 'art',
+        icon: 'palette',
+        label: 'Direção de Arte',
+        done: !!this.B.arte_ficha_aprovada,
+        active: this.state.screen === 'art',
+      },
+      {
+        key: 'review',
+        icon: 'zap',
+        label: 'Revisão e Geração',
+        done: false,
+        active: this.state.screen === 'review',
+      },
+    ];
+
+    const specialLabel = document.createElement('div');
+    specialLabel.className = 'sidebar-label';
+    specialLabel.style.marginTop = '8px';
+    specialLabel.textContent = 'Etapas Finais';
+    nav.appendChild(specialLabel);
+
+    specialItems.forEach(item => {
+      const el = document.createElement('button');
+      el.className = `steps-nav-item steps-nav-special ${item.active ? 'active' : ''} ${item.done ? 'visited' : ''}`;
+      el.setAttribute('role', 'listitem');
+      el.innerHTML = `
+        <i data-lucide="${item.done && !item.active ? 'check-circle' : item.icon}"
+           class="steps-nav-icon ${item.done && !item.active ? 'done' : ''}"></i>
+        <span class="steps-nav-label">${item.label}</span>
+        ${item.done && !item.active ? '<i data-lucide="check" class="steps-nav-done" style="width:11px;height:11px;margin-left:auto;color:var(--accent)"></i>' : ''}
+      `;
+      el.onclick = () => this.goToScreen(item.key);
+      nav.appendChild(el);
+    });
+
     lucide.createIcons({ nodes: [nav] });
   },
 
@@ -175,6 +233,7 @@ Object.assign(window.App, {
       { id: 'gemini', label: 'Google Gemini', icon: 'zap', hint: 'Recomendado (Flash é grátis)' },
       { id: 'openrouter', label: 'OpenRouter', icon: 'globe', hint: 'Acesso a Claude, DeepSeek, Llama' },
       { id: 'claude', label: 'Anthropic Claude', icon: 'cpu', hint: 'Direto (requer proxy ou tier pago)' },
+      { id: 'xai', label: 'xAI (Grok)', icon: 'terminal', hint: 'Acesso direto ao Grok' },
     ];
 
     body.innerHTML = `
@@ -206,7 +265,7 @@ Object.assign(window.App, {
   },
 
   saveAllApiKeys() {
-    ['gemini', 'openrouter', 'claude'].forEach(p => {
+    ['gemini', 'openrouter', 'claude', 'xai'].forEach(p => {
       const val = document.getElementById(`api-key-${p}`)?.value;
       if (val !== undefined) this.saveApiKey(p, val);
     });
@@ -279,8 +338,14 @@ Object.assign(window.App, {
             <div class="project-list-meta">${p.briefing?.segmento || '—'} · ${date}</div>
           </div>
           <div class="project-list-actions" onclick="event.stopPropagation()">
+            <button class="project-list-action" onclick="App.state.activeId='${p.id}'; App.openRenameModal();" title="Renomear">
+              <i data-lucide="edit-3" style="width:13px;height:13px"></i>
+            </button>
             <button class="project-list-action" onclick="App.cloneProject('${p.id}')" title="Duplicar">
               <i data-lucide="copy" style="width:13px;height:13px"></i>
+            </button>
+            <button class="project-list-action" onclick="App.exportProject('${p.id}')" title="Exportar JSON">
+              <i data-lucide="download" style="width:13px;height:13px"></i>
             </button>
             <button class="project-list-action danger" onclick="App.deleteProject('${p.id}')" title="Excluir">
               <i data-lucide="trash-2" style="width:13px;height:13px"></i>
@@ -331,9 +396,21 @@ Object.assign(window.App, {
 
   aiLogDone() {
     const log = this.state.aiLog;
-    if (log.active !== null) log.done.push(log.active);
+    if (log.active !== null) {
+      log.done.push(log.active);
+      log.stepTimes[log.active + '_end'] = Date.now();
+    }
     log.active = null;
     this._renderAILog();
+  },
+
+  aiLogDelay(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  },
+
+  closeAILog() {
+    this.aiLogDone();
+    setTimeout(() => this.closeModal('modal-gen'), 800);
   },
 
   _renderAILog() {
@@ -347,36 +424,97 @@ Object.assign(window.App, {
       const isActive = log.active === s.id;
       const isDone = log.done.includes(s.id);
       const isError = log.errors.includes(s.id);
-      
-      const iconName = isActive ? 'loader-2' : isDone ? 'check-circle' : isError ? 'x-circle' : 'circle';
-      const stateClass = isActive ? 'log-step--active' : isDone ? 'log-step--done' : isError ? 'log-step--error' : 'log-step--wait';
+
+      let stepElapsed = '';
+      if (isDone && log.stepTimes[s.id + '_start'] && log.stepTimes[s.id + '_end']) {
+        const ms = log.stepTimes[s.id + '_end'] - log.stepTimes[s.id + '_start'];
+        stepElapsed = `<span class="log-step-time">${(ms / 1000).toFixed(1)}s</span>`;
+      }
+
+      const iconName = isActive ? 'loader-2'
+        : isDone ? 'check-circle'
+          : isError ? 'x-circle'
+            : 'circle';
+
+      const stateClass = isActive ? 'log-step--active'
+        : isDone ? 'log-step--done'
+          : isError ? 'log-step--error'
+            : 'log-step--wait';
 
       return `
         <div class="log-step ${stateClass}">
           <i data-lucide="${iconName}" class="log-step-icon ${isActive ? 'spin' : ''}"></i>
           <span class="log-step-label">${s.label}</span>
+          ${stepElapsed}
         </div>`;
     }).join('');
+
+    const liveSection = log.liveMsg ? `
+      <div class="log-live">
+        <span class="log-live-dot"></span>
+        <span class="log-live-msg">${log.liveMsg}</span>
+      </div>` : '';
+
+    const model = AI_MODELS[this.state.selectedModel];
 
     const modal = document.getElementById('modal-gen');
     if (!modal) return;
 
     modal.innerHTML = `
       <div class="modal modal--sm ai-log-modal">
-        <div class="modal-header">
-          <span class="modal-title">${log.title}</span>
-        </div>
-        <div class="modal-body">
-          <div class="log-progress-wrap">
-             <div class="log-progress-bar"><div class="log-progress-fill" style="width:${pct}%"></div></div>
-             <span class="log-progress-pct">${pct}%</span>
+        <div class="modal-header" style="border-bottom:none;padding-bottom:8px">
+          <div class="ai-log-header">
+            <div class="ai-log-title">
+              <i data-lucide="cpu" style="width:16px;height:16px;color:var(--accent2)"></i>
+              ${log.title}
+            </div>
+            <div class="ai-log-meta">
+              <span class="ai-log-model">${model?.label || '—'}</span>
+              <span class="ai-log-elapsed">${elapsed}s</span>
+            </div>
           </div>
-          <div class="log-steps-list">${stepRows}</div>
-          ${log.liveMsg ? `<div class="log-live"><span class="log-live-msg">${log.liveMsg}</span></div>` : ''}
-          <div class="log-footer-meta">Tempo decorrido: ${elapsed}s</div>
+        </div>
+        <div class="modal-body ai-log-body">
+          <div class="log-progress-wrap">
+            <div class="log-progress-bar">
+              <div class="log-progress-fill" style="width:${pct}%"></div>
+            </div>
+            <span class="log-progress-pct">${pct}%</span>
+          </div>
+          <div class="log-steps-list">
+            ${stepRows}
+          </div>
+          ${liveSection}
+          <p class="log-hint">
+            <i data-lucide="info" style="width:12px;height:12px"></i>
+            Isso pode levar 30–90 segundos dependendo do modelo.
+          </p>
         </div>
       </div>
     `;
     lucide.createIcons({ nodes: [modal] });
+  },
+
+  /* ── Projeto: Renomear ───────────────────────────────────────── */
+  openRenameModal() {
+    const p = this.P;
+    if (!p) return;
+    const input = document.getElementById('rename-input');
+    if (input) input.value = p.name || '';
+    this.openModal('modal-rename');
+    if (input) setTimeout(() => input.focus(), 100);
+  },
+
+  saveProjectName() {
+    const input = document.getElementById('rename-input');
+    if (!input || !this.P) return;
+    const newName = input.value.trim();
+    if (newName) {
+      this.P.name = newName;
+      this.autosave();
+      this.renderProjectsList();
+      this.closeModal('modal-rename');
+      this.showToast('Projeto renomeado', 'success');
+    }
   }
 });

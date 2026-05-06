@@ -47,9 +47,19 @@ Object.assign(window.App, {
     } catch (e) { console.error('Erro ao salvar localStorage:', e); }
   },
 
-  autosave() { 
-    this.saveStorage(); 
-    if (this.updateSidebar) this.updateSidebar(); 
+  autosave() {
+    this.saveStorage();
+    if (this.updateSidebar) this.updateSidebar();
+    // Flash visual do indicador de save
+    const el = document.getElementById('sidebar-save-indicator');
+    if (el) {
+      el.classList.remove('saved');
+      el.classList.add('saving');
+      setTimeout(() => {
+        el.classList.remove('saving');
+        el.classList.add('saved');
+      }, 600);
+    }
   },
 
   createProject(name = 'Novo Projeto') {
@@ -105,6 +115,58 @@ Object.assign(window.App, {
       else this.createProject();
     }
     this.autosave();
+  },
+
+  cloneProject(id) {
+    const src = this.state.projects[id];
+    if (!src) return;
+    const newId  = 'p_' + Date.now();
+    const clone  = JSON.parse(JSON.stringify(src));
+    clone.id     = newId;
+    clone.name   = (src.name || 'Projeto') + ' — Cópia';
+    clone.createdAt = new Date().toISOString();
+    clone.updatedAt = new Date().toISOString();
+    // Limpar aprovações para o clone começar limpo
+    delete clone.briefing.estrutura_aprovada;
+    delete clone.briefing.arte_ficha_aprovada;
+    this.state.projects[newId] = clone;
+    this.autosave();
+    if (this.renderProjectsList) this.renderProjectsList();
+    this.showToast(`"${clone.name}" criado.`, 'success');
+  },
+
+  exportProject(id) {
+    const p   = this.state.projects[id];
+    if (!p) return;
+    const json = JSON.stringify(p, null, 2);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = `projeto-${p.name?.replace(/\s+/g,'-') || id}.json`; a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  importProject(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const p  = JSON.parse(e.target.result);
+        if (!p.briefing) throw new Error('JSON inválido — sem campo briefing.');
+        const newId = 'p_' + Date.now();
+        p.id = newId;
+        p.name = (p.name || 'Projeto') + ' (importado)';
+        this.state.projects[newId] = p;
+        this.autosave();
+        if (this.renderProjectsList) this.renderProjectsList();
+        this.showToast('Projeto importado com sucesso.', 'success');
+      } catch (err) {
+        this.showToast('Erro ao importar: ' + err.message, 'error');
+      }
+      input.value = '';
+    };
+    reader.readAsText(file);
   },
 
   setField(field, value) {

@@ -87,35 +87,39 @@
     background: var(--bg-raised);
     border: 1px solid var(--border-default);
     border-radius: var(--r-md);
-    padding: 10px 12px;
+    padding: 12px 14px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     text-align: left;
-    transition: border-color var(--t-base), background var(--t-base);
+    transition: all var(--t-base);
+    box-shadow: var(--shadow-sm);
 }
 
 .project-card:hover {
     border-color: var(--border-strong);
     background: var(--bg-overlay);
+    transform: translateY(-1px);
 }
 
 .project-card-icon {
-    width: 16px;
-    height: 16px;
-    color: var(--accent);
+    width: 18px;
+    height: 18px;
+    color: var(--accent2);
     flex-shrink: 0;
 }
 
 .project-card-info {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
 }
 
 .project-card-name {
-    display: block;
     font-family: var(--font-body);
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
     color: var(--text-primary);
     white-space: nowrap;
@@ -124,7 +128,6 @@
 }
 
 .project-card-segment {
-    display: block;
     font-size: 11px;
     color: var(--text-secondary);
     white-space: nowrap;
@@ -132,11 +135,24 @@
     text-overflow: ellipsis;
 }
 
-.project-card-chevron {
-    width: 14px;
-    height: 14px;
+.project-rename-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--r-sm);
     color: var(--text-tertiary);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    transition: all var(--t-base);
     flex-shrink: 0;
+}
+
+.project-rename-btn:hover {
+    background: var(--bg-overlay);
+    color: var(--accent);
 }
 
 .project-score-row {
@@ -188,80 +204,71 @@
     gap: 2px;
 }
 
-.step-nav-item {
+.steps-nav-item {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
+    gap: 12px;
+    padding: 9px 14px;
+    margin: 1px 0;
     border-radius: var(--r-sm);
     font-size: 13px;
     color: var(--text-secondary);
-    transition: background var(--t-fast), color var(--t-fast);
+    transition: all var(--t-base);
     text-align: left;
+    background: transparent;
+    border: none;
+    cursor: pointer;
 }
 
-.step-nav-item:hover {
+.steps-nav-item:hover {
     background: var(--bg-overlay);
     color: var(--text-primary);
 }
 
-.step-nav-item.active {
+.steps-nav-item.active {
     background: var(--accent2-dim);
     color: var(--text-primary);
 }
 
-.step-nav-item.active .step-dot {
-    background: var(--accent2);
-    border-color: var(--accent2);
+.steps-nav-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+    transition: color var(--t-base);
 }
 
-.step-nav-item.done .step-dot {
-    background: var(--accent);
-    border-color: var(--accent);
+.steps-nav-item:hover .steps-nav-icon {
+    color: var(--text-secondary);
 }
 
-.step-nav-item.done .step-dot i {
-    display: none;
+.steps-nav-item.active .steps-nav-icon {
+    color: var(--accent2);
 }
 
-.step-nav-item.has-error .step-dot {
-    background: var(--danger-dim);
-    border-color: var(--danger);
+.steps-nav-item.done .steps-nav-icon,
+.steps-nav-icon.done {
+    color: var(--accent);
 }
 
-.step-nav-item.has-error .step-dot-inner {
-    color: var(--danger);
+.steps-nav-label {
+    flex: 1;
+    font-size: 12.5px;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.01em;
+}
+
+.steps-nav-done {
+    color: var(--accent);
+    flex-shrink: 0;
 }
 
 .step-dot {
-    width: 18px;
-    height: 18px;
-    border-radius: var(--r-pill);
-    border: 1.5px solid var(--border-default);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: all var(--t-base);
-}
-
-.step-dot-inner {
-    font-family: var(--font-mono);
-    font-size: 9px;
-    color: var(--text-tertiary);
-}
-
-.step-dot--art {
-    border-color: rgba(255, 179, 71, 0.35);
-    background: rgba(255, 179, 71, 0.08);
-    color: var(--warning);
-}
-
-.step-dot--review {
-    border-color: var(--accent-border);
-    background: var(--accent-dim);
-    color: var(--accent);
+    display: none;
 }
 
 .step-label {

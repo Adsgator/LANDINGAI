@@ -1,0 +1,78 @@
+# ============================================================
+# LandingAI v2 — Regras para Cline / AI Assistants
+# ============================================================
+
+# ── Projeto ───────────────────────────────────────────────────
+# Sistema interno Adsgator — assistente de briefing para
+# criação de landing pages. Single-page app (HTML + CSS + JS).
+# Sem framework, sem build step, sem backend.
+
+# ── Arquitetura dos arquivos ──────────────────────────────────
+# index.html     → Estrutura HTML estática (sidebar, topbar, modais)
+# assets/app.css → Design system completo (tokens, componentes, layout)
+# assets/app.js  → Lógica completa do app (state, rendering, API calls)
+# assets/app-patch.js → Constantes de compatibilidade (carregado ANTES do app.js)
+
+# ── REGRAS OBRIGATÓRIAS ──────────────────────────────────────
+
+# 1. NÃO MODIFIQUE sem instrução explícita:
+#    - Os design tokens CSS (:root { ... })
+#    - A constante STEPS[] e seu formato
+#    - A constante AI_MODELS{} e endpoints
+#    - A função defaultBriefing() e seus campos
+#    - A função defaultProject() e sua estrutura
+#    - As chaves de STORAGE_KEYS
+#
+# 2. IDs do HTML → JS:
+#    O HTML usa IDs específicos que o JS espera. Se renomear um
+#    id no HTML, atualize TODAS as referências no JS e vice-versa.
+#    IDs críticos que não podem ser removidos:
+#    - project-name, project-segment, project-score-fill, project-score-pct
+#    - topbar-title, topbar-subtitle, topbar-progress-fill
+#    - screen-content, steps-nav
+#    - sidebar-api-dot, sidebar-api-label, sidebar-save-indicator
+#    - btn-model-selector, btn-model-label, model-dropdown
+#    - btn-prev, btn-next, bottombar
+#    - Todos os modal-* IDs (modal-projects, modal-api, modal-gen, etc)
+#
+# 3. Fluxo de telas:
+#    intake → step(1-8) → art → review
+#    NÃO altere essa ordem sem permissão explícita.
+#
+# 4. Storage:
+#    Tudo persiste em localStorage com as chaves landingai_v3_*.
+#    NÃO mude os nomes das chaves — isso apagaria dados dos usuários.
+#
+# 5. Chamadas de API:
+#    Cada provider (gemini, claude, grok, mistral) tem seu handler
+#    específico (_callGemini, _callClaude, _callOpenAICompat).
+#    NÃO unifique em um handler genérico — cada API tem headers e
+#    formatos de resposta diferentes.
+#
+# 6. CSS:
+#    O design system é dark-mode-only com tokens em :root.
+#    NÃO adicione !important.
+#    NÃO use Tailwind classes — todo estilo é vanilla CSS.
+#    NÃO altere cores de --accent (verde Adsgator) nem --accent2 (azul).
+#
+# 7. Lucide Icons:
+#    Icons são renderizados via lucide.createIcons().
+#    Após inserir HTML dinâmico com <i data-lucide="...">, SEMPRE
+#    chame lucide.createIcons() no container.
+#
+# 8. Autosave:
+#    Toda alteração de campo chama autosave() com debounce de 1500ms.
+#    NÃO chame saveStorage() diretamente de handlers de input —
+#    sempre passe por autosave().
+
+# ── DIRETÓRIOS PROTEGIDOS ─────────────────────────────────────
+# docs/    → Especificações originais do sistema, NÃO editar
+# scratch/ → Scripts de debug temporários, NÃO committar
+
+# ── CONVENÇÕES ────────────────────────────────────────────────
+# Linguagem: pt-BR em toda interface e comentários
+# Encoding: UTF-8
+# Line endings: LF (normalizar para LF, não CRLF)
+# Indentação: 2 espaços
+# Strings JS: aspas simples (')
+# Template literals: backticks (`) para HTML dinâmico

@@ -25,8 +25,6 @@ Object.assign(window.App, {
     },
   },
 
-  },
-
   loadStorage() {
     try {
       const p = localStorage.getItem(STORAGE_KEYS.PROJECTS);

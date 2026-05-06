@@ -1,4 +1,4 @@
-# LandingAI v3 — Adsgator
+# LandingAI v2 — Adsgator
 
 Sistema interno de geração de Fichas de Implementação para projetos de landing page.
 
@@ -59,4 +59,4 @@ As chamadas de API vão diretamente do browser para o provider escolhido.
 
 ## Suporte
 
-Sistema interno Adsgator — v3.0.0
+Sistema interno Adsgator — v2.0.0

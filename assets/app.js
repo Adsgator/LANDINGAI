@@ -1,5 +1,5 @@
 /* ============================================================
-   LandingAI v3 — Aplicação Completa
+   LandingAI v2 — Aplicação Completa
    Adsgator · Sistema Interno
    ============================================================ */
 
@@ -8,10 +8,10 @@
 /* ── Constantes ─────────────────────────────────────────────── */
 
 /* ============================================================
-   LandingAI v3 — Constantes Globais
+   LandingAI v2 — Constantes Globais
    ============================================================ */
 
-const VERSION = '3.0.0';
+const VERSION = '2.0.0';
 
 /* ── Storage Keys ──────────────────────────────────────────── */
 const STORAGE_KEYS = {
@@ -2332,14 +2332,14 @@ title: ${B.nome_cliente} — Briefing e Direção
 date: ${now}
 tags: [adsgator, briefing, doc-1]
 status: pronto-para-ia
-gerado_por: LandingAI v3
+gerado_por: LandingAI v2
 modelo_ia: ${AI_MODELS[this.state.selectedModel]?.label || 'manual'}
 projeto: ${P?.slug || B.slug || ''}
 ---
 
 # ${B.nome_cliente} — Briefing e Direção
 
-> **Documento 1 — Adsgator (gerado pelo LandingAI v3)**
+> **Documento 1 — Adsgator (gerado pelo LandingAI v2)**
 > Envie este documento para a IA gerar a Ficha de Implementação completa.
 > Não edite — envie como está.
 
@@ -3095,7 +3095,7 @@ buildDoc1() {
 
     return `# ${B.nome_cliente || '[Nome do Cliente]'} — DOC-1 Briefing Completo
 
-> **Gerado pelo LandingAI v3 — Adsgator**
+> **Gerado pelo LandingAI v2 — Adsgator**
 > Data: ${dataAtual}
 > Modelo: ${AI_MODELS[this.state.selectedModel]?.label}
 > Slug: ${B.slug || '[slug]'}
@@ -3664,13 +3664,10 @@ renderScreen() {
         <div class="intake-hero">
           <div class="intake-badge">
             <i data-lucide="sparkles" style="width:12px;height:12px"></i>
-            LandingAI v3 — Adsgator
+            LandingAI v2 — Adsgator
           </div>
           <div class="intake-title">Cole o briefing.<br>A IA preenche tudo.</div>
-          <div class="intake-subtitle">
-            Cole o material bruto do cliente abaixo e o sistema preenche automaticamente
-            todos os 8 steps. Você revisa e ajusta — não digita do zero.
-          </div>
+
         </div>
 
         <div class="intake-box">

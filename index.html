@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LandingAI — Adsgator</title>
-  <meta name="description" content="LandingAI v3 — Assistente de briefing inteligente. A IA lê o material do cliente e preenche tudo automaticamente.">
+  <meta name="description" content="LandingAI v2 — Assistente de briefing inteligente. A IA lê o material do cliente e preenche tudo automaticamente.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -38,8 +38,8 @@
         <div class="project-card-info">
           <!-- ID esperado pelo JS complementar: project-name -->
           <!-- ID esperado pelo JS original: sidebar-project-name -->
-          <span class="project-card-name" id="project-name" data-alias="sidebar-project-name">Novo Projeto</span>
-          <span class="project-card-segment" id="project-segment" data-alias="sidebar-project-segment">—</span>
+          <span class="project-card-name" id="project-name">Novo Projeto</span>
+          <span class="project-card-segment" id="project-segment">—</span>
         </div>
         <i data-lucide="chevron-right" class="project-card-chevron"></i>
       </button>
@@ -184,7 +184,7 @@
 <div class="modal-overlay" id="modal-gen">
   <div class="modal modal--sm" style="text-align:center;">
     <div class="modal-header" style="justify-content:center;border-bottom:none;">
-      <span class="modal-title">Gerando Ficha de Implementação</span>
+      <span class="modal-title" id="modal-gen-title">Gerando Ficha de Implementação</span>
     </div>
     <div class="modal-body" style="align-items:center;">
       <div class="gen-model-badge" id="gen-model-badge"></div>
@@ -192,9 +192,9 @@
         <div class="gen-progress-bar">
           <div class="gen-progress-fill" id="gen-progress-fill" style="width:0%"></div>
         </div>
-        <span class="gen-progress-pct" id="gen-progress-text">0%</span>
+        <span class="gen-progress-pct" id="gen-progress-pct">0%</span>
       </div>
-      <div class="gen-steps-list" id="gen-status-list"></div>
+      <div class="gen-steps-list" id="gen-steps-list"></div>
       <p class="gen-hint">O processo pode levar 30–90 segundos dependendo do modelo e do briefing.</p>
     </div>
   </div>
@@ -214,17 +214,17 @@
     </div>
     <div class="modal-body">
       <p class="error-meta" id="error-meta"></p>
-      <div class="error-message" id="error-msg"></div>
-      <p class="error-cause" id="error-tip"></p>
+      <div class="error-message" id="error-message"></div>
+      <p class="error-cause" id="error-cause"></p>
       <div class="error-actions">
-        <button class="btn-primary btn-sm" id="btn-error-retry" onclick="App.generateDocImpl()">
+        <button class="btn-primary btn-sm" id="btn-retry" onclick="App.generateDocImpl()">
           <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Tentar Novamente
         </button>
-        <button class="btn-ghost btn-sm" id="btn-error-model"
+        <button class="btn-ghost btn-sm" id="btn-change-model"
           onclick="App.closeModal('modal-error'); document.getElementById('btn-model-selector').click();">
           <i data-lucide="cpu" style="width:14px;height:14px;"></i> Trocar Modelo
         </button>
-        <button class="btn-ghost btn-sm" id="btn-error-doc1" onclick="App.downloadDoc1()">
+        <button class="btn-ghost btn-sm" id="btn-download-doc1-fallback" onclick="App.downloadDoc1()">
           <i data-lucide="download" style="width:14px;height:14px;"></i> Baixar DOC-1
         </button>
       </div>
@@ -236,9 +236,9 @@
 <div class="modal-overlay" id="modal-preview">
   <div class="modal modal--preview" style="height:85dvh;display:flex;flex-direction:column;">
     <div class="modal-header">
-      <span class="modal-title">Preview — <span id="preview-title" style="color:var(--text-secondary);font-weight:400;"></span></span>
+      <span class="modal-title">Preview — <span id="preview-project-name" style="color:var(--text-secondary);font-weight:400;"></span></span>
       <div class="modal-header-actions">
-        <button class="btn-primary btn-sm" onclick="App.downloadDocImpl()">
+        <button class="btn-primary btn-sm" id="btn-download-preview">
           <i data-lucide="download" style="width:14px;height:14px;"></i> Baixar Preview
         </button>
         <button class="modal-close" onclick="App.closeModal('modal-preview')">
@@ -255,7 +255,7 @@
           <span class="preview-url-bar" id="preview-url-bar">preview.html</span>
         </div>
         <div class="preview-iframe-wrap">
-          <iframe id="preview-frame" class="preview-iframe"></iframe>
+          <iframe id="preview-iframe" class="preview-iframe"></iframe>
         </div>
       </div>
     </div>
@@ -264,7 +264,7 @@
       Preview simplificado — representa Hero + 3 seções + Footer. A implementação final será mais rica.
     </div>
     <div class="preview-actions">
-      <button class="btn-primary" onclick="App.downloadDocImpl()">
+      <button class="btn-primary" id="btn-download-docimpl">
         <i data-lucide="download" style="width:16px;height:16px;"></i> Baixar DOC-IMPL
       </button>
       <button class="btn-ghost" onclick="App.closeModal('modal-preview')">Fechar</button>
@@ -287,8 +287,8 @@
     <div class="modal-body" id="art-result-body" style="flex:1;overflow-y:auto;"></div>
     <div class="modal-footer" style="justify-content:flex-end;">
       <button class="btn-ghost" onclick="App.closeModal('modal-art-result')">Revisar</button>
-      <button class="btn-primary" onclick="App.approveArtDirection()">
-        <i data-lucide="check" style="width:16px;height:16px;"></i> Aprovar Direção
+      <button class="btn-primary" id="btn-art-approve">
+        <i data-lucide="check" style="width:16px;height:16px"></i> Aprovar Direção
       </button>
     </div>
   </div>

@@ -1360,6 +1360,466 @@ Este bloco é appendado no final de todo DOC-1. É uma cópia do template DOC-2,
 > ```
 > Sempre appendar ao final do DOC-1 gerado.
 
+## PARTE 3 — REGRAS FIXAS ADSGATOR
+
+> A PARTE 3 contém as Regras Fixas da Adsgator. Você não precisa alterar ou pensar sobre elas.
+> Utilize estas regras integralmente ao gerar o Doc 3. Não resuma e não invente regras novas.
+> Estas regras são aplicadas em 100% dos projetos.
+
+### Stack Técnica
+
+```
+NÚCLEO IMUTÁVEL
+───────────────
+Astro          → Framework base. Saída estática por padrão. Zero JS desnecessário.
+                 astro.config.mjs: output: 'static', site: 'https://[dominio].com.br'
+                 @astrojs/sitemap instalado e configurado.
+                 Exclui do sitemap: /links, /politica-de-privacidade, /termos-de-uso, /404
+
+Tailwind CSS   → Toda estilização. Tokens em tailwind.config.js.
+                 Sem style="" onde Tailwind resolve.
+                 Sem HEX hardcoded no código — sempre via token.
+
+Node.js        → Ambiente de build.
+
+Lenis          → Smooth scroll global.
+                 npm install @studio-freight/lenis
+                 Inicializado em <script is:inline> no Layout.astro.
+                 duration: 1.2 | easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
+                 Integrado ao GSAP: lenis.on('scroll', ScrollTrigger.update)
+                 gsap.ticker.add((time) => { lenis.raf(time * 1000) })
+                 gsap.ticker.lagSmoothing(0)
+
+ANALYTICS E MONITORAMENTO
+──────────────────────────
+Vercel Analytics   → npm install @vercel/analytics
+                     Import em Layout.astro: import { Analytics } from '@vercel/analytics/astro'
+                     Inserir <Analytics /> no Layout.astro após o conteúdo.
+                     Coleta pageviews e eventos automaticamente sem configuração extra.
+
+Vercel Speed Insights → npm install @vercel/speed-insights
+                     Import em Layout.astro: import { SpeedInsights } from '@vercel/speed-insights/astro'
+                     Inserir <SpeedInsights /> no Layout.astro.
+                     Monitora Web Vitals reais (LCP, CLS, FID) em produção.
+
+EXTENSÕES (apenas onde necessário)
+───────────────────────────────────
+React          → Somente para componentes com estado dinâmico real:
+                 MobileMenu.tsx, InstagramFeed.tsx (se ativo), ContactForm.tsx, CookieBanner.tsx
+                 Sempre com client:visible ou client:idle (nunca client:load sem justificativa)
+
+GSAP + ScrollTrigger → Animações de scroll e timelines.
+                 Direto em <script> dentro dos .astro — nunca via import em bundle React.
+                 gsap.registerPlugin(ScrollTrigger) obrigatório antes de qualquer uso.
+
+Framer Motion  → Dentro de islands React.
+                 Menu mobile fullscreen (AnimatePresence), hover em cards, CTA spring.
+
+Web3Forms        → Backend do formulário de contato (se formulário ativo).
+                 npm install web3forms
+                 Variável: FORMS_ACCESS_KEY no .env
+
+DEPLOY E INFRAESTRUTURA
+────────────────────────
+Target: Vercel — output: 'static' em astro.config.mjs
+Alternativa aceita: Netlify — mesma configuração
+
+GIT — OBRIGATÓRIO ANTES DE QUALQUER CÓDIGO
+────────────────────────────────────────────
+git init                           → inicializar repositório no primeiro passo do projeto
+.gitignore padrão Astro:           → node_modules/, dist/, .env
+Commit inicial:                    → "init: projeto Astro base" antes de qualquer código
+Repositório remoto:                → conectar ao GitHub ou GitLab antes do primeiro deploy
+CI/CD:                             → Vercel conecta ao repositório para deploy automático a cada push
+Convenção de branches:
+  main   → produção (deploy automático na Vercel)
+  dev    → desenvolvimento local
+
+ARQUIVOS OBRIGATÓRIOS
+──────────────────────
+public/robots.txt    → Permite: / | Proíbe: /links | Sitemap: https://[dominio]/sitemap-index.xml
+public/manifest.json → name, short_name, start_url "/", display "standalone",
+                       background_color e theme_color via tokens do projeto
+.env.example         → entregar com o projeto — todas as variáveis documentadas, sem valores reais
+                       Variáveis padrão:
+                         GTM_ID=GTM-XXXXXXX
+                         WHATSAPP_NUMBER=
+                         FORMS_ACCESS_KEY= (se formulário ativo)
+                         INSTAGRAM_TOKEN= (se feed ativo)
+                         GOOGLE_MAPS_API_KEY= (se mapa avançado ativo)
+```
+
+### Componentes Globais (criar isolados, sem repetição)
+
+```
+Componentes Astro obrigatórios:
+  Layout.astro          → Shell global. Contém: <head> com SEO, GTM snippet (is:inline),
+                          Consent Mode v2, Lenis init, GSAP, Vercel Analytics, Speed Insights,
+                          componente de menu, botão WhatsApp flutuante, rodapé.
+  Button.astro          → Props: label, href, variant (primary | secondary | ghost), tracking-id.
+                          Nunca escrever botão inline nas seções.
+  SectionHeader.astro   → Props: label (pequeno texto acima), title, subtitle.
+                          Usado em todas as seções que têm título + subtítulo.
+  FeatureCard.astro     → Props: icon, title, description. Usado em Diferenciais e Como Funciona.
+  TestimonialCard.astro → Props: name, role, text, avatar (opcional). Prova social.
+  ReviewCard.astro      → Props: name, rating, text, date. Avaliações Google.
+
+Componentes React (islands):
+  MobileMenu.tsx        → Fullscreen overlay com Framer Motion AnimatePresence.
+                          Props: links[], ctaLabel, ctaHref.
+  InstagramFeed.tsx     → Grid de posts. Props: username, token (env var).
+                          Sempre com ErrorBoundary — se API falhar, exibe placeholder neutro.
+  ContactForm.tsx       → Multi-step se aplicável. Props: whatsappFallback.
+                          ErrorBoundary: se falhar, exibe link direto para WhatsApp.
+  CookieBanner.tsx      → Banner LGPD + Google Consent Mode v2.
+                          Props: gtmId. client:idle. Estado via localStorage.
+```
+
+### Padrão de Assets
+
+```
+Localização: src/assets/images/[nome-do-arquivo].webp
+Convenção:
+  hero-principal.webp       → foto principal do profissional ou serviço
+  profissional-retrato.webp → foto para seção de diferenciais
+  servico-[numero].webp     → fotos de serviços específicos
+  depoimento-[nome].webp    → avatares de depoimentos
+  og-image.webp             → 1200x630px — compartilhamento social
+  favicon.svg               → SVG nativo, nunca PNG
+  avatar-links.webp         → 192x192px — foto para /links
+
+Componente de imagem: sempre <Image /> nativo do Astro
+  loading="eager"           → apenas hero-principal.webp
+  loading="lazy"            → todo o resto
+  width e height            → sempre definidos (evita layout shift)
+  format="webp"             → explícito
+
+Placeholders (quando asset não disponível):
+  Fundo: token bg-surface
+  Label descritivo: ex: "[Foto do profissional — 800x1000px]"
+  Nunca cor sólida genérica sem label
+```
+
+### Design de Viewport — Regra Adsgator
+
+```
+Filosofia:
+  O site não fica preso em um container central. Usar o viewport completo é uma decisão
+  de design, não um descuido. Containers são ferramentas de legibilidade — não prisões.
+
+Aplicação por tipo de bloco:
+  Hero:            full-bleed. Fundo vai de borda a borda. Texto e imagem no container interno.
+  Seções de fundo alternado: full-bleed com cor/textura própria — cria ritmo visual sem depender
+                   só de espaçamento entre seções.
+  Seções de texto: container centralizado (max-w-prose ou max-w-2xl) para legibilidade.
+  Seções de grid:  container mais largo (max-w-7xl) com padding lateral.
+  CTA Final:       full-bleed com cor de destaque — contraste máximo com o restante da página.
+  Footer:          full-bleed — nunca container estreito no footer.
+  Imagens heroicas: podem sangrar para fora do grid em desktop — quebrar o ritmo é intencional.
+
+Ritmo visual entre seções:
+  Alternar backgrounds (claro → levemente diferente → claro) cria profundidade sem divisórias.
+  Mínimo 3 variações de fundo ao longo da página: background, surface, e um tom de destaque.
+  Espaçamento vertical generoso: py-24 como mínimo em mobile, py-32 a py-40 em desktop.
+```
+
+### Performance e SEO Técnico
+
+```
+Preload de assets críticos (no <head> via Layout.astro):
+  <link rel="preconnect"> para domínio da fonte
+  <link rel="preload"> do woff2 da fonte principal com crossorigin="anonymous"
+  <link rel="preload"> da hero-principal.webp com fetchpriority="high" as="image"
+  Impacto direto no LCP — esses três itens sozinhos movem 0.5s–1.5s.
+
+Font loading — evitar FOIT:
+  font-display: swap obrigatório em toda @font-face.
+  Fontsource já inclui swap por padrão — confirmar que não está sendo sobrescrito.
+  Fallback stack explícito no tailwind.config.js:
+    fontFamily: { sans: ['NomeDaFonte', 'ui-sans-serif', 'system-ui', 'sans-serif'] }
+
+Canonical URL:
+  <link rel="canonical" href="https://[domínio]/[path]" />
+  Cada página recebe seu canonical absoluto via prop canonicalUrl no Layout.
+```
+
+### Sistema de Rastreamento
+
+```
+Google Tag Manager:
+  Snippet head: dentro do <head>, imediatamente após <meta charset>
+  Snippet body: imediatamente após abertura do <body>
+  Diretiva Astro: <script is:inline> — obrigatório. Nunca processar com bundler.
+  Componente: GTM.astro → recebe ID via prop. Usado dentro do Layout.astro.
+
+Conversões Google Ads — padrão Adsgator:
+  contato_wpp   → cliques em links WhatsApp
+  view_content  → pageview da landing page principal
+  view_links    → pageview da /links
+
+Data attributes obrigatórios em todos os CTAs:
+  id="btn-[local]"
+  data-tracking="[ação]-[destino]"
+  data-section="[nome-da-seção]"
+```
+
+### UX Obrigatório
+
+```
+Header Inteligente:
+  Sticky top-0 z-50
+  Esconde ao scrollar para baixo (GSAP translateY -100%, 0.3s ease-in-out)
+  Reaparece ao scrollar para cima
+  Fundo opaco ou backdrop-blur após 80px de scroll (transition 0.2s)
+  Sempre contém logo + CTA principal rastreado
+  Logo: link para #top, SVG nativo
+
+Menu Mobile — Padrão Alto Padrão Adsgator:
+  Acionado por botão hambúrguer com morphing animado (3 linhas → X, Framer Motion)
+  Fullscreen overlay com AnimatePresence
+  Fundo: cor da marca com opacidade alta ou dark overlay
+  Links: stagger 0.05s de delay, slide de baixo para cima
+  Tipografia: grande, impactante — não uma lista discreta
+  Elemento de destaque: número de telefone OU CTA em destaque no fundo do overlay
+  Fechar: clique fora, Escape ou botão X
+  Scroll do body bloqueado enquanto aberto (overflow-hidden no html)
+
+Botão WhatsApp flutuante:
+  Oculto no carregamento
+  Aparece após o Hero sair do viewport (IntersectionObserver)
+  Desaparece quando o footer entra no viewport
+  fixed bottom-6 right-6 (mobile) / bottom-8 right-8 (desktop)
+  Mínimo 56x56px, touch target 64x64px
+  Entrada: scale 0→1 + opacity 0→1, 0.3s ease-out
+  SVG nativo do WhatsApp (cor #25D366), sem biblioteca externa
+  data-tracking="click-whatsapp" data-section="floating-button"
+
+Smooth Scroll (Lenis):
+  Inicializar no Layout.astro via <script is:inline>
+  duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
+  Integrado ao GSAP: lenis.on('scroll', ScrollTrigger.update)
+  requestAnimationFrame loop padrão do Lenis
+
+Mobile First — Padrão Absoluto:
+  Design começa em 375px — não adapta para mobile, começa no mobile
+  Base para mobile, sobrescrever com sm: md: lg: xl:
+  Breakpoint principal para 2 colunas: xl: (1280px)
+  Texto nunca menor que 16px no mobile
+  Touch targets mínimo 44x44px
+  Padding lateral mobile mínimo px-5
+  Tap highlight removido: -webkit-tap-highlight-color: transparent
+  Hero: 100svh em mobile (usa svh, não vh — evita barra de endereço cortando)
+  Nenhuma seção com overflow horizontal — testar sempre em 375px
+
+Rodapé — Padrão de Excelência Adsgator:
+  O footer é a última impressão do site — tratado com o mesmo cuidado do Hero.
+
+  Estrutura obrigatória:
+    Logo da marca — mesma proporção do header, com respiro vertical
+    Tagline curta ou frase de encerramento — opcional mas poderosa quando usada
+    Links essenciais: Política de Privacidade + Termos de Uso (se houver) + redes sociais confirmadas
+    CNPJ do cliente (se fornecido no briefing)
+    Copyright: © {new Date().getFullYear()} [Nome do Cliente]. Todos os direitos reservados.
+    Logo da Adsgator: SVG com currentColor, discreto, com link para adsgator.com.br
+      Texto: "Desenvolvido por Adsgator" ou apenas o logo — IA decide com base no espaço
+
+  Design:
+    Não use o mesmo fundo da última seção — crie separação visual clara
+    Opções de fundo: cor primária escurecida / off-black / tom de destaque da paleta
+    Tipografia: hierarquia visual real — não uma lista plana de links
+    Espaçamento interno generoso: py-16 no mínimo
+    Links com hover sutil — opacity ou cor, não sublinhado óbvio
+    Ícones de redes sociais: tamanho mínimo 20px, monocromáticos, com aria-label
+
+  Mobile:
+    Coluna única, texto centralizado ou alinhado à esquerda (IA decide com base no tom)
+    Logo acima, links abaixo, Adsgator no final
+    Nenhum elemento cortado ou comprimido
+
+Card CTA Final (bloco antes do footer):
+  Posicionado imediatamente antes do footer, sempre
+  Maior contraste visual da página
+  Headline diferente do Hero — segundo ângulo de persuasão
+  Botão com id="btn-cta-final" e data-tracking rastreado
+```
+
+### Banner de Consentimento (LGPD + Google Consent Mode v2)
+
+```
+Componente: CookieBanner.tsx (island React, client:idle)
+Posição: fixed bottom-0 left-0 right-0, z-[9999]
+Aparece: apenas se não houver consentimento no localStorage
+  Chave: 'adsgator-consent' | Valor: 'granted' | 'denied'
+
+Comportamento:
+  Não bloqueia conteúdo — página carrega normalmente
+  Banner aparece após idle (client:idle) — não compete com LCP
+  Dois botões: "Aceitar" (primary) e "Recusar" (ghost)
+  Clicar em qualquer um fecha e registra a escolha
+
+Design:
+  Barra horizontal discreta — não modal, não fullscreen
+  Fundo: token bg-surface com backdrop-blur leve
+  Borda superior sutil: border-t border-border
+  Texto pequeno (text-sm), direto — sem juridiquês
+  Link para /politica-de-privacidade (target _blank)
+  Entrada: slide de baixo para cima, opacity 0→1, 0.3s ease-out (Framer Motion)
+  Saída: slide para baixo + opacity 0, 0.25s ease-in (AnimatePresence)
+
+Google Consent Mode v2 — integração com GTM:
+  Antes do snippet do GTM (via <script is:inline>):
+  gtag('consent', 'default', {
+    'ad_storage': 'denied',
+    'analytics_storage': 'denied',
+    'ad_user_data': 'denied',
+    'ad_personalization': 'denied',
+    'wait_for_update': 500
+  })
+  Ao aceitar: gtag('consent', 'update', { todos: 'granted' })
+  Ao recusar: manter 'denied' — não disparar update
+```
+
+### Sistema de Animação — Padrão Adsgator
+
+```
+Filosofia:
+  Animação tem função: revelar, guiar, confirmar. Nunca decorativa.
+  prefers-reduced-motion: todas as animações GSAP encapsuladas em
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {}
+
+Tokens GSAP:
+  Duração padrão entrada:   0.7s
+  Duração rápida (micro):   0.3s
+  Duração lenta (hero):     1.0s–1.4s
+  Easing entrada:           power2.out
+  Easing saída:             power2.in
+
+Triggers de entrada:
+  Hero:             timeline imediata (sem ScrollTrigger)
+                    stagger: H1 → subtítulo → CTA → imagem
+                    opacity: 0→1, y: 30→0, duração 1.0s, stagger 0.15s
+  Seções internas:  ScrollTrigger start="top 80%"
+                    opacity: 0→1, y: 40→0, duração 0.7s
+  Cards em grid:    ScrollTrigger + stagger 0.1s por card
+  CTA Final:        ScrollTrigger start="top 75%"
+                    scale: 0.96→1 + opacity: 0→1, duração 0.8s, power3.out
+
+Tokens Framer Motion (islands React):
+  Hambúrguer → X:   rotate + scale, 0.3s, spring stiffness 300 damping 20
+  Menu overlay:     opacity 0→1, 0.25s ease-out
+  Links do menu:    stagger 0.05s, y: 20→0 + opacity: 0→1
+  Hover em cards:   y: -4px, scale: 1.01, 0.2s ease-out
+  Hover em botões:  scale: 1.03, 0.15s spring
+```
+
+### Acessibilidade Mínima Obrigatória
+
+```
+Filosofia: acessibilidade é critério de Quality Score no Google Ads.
+Páginas com baixa acessibilidade têm CPC mais alto.
+
+Contraste: WCAG AA mínimo — ratio 4.5:1 para texto normal, 3:1 para texto grande
+Imagens: alt descritivo e específico. alt="" só em imagens puramente decorativas.
+Botões icon-only: aria-label obrigatório (WhatsApp flutuante, hambúrguer, fechar)
+Links externos: rel="noopener noreferrer"
+Focus: focus-visible em todos os elementos interativos — nunca outline:none sem substituto
+  Classes Tailwind: focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
+Menu mobile: focus trap enquanto aberto. Escape fecha.
+Semântica: <h1> única por página (no Hero). Hierarquia h1→h2→h3 — nunca pular nível.
+  <main>, <header>, <footer>, <nav>, <section> com roles corretos.
+Formulários: <label> associado via htmlFor/id. Mensagens de erro acessíveis via aria-describedby.
+```
+
+### Comportamento Responsivo por Tipo de Seção
+
+```
+Hero:
+  mobile:   coluna única, texto em cima, imagem embaixo ou background full-bleed
+  desktop:  2 colunas — texto (55%) | imagem (45%)
+
+Diferenciais / Features:
+  mobile:   1 coluna, cards empilhados
+  tablet:   2 colunas
+  desktop:  3 ou 4 colunas
+
+Como Funciona:
+  mobile:   vertical, numerado, com linha conectora
+  desktop:  horizontal com seta entre etapas, ou alternado esquerda/direita
+
+Prova Social:
+  mobile:   slider/carousel 1 item (Framer Motion drag)
+  desktop:  grid 2 ou 3 colunas
+
+Avaliações Google:
+  mobile:   horizontal scroll (overflow-x-auto, snap-mandatory)
+  desktop:  grid 3 colunas
+
+Feed Instagram:
+  mobile:   grid 2x3
+  desktop:  grid 3x2
+
+FAQ:
+  accordion, sempre 1 coluna, max-w-2xl centralizado
+
+Mapa:
+  mobile:   embed full width, 300px de altura
+  desktop:  60% width + info de endereço ao lado, 400px
+
+CTA Final:
+  mobile:   coluna única, headline grande, botão full width
+  desktop:  centralizado, max-w-3xl, botão não full width
+```
+
+### Integrações Técnicas
+
+```
+Google Maps:
+  Embed API (iframe) — sem chave para embed básico
+  Parâmetros: q=[endereço URL-encoded]&output=embed&z=16&language=pt-BR
+  Sempre incluir bloco de endereço textual ao lado ou abaixo
+
+Google Reviews:
+  Places API (chave fornecida pelo gestor) ou widget Elfsight
+  Exibir: foto, nome, nota em estrelas (SVG), texto, data relativa
+  Máximo: 6 desktop, 3 mobile. Nota geral + total de avaliações acima dos cards.
+
+Instagram Feed:
+  Island React (client:visible) — não bloqueia carregamento
+  Token: INSTAGRAM_TOKEN no .env — nunca hardcoded
+  ErrorBoundary: se falhar, exibe "Ver no Instagram →" linkado ao perfil
+
+Formulário de Contato:
+  Simples: Astro nativo com Resend
+  Multi-step: island React com Framer Motion AnimatePresence
+  Honeypot: campo oculto via CSS (position absolute left -9999px)
+  Submit: feedback inline — sem redirecionamento externo
+  ErrorBoundary: fallback para WhatsApp se submit falhar
+
+Links WhatsApp — formato canônico:
+  https://wa.me/[DDI+DDD+NÚMERO]?text=[MENSAGEM_URL_ENCODED]
+  Nunca api.whatsapp.com/send — sempre wa.me
+```
+
+### Schema.org — Dados Estruturados
+
+```
+Obrigatório em 100% dos projetos.
+Tipo base: LocalBusiness (ou subtipo específico do nicho).
+
+Subtipos por nicho:
+  Dentista: Dentist | Nutricionista: Nutritionist | Fisioterapeuta: MedicalBusiness
+  Advogado: LegalService | Psicólogo: MedicalBusiness | Salão/Estética: HealthAndBeautyBusiness
+  Outros: LocalBusiness como fallback
+
+Campos obrigatórios (JSON-LD no <head> via Layout.astro):
+  @context, @type, name, description, url, telephone, image, openingHours, sameAs
+  address e geo: apenas se atendimento presencial confirmado com endereço autorizado
+  aggregateRating: apenas se avaliações reais confirmadas no briefing — nunca inventar
+  priceRange: se valor fornecido no briefing
+
+Nunca inventar dados. Se o campo não foi fornecido, omiti-lo.
+```
+
 ---
 
 ## 12. APIS DE IA — ESPECIFICAÇÃO TÉCNICA

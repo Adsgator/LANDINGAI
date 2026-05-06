@@ -40,7 +40,7 @@
 #    NÃO altere essa ordem sem permissão explícita.
 #
 # 4. Storage:
-#    Tudo persiste em localStorage com as chaves landingai_v3_*.
+#    Tudo persiste em localStorage com as chaves landingai_v2_*.
 #    NÃO mude os nomes das chaves — isso apagaria dados dos usuários.
 #
 # 5. Chamadas de API:

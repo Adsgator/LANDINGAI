@@ -113,15 +113,15 @@
     <!-- Bottom bar -->
     <footer class="bottombar" id="bottombar">
       <div class="bottombar-inner">
-        <div class="bottombar-actions">
-          <button class="btn-ghost" id="btn-prev" onclick="App.goPrev()">
+        <div class="bottombar-actions" id="bottombar-actions-left">
+          <button class="btn-ghost" id="btn-prev">
             <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
             Anterior
           </button>
         </div>
-        <div class="bottombar-center"></div>
-        <div class="bottombar-actions">
-          <button class="btn-primary" id="btn-next" onclick="App.goNext()">
+        <div class="bottombar-center" id="bottombar-center"></div>
+        <div class="bottombar-actions" id="bottombar-actions">
+          <button class="btn-primary" id="btn-next">
             Próximo
             <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
           </button>
@@ -150,13 +150,12 @@
     </div>
     <div class="modal-body">
       <div class="modal-actions-row" style="margin-bottom:4px;">
-        <button class="btn-primary btn-sm" id="btn-new-project" onclick="App.createProject()">
+        <button class="btn-primary btn-sm" id="btn-new-project">
           <i data-lucide="plus" style="width:14px;height:14px;"></i> Novo Projeto
         </button>
         <label class="btn-ghost btn-sm" style="cursor:pointer;">
           <i data-lucide="upload" style="width:14px;height:14px;"></i> Importar
-          <input type="file" id="import-file-input" style="display:none;" accept=".json"
-            onchange="if(this.files[0]) App.importProject(this.files[0])">
+          <input type="file" id="import-file-input" style="display:none;" accept=".json">
         </label>
       </div>
       <div class="projects-list" id="projects-list"></div>
@@ -298,77 +297,7 @@
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <!-- Scripts -->
-<script src="https://unpkg.com/lucide@latest"></script>
-<!-- Patch: define constantes faltantes ANTES do app.js -->
-<script src="assets/app-patch.js"></script>
+<script src="https://unpkg.com/lucide@0.344.0"></script>
 <script src="assets/app.js"></script>
-<script>
-  // ── Patch de métodos faltantes no App ──────────────────────
-
-  // calcGlobalScore: alias de getGlobalScore (ambos existem em versões diferentes)
-  if (!App.calcGlobalScore) {
-    App.calcGlobalScore = function() {
-      if (this.getGlobalScore) return this.getGlobalScore();
-      let total = 0;
-      for (let s = 1; s <= 8; s++) total += (this.getStepScore ? this.getStepScore(s) : 0);
-      return Math.round(total / 8);
-    };
-  }
-
-  // renderBottombar: atualiza estado dos botões de navegação
-  if (!App.renderBottombar) {
-    App.renderBottombar = function() {
-      const prev = document.getElementById('btn-prev');
-      const next = document.getElementById('btn-next');
-      const { screen, currentStep } = this.state;
-
-      if (prev) {
-        prev.style.display = screen === 'intake' ? 'none' : '';
-      }
-      if (next) {
-        if (screen === 'review') {
-          next.style.display = 'none';
-        } else {
-          next.style.display = '';
-          if (screen === 'step') {
-            next.innerHTML = currentStep < 8
-              ? 'Próximo <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>'
-              : 'Direção de Arte <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>';
-          } else if (screen === 'intake') {
-            next.innerHTML = 'Começar <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>';
-          } else if (screen === 'art') {
-            next.innerHTML = 'Revisão Final <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>';
-          } else {
-            next.innerHTML = 'Próximo <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>';
-          }
-          lucide.createIcons({ nodes: [next] });
-        }
-      }
-    };
-  }
-
-  // progress-fill: alias para topbar-progress-fill (updateTopbarScore usa 'progress-fill')
-  // Redireciona getElementById para os IDs corretos via Proxy não é possível,
-  // então criamos um observer que sincroniza os estilos
-  const _origUpdateTopbarScore = App.updateTopbarScore?.bind(App);
-  if (_origUpdateTopbarScore) {
-    App.updateTopbarScore = function() {
-      _origUpdateTopbarScore();
-      // Sincroniza topbar-progress-fill com project-score-fill se necessário
-      const pf = document.getElementById('progress-fill');
-      const tf = document.getElementById('topbar-progress-fill');
-      if (pf && tf) tf.style.width = pf.style.width;
-    };
-  }
-
-  // Fechar modal ao clicar no overlay (exceto modal-gen que é bloqueante)
-  document.querySelectorAll('.modal-overlay').forEach(overlay => {
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay && overlay.id !== 'modal-gen') {
-        App.closeModal(overlay.id);
-      }
-    });
-  });
-</script>
 </body>
 </html>

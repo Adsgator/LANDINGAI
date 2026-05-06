@@ -1,5 +1,5 @@
 /* ============================================================
-   LandingAI v2 — Aplicação Completa
+   LandingAI v2 — Aplicação Completa (Consolidada)
    Adsgator · Sistema Interno
    ============================================================ */
 
@@ -7,737 +7,226 @@
 
 /* ── Constantes ─────────────────────────────────────────────── */
 
-/* ============================================================
-   LandingAI v2 — Constantes Globais
-   ============================================================ */
-
 const VERSION = '2.0.0';
 
-/* ── Storage Keys ──────────────────────────────────────────── */
 const STORAGE_KEYS = {
-  PROJECTS: 'landingai_v3_projects',
-  ACTIVE:   'landingai_v3_active',
-  API_KEYS: 'landingai_v3_apikeys',
-  SETTINGS: 'landingai_v3_settings',
+  PROJECTS: 'landingai_v2_projects',
+  ACTIVE:   'landingai_v2_active',
+  API_KEYS: 'landingai_v2_apikeys',
+  SETTINGS: 'landingai_v2_settings',
 };
 
-const STORAGE_LIMIT_BYTES = 4 * 1024 * 1024; // 4MB warning threshold
+const STORAGE_LIMIT_BYTES = 4 * 1024 * 1024; // 4MB
 
-/* ── Modelos de IA ─────────────────────────────────────────── */
 const AI_MODELS = {
-  'gemini-2.5-pro': {
-    label:    'Gemini 2.5 Pro',
-    provider: 'gemini',
-    tier:     'paid',
-    group:    'Google',
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
-    maxTokens: 16000,
-    temp:      0.65,
-  },
   'gemini-2.5-flash': {
-    label:    'Gemini 2.5 Flash',
-    provider: 'gemini',
-    tier:     'free',
-    group:    'Google',
+    id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash',
+    provider: 'gemini', group: 'Google', tier: 'free',
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
-    maxTokens: 12000,
-    temp:      0.70,
+    maxTokens: 12000, temp: 0.7,
   },
-  'claude-sonnet-4-20250514': {
-    label:    'Claude Sonnet 4',
-    provider: 'claude',
-    tier:     'paid',
-    group:    'Anthropic',
-    endpoint: 'https://api.anthropic.com/v1/messages',
-    maxTokens: 16000,
-    temp:      0.65,
+  'gemini-2.5-pro': {
+    id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro',
+    provider: 'gemini', group: 'Google', tier: 'paid',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+    maxTokens: 16000, temp: 0.65,
   },
-  'claude-haiku-4-5-20251001': {
-    label:    'Claude Haiku 4.5',
-    provider: 'claude',
-    tier:     'free',
-    group:    'Anthropic',
+  'claude-sonnet-4': {
+    id: 'claude-sonnet-4', label: 'Claude Sonnet 4',
+    provider: 'claude', group: 'Anthropic', tier: 'paid',
     endpoint: 'https://api.anthropic.com/v1/messages',
-    maxTokens: 8000,
-    temp:      0.70,
+    maxTokens: 16000, temp: 0.65,
+  },
+  'claude-opus-4': {
+    id: 'claude-opus-4', label: 'Claude Opus 4',
+    provider: 'claude', group: 'Anthropic', tier: 'paid',
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    maxTokens: 16000, temp: 0.65,
   },
   'grok-3': {
-    label:    'Grok 3',
-    provider: 'grok',
-    tier:     'paid',
-    group:    'xAI',
+    id: 'grok-3', label: 'Grok 3',
+    provider: 'grok', group: 'xAI', tier: 'paid',
     endpoint: 'https://api.x.ai/v1/chat/completions',
-    maxTokens: 12000,
-    temp:      0.65,
+    maxTokens: 12000, temp: 0.65,
   },
-  'mistral-large-latest': {
-    label:    'Mistral Large',
-    provider: 'mistral',
-    tier:     'paid',
-    group:    'Mistral',
+  'mistral-large': {
+    id: 'mistral-large', label: 'Mistral Large',
+    provider: 'mistral', group: 'Mistral', tier: 'paid',
     endpoint: 'https://api.mistral.ai/v1/chat/completions',
-    maxTokens: 12000,
-    temp:      0.65,
+    maxTokens: 12000, temp: 0.65,
   },
 };
 
-/* ── Steps ─────────────────────────────────────────────────── */
 const STEPS = [
-  { id: 1, label: 'Identificação',        icon: 'user',          fields: ['nome_cliente','segmento','tipo','whatsapp','email','horarios','gtm_id','objetivo_conversao'] },
-  { id: 2, label: 'Contato e Redes',      icon: 'share-2',       fields: ['instagram','tiktok','youtube','outras_redes','integracoes'] },
-  { id: 3, label: 'Atendimento',          icon: 'map-pin',       fields: ['modalidade','endereco','exibir_localizacao','cidades_atendimento','plataforma_online'] },
-  { id: 4, label: 'Serviços e Preço',     icon: 'briefcase',     fields: ['servico_principal','servicos_descricao','preco_exibir'] },
-  { id: 5, label: 'Preço',               icon: 'tag',           fields: ['preco_exibir'] },
-  { id: 6, label: 'Público-Alvo',         icon: 'target',        fields: ['publico_primario','publico_dor','publico_resultado'] },
-  { id: 7, label: 'Diferenciais',         icon: 'star',          fields: ['diferencial','frase_impacto','depoimentos','google_business'] },
-  { id: 8, label: 'Tom e Identidade',     icon: 'palette',       fields: ['estilo_desejado','sensacao_visitante','vocabulario_usa','vocabulario_nunca'] },
+  { id: 1, label: 'Identificação',    sub: 'Nome, nicho e tipo de projeto', icon: 'user' },
+  { id: 2, label: 'Contato e Redes', sub: 'WhatsApp, e-mail e redes',      icon: 'share-2' },
+  { id: 3, label: 'Localização',      sub: 'Endereço e modalidade',         icon: 'map-pin' },
+  { id: 4, label: 'Serviço Principal',sub: 'O que é vendido',              icon: 'briefcase' },
+  { id: 5, label: 'Lista de Serviços',sub: 'Detalhes e preços',            icon: 'tag' },
+  { id: 6, label: 'Público-Alvo',     sub: 'Perfil e dores do cliente',     icon: 'target' },
+  { id: 7, label: 'Diferenciais',     sub: 'Autoridade e prova social',     icon: 'star' },
+  { id: 8, label: 'Tom e Identidade', sub: 'Estilo e vocabulário',         icon: 'palette' },
 ];
 
-/* ── Validações ────────────────────────────────────────────── */
 const REQUIRED_FIELDS = {
-  1: ['nome_cliente','segmento','tipo','whatsapp','objetivo_conversao'],
-  2: [],
+  1: ['nome_cliente', 'segmento', 'tipo'],
+  2: ['whatsapp'],
   3: ['modalidade'],
-  4: ['servico_principal','servicos_descricao','preco_exibir'],
-  5: [],
-  6: ['publico_primario','publico_dor','publico_resultado'],
-  7: ['diferencial','frase_impacto','depoimentos','google_business'],
-  8: ['estilo_desejado','sensacao_visitante'],
+  4: ['servico_principal'],
+  5: ['servicos_descricao'],
+  6: ['publico_primario', 'publico_dor'],
+  7: ['diferencial', 'frase_impacto'],
+  8: ['estilo_desejado', 'sensacao_visitante'],
 };
 
 const FIELD_WARNINGS = {
-  publico_primario: { min: 80,  msg: 'Muito curto — quanto mais específico, melhor a copy gerada.' },
-  publico_dor:      { min: 60,  msg: 'Descreva a dor com as palavras do cliente, não termos técnicos.' },
-  servicos_descricao:{ min: 100, msg: 'Pouco detalhe — a copy ficará genérica com menos de 100 caracteres.' },
-  diferencial:      { min: 80,  msg: 'Evite qualidade/excelência — cite fatos concretos e específicos.' },
+  publico_primario: { min: 60,  msg: 'Muito curto — detalhe melhor o perfil do cliente ideal.' },
+  publico_dor:      { min: 50,  msg: 'Pouco detalhe sobre a dor — use as palavras do cliente.' },
+  servicos_descricao:{ min: 80,  msg: 'Descreva melhor os serviços para uma copy mais rica.' },
+  diferencial:      { min: 60,  msg: 'Seja mais específico sobre o que te diferencia.' },
 };
 
-/* ── Mapa de erros de API ──────────────────────────────────── */
-const ERROR_MAP = {
-  '429': {
-    cause: 'Limite de requisições da API atingido (rate limit).',
-    tip:   'Aguarde 30 segundos e tente novamente, ou troque de modelo.',
-  },
-  'quota': {
-    cause: 'Cota da API esgotada para hoje.',
-    tip:   'Use outro modelo ou aguarde a renovação da cota.',
-  },
-  '401': {
-    cause: 'API Key inválida ou sem permissão.',
-    tip:   'Verifique a chave em Config. API e tente novamente.',
-  },
-  '403': {
-    cause: 'Acesso negado — API Key sem permissão para este modelo.',
-    tip:   'Verifique o plano e permissões da sua API Key.',
-  },
-  '500': {
-    cause: 'Erro interno no servidor da IA.',
-    tip:   'Aguarde alguns segundos e tente novamente.',
-  },
-  'response too short': {
-    cause: 'A IA retornou uma resposta muito curta ou incompleta.',
-    tip:   'Tente com Gemini 2.5 Pro ou aumente o detalhamento do briefing.',
-  },
-  'failed to fetch': {
-    cause: 'Sem conexão com a internet ou CORS bloqueado.',
-    tip:   'Verifique sua conexão. Se persistir, tente em outro navegador.',
-  },
-  'no key': {
-    cause: 'Nenhuma API Key configurada para o modelo selecionado.',
-    tip:   'Abra Config. API e insira a chave do provedor.',
-  },
+const FIELD_TOOLTIPS = {
+  nome_cliente:         'Nome completo como aparecerá no site. Ex: "Beatriz Mattos".',
+  segmento:             'Área de atuação detalhada. Ex: "Adestramento comportamental".',
+  whatsapp:             'Dígitos com DDD. Ex: 5511999999999.',
+  gtm_id:               'ID do Google Tag Manager. Ex: GTM-XXXXXXX.',
+  servico_principal:    'O foco da campanha. Uma linha que define a H1.',
+  publico_dor:          'O problema real que faz o cliente te procurar.',
+  frase_impacto:        'Frase curta que resume a essência do seu serviço.',
+  estilo_desejado:      'Ex: Sóbrio, técnico e confiante.',
+  briefing_bruto:       'Cole aqui o material bruto enviado pelo cliente.',
 };
 
-function defaultBriefing() {
-  return {
-    nome_cliente: '', nome_marca: '', slug: '', segmento: '', tipo: '',
-    whatsapp: '', email: '', horarios: '', gtm_id: '',
-    instagram: '', tiktok: '', youtube: '', outras_redes: '',
-    modalidade: '', endereco: '', exibir_localizacao: '', cidades_atendimento: '', plataforma_online: '',
-    servicos_lista: '', servicos_descricao: '', servico_principal: '', objetivo_conversao: '', objetivo_outro: '',
-    preco_exibir: '', preco_valor: '', preco_condicao: '', oferta_especial: '',
-    publico_primario: '', publico_dor: '', publico_resultado: '', publico_secundario: '', faq: '',
-    diferencial: '', historia: '', frase_impacto: '',
-    depoimentos: '', depoimentos_formato: [], depoimentos_qtd: '',
-    google_business: '', google_nota: '', google_qtd: '', casos_resultados: '',
-    estilo_desejado: '', sensacao_visitante: '', restricoes: '', frase_tom: '',
-    vocabulario_usa: '', vocabulario_nunca: '', briefing_bruto: '',
-    instrucoes_adicionais: '',
-    // Preenchidos na tela de arte (não nos steps)
-    arte_referencias_pessoais: [], // [{link, gostei, adaptar}]
-    arte_referencias_nicho: [],    // [{link, gostei, adaptar}]
-    arte_cor_principal: '', arte_cor_secundaria: '',
-    arte_logo: '', arte_fotos: '', arte_outros_assets: '',
-    arte_tema: '', arte_intensidade: '', arte_menu_mobile: '',
-    arte_footer_tom: '', arte_o_que_nao_quero: '', arte_referencia_marca: '',
-    arte_ficha_aprovada: '', // JSON string da ficha aprovada
-    // Meta
-    dominio: '', cnpj: '', aviso_legal: '',
-    integracoes: [], // ['maps','reviews','instagram','formulario','whatsapp','ligacao']
-  };
-}
+const REGRAS_FIXAS_ADSGATOR = `
+1. DESIGN EDITORIAL E PREMIUM: A Landing Page deve ter um visual de "Direção de Arte". Use layouts assimétricos e tipografia com personalidade.
+2. MOBILE FIRST REAL: O design deve ser concebido para 375px primeiro.
+3. SEM PLACEHOLDERS: Todo o texto deve ser final e persuasivo.
+4. TOKENS E DESIGN SYSTEM: Escala tipográfica clara e paleta harmoniosa.
+5. CONVERSÃO ESTRATÉGICA: CTA principal sempre visível ou acessível.
+`;
 
-function defaultProject(name) {
-  return {
-    id: crypto.randomUUID(),
-    name: name || 'Novo Projeto',
-    slug: '',
-    status: 'rascunho',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    visitedSteps: [],
-    briefing: defaultBriefing(),
-    versions: [],
-  };
-}
-
-/* ── App Object ─────────────────────────────────────────────── */
+const PROMPT_AUDITORIA = `
+Analise a implementação atual contra os seguintes critérios:
+- A hierarquia visual respeita a importância dos serviços?
+- O tom de voz está consistente com a personalidade da marca?
+- O design mobile mantém a elegância da versão desktop?
+`;
 
 const App = {
-
-  /* ── Estado ──────────────────────────────────────────── */
   state: {
-    screen: 'intake',       // 'intake' | 'step' | 'art' | 'review'
-    currentStep: 1,
     projects: {},
     activeId: null,
-    apiKeys: { gemini: '', claude: '', grok: '', mistral: '' },
+    screen: 'intake',
+    currentStep: 1,
     selectedModel: 'gemini-2.5-flash',
+    apiKeys: {},
+    intakeFiles: [],
     isGenerating: false,
-    lastError: null,
-    lastDocImpl: '',
-    lastDoc1: '',
     artAnalyzed: false,
-    intakeFiles: [],         // File[] de upload no intake
-    artFiles: [],            // File[] de upload na arte
-    notifPermission: 'default',
   },
 
-  /* ── Alias ───────────────────────────────────────────── */
-  get B() { return this.state.projects[this.state.activeId]?.briefing || defaultBriefing(); },
-  get P() { return this.state.projects[this.state.activeId] || null; },
+  get P() { return this.state.projects[this.state.activeId]; },
+  get B() { return this.P ? this.P.briefing : {}; },
 
-  /* ─────────────────────────────────────────────────────
-     INIT
-  ───────────────────────────────────────────────────── */
   init() {
     this.loadStorage();
-    this.requestNotificationPermission();
-    this.renderApp();
+    if (!this.state.activeId || !this.P) this.createProject('Projeto Inicial');
     this.setupGlobalEvents();
-    lucide.createIcons();
-    this.updateSidebar();
-    this.updateTopbar();
-    this.renderScreen();
-    this.checkStorageUsage();
+    this.renderAll();
   },
 
-  renderApp() {
-    // Render estático do HTML já está no index.html
-    // Apenas monta as partes dinâmicas
-    this.renderStepsNav();
-    this.renderModelDropdown();
-    this.renderApiModal();
-  },
-
-  /* ─────────────────────────────────────────────────────
-     STORAGE
-  ───────────────────────────────────────────────────── */
   loadStorage() {
     try {
-      const projects = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROJECTS) || '{}');
-      const activeId = localStorage.getItem(STORAGE_KEYS.ACTIVE);
-      const apiKeys  = JSON.parse(localStorage.getItem(STORAGE_KEYS.API_KEYS) || '{}');
-      const settings = JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS) || '{}');
-
-      this.state.projects = projects;
-      this.state.apiKeys = { gemini: '', claude: '', grok: '', mistral: '', ...apiKeys };
-      this.state.selectedModel = settings.selectedModel || 'gemini-2.5-flash';
-
-      // Verifica se activeId existe
-      if (activeId && projects[activeId]) {
-        this.state.activeId = activeId;
-      } else {
-        // Cria projeto padrão
-        const p = defaultProject('Novo Projeto');
-        this.state.projects[p.id] = p;
-        this.state.activeId = p.id;
-        this.saveStorage();
-      }
-    } catch (e) {
-      console.error('[LandingAI] loadStorage erro:', e);
-      const p = defaultProject('Novo Projeto');
-      this.state.projects = { [p.id]: p };
-      this.state.activeId = p.id;
-    }
+      const p = localStorage.getItem(STORAGE_KEYS.PROJECTS);
+      const a = localStorage.getItem(STORAGE_KEYS.ACTIVE);
+      const k = localStorage.getItem(STORAGE_KEYS.API_KEYS);
+      if (p) this.state.projects = JSON.parse(p);
+      if (a) this.state.activeId = a;
+      if (k) this.state.apiKeys = JSON.parse(k);
+    } catch (e) {}
   },
 
   saveStorage() {
     try {
-      if (this.P) {
-        this.P.updatedAt = new Date().toISOString();
-      }
       localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(this.state.projects));
-      localStorage.setItem(STORAGE_KEYS.ACTIVE, this.state.activeId);
+      localStorage.setItem(STORAGE_KEYS.ACTIVE, this.state.activeId || '');
       localStorage.setItem(STORAGE_KEYS.API_KEYS, JSON.stringify(this.state.apiKeys));
-      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ selectedModel: this.state.selectedModel }));
-    } catch (e) {
-      if (e.name === 'QuotaExceededError') {
-        this.showToast('⚠ Armazenamento cheio — delete versões antigas para continuar.', 'warning');
-      } else {
-        console.error('[LandingAI] saveStorage erro:', e);
-      }
-    }
+    } catch (e) {}
   },
 
-  checkStorageUsage() {
-    let total = 0;
-    for (const k of Object.values(STORAGE_KEYS)) {
-      const v = localStorage.getItem(k) || '';
-      total += new Blob([v]).size;
-    }
-    if (total > STORAGE_LIMIT_BYTES) {
-      this.showToast(`⚠ Armazenamento em ${Math.round(total/1024)}KB — próximo do limite.`, 'warning');
-    }
-  },
+  autosave() { this.saveStorage(); this.updateSidebar(); },
 
-  autosave() {
-    clearTimeout(this._saveTimer);
-    this.showSaving();
-    this._saveTimer = setTimeout(() => {
-      this.saveStorage();
-      this.showSaved();
-      this.updateSidebar();
-    }, 1500);
-  },
-
-  showSaving() {
-    const el = document.getElementById('sidebar-save-indicator');
-    if (!el) return;
-    el.className = 'save-indicator saving';
-    el.querySelector('span').textContent = 'Salvando...';
-  },
-
-  showSaved() {
-    const el = document.getElementById('sidebar-save-indicator');
-    if (!el) return;
-    el.className = 'save-indicator saved';
-    el.querySelector('span').textContent = 'Salvo';
-  },
-
-  /* ─────────────────────────────────────────────────────
-     PROJETOS
-  ───────────────────────────────────────────────────── */
-  createProject() {
-    const p = defaultProject('Novo Projeto');
-    this.state.projects[p.id] = p;
-    this.state.activeId = p.id;
+  createProject(name = 'Novo Projeto') {
+    const id = 'p_' + Date.now();
+    this.state.projects[id] = {
+      id, name, slug: name.toLowerCase().replace(/\s+/g, '-'),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      visitedSteps: [],
+      briefing: { integracoes: ['whatsapp'], depoimentos_formato: [], arte_referencias_pessoais: [], arte_referencias_nicho: [] }
+    };
+    this.state.activeId = id;
     this.state.screen = 'intake';
-    this.state.currentStep = 1;
-    this.saveStorage();
-    this.closeModal('modal-projects');
-    this.updateSidebar();
-    this.renderScreen();
-    this.showToast('Projeto criado', 'success');
+    this.autosave();
+    this.renderAll();
   },
 
   loadProject(id) {
     if (!this.state.projects[id]) return;
     this.state.activeId = id;
     this.state.screen = 'intake';
-    this.state.currentStep = 1;
-    this.saveStorage();
+    this.renderAll();
     this.closeModal('modal-projects');
-    this.updateSidebar();
-    this.renderScreen();
-  },
-
-  cloneProject(id) {
-    const src = this.state.projects[id];
-    if (!src) return;
-    const clone = JSON.parse(JSON.stringify(src));
-    clone.id = crypto.randomUUID();
-    clone.name = src.name + ' (cópia)';
-    clone.status = 'rascunho';
-    clone.createdAt = new Date().toISOString();
-    clone.updatedAt = new Date().toISOString();
-    clone.versions = [];
-    this.state.projects[clone.id] = clone;
-    this.saveStorage();
-    this.renderProjectsList();
-    this.showToast('Projeto clonado', 'success');
   },
 
   deleteProject(id) {
-    if (!this.state.projects[id]) return;
-    if (!confirm(`Excluir "${this.state.projects[id].name}"? Esta ação não pode ser desfeita.`)) return;
+    if (!confirm('Excluir projeto?')) return;
     delete this.state.projects[id];
-
-    // Se era o ativo, seleciona outro
     if (this.state.activeId === id) {
-      const ids = Object.keys(this.state.projects);
-      if (ids.length === 0) {
-        const p = defaultProject('Novo Projeto');
-        this.state.projects[p.id] = p;
-        this.state.activeId = p.id;
-      } else {
-        this.state.activeId = ids[0];
-      }
+      const remaining = Object.keys(this.state.projects);
+      if (remaining.length > 0) this.loadProject(remaining[0]);
+      else this.createProject();
     }
-    this.saveStorage();
+    this.autosave();
     this.renderProjectsList();
-    this.updateSidebar();
   },
 
-  renameProject(id, name) {
-    if (!this.state.projects[id]) return;
-    this.state.projects[id].name = name;
-    this.saveStorage();
-    this.updateSidebar();
-  },
-
-  exportProject() {
-    if (!this.P) return;
-    const data = JSON.stringify(this.P, null, 2);
-    this.downloadText(data, `projeto-${this.P.slug || 'landingai'}.json`, 'application/json');
-    this.showToast('Projeto exportado', 'success');
-  },
-
-  importProject(file) {
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const p = JSON.parse(e.target.result);
-        if (!p.id || !p.briefing) throw new Error('Arquivo inválido');
-        p.id = crypto.randomUUID(); // Novo ID para evitar conflito
-        p.name = p.name + ' (importado)';
-        this.state.projects[p.id] = p;
-        this.saveStorage();
-        this.renderProjectsList();
-        this.showToast('Projeto importado', 'success');
-      } catch (err) {
-        this.showToast('Erro ao importar: arquivo inválido', 'error');
-      }
-    };
-    reader.readAsText(file);
-  },
-
-  saveVersion(doc1, docImpl, model) {
-    if (!this.P) return;
-    const versions = this.P.versions || [];
-    versions.push({
-      v: versions.length + 1,
-      savedAt: new Date().toISOString(),
-      model,
-      // Salva apenas os primeiros 50KB de cada doc para não estourar localStorage
-      doc1: doc1.substring(0, 50000),
-      docImpl: docImpl ? docImpl.substring(0, 50000) : '',
-    });
-    // Mantém apenas as últimas 5 versões
-    if (versions.length > 5) versions.splice(0, versions.length - 5);
-    this.P.versions = versions;
-    this.saveStorage();
-  },
-
-  /* ─────────────────────────────────────────────────────
-     BRIEFING FIELDS
-  ───────────────────────────────────────────────────── */
   setField(field, value) {
     if (!this.P) return;
     this.P.briefing[field] = value;
-
-    // Efeitos especiais por campo
-    if (field === 'nome_cliente') {
-      const slug = value.toLowerCase()
-        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/^-|-$/g, '');
-      this.P.briefing.slug = slug;
-      this.P.name = value || 'Novo Projeto';
-      this.updateSidebar();
-    }
-
-    if (field === 'segmento') this.updateSidebar();
-    if (field === 'whatsapp') this.P.briefing.whatsapp = value.replace(/\D/g, '');
-
+    this.P.updatedAt = new Date().toISOString();
     this.autosave();
-    this.updateTopbarScore();
   },
 
   toggleArray(field, value) {
     if (!this.P) return;
-    const arr = this.P.briefing[field] || [];
+    const arr = this.B[field] || [];
     const idx = arr.indexOf(value);
-    if (idx >= 0) arr.splice(idx, 1); else arr.push(value);
+    if (idx === -1) arr.push(value); else arr.splice(idx, 1);
     this.P.briefing[field] = arr;
     this.autosave();
   },
 
-  /* ─────────────────────────────────────────────────────
-     VALIDAÇÃO
-  ───────────────────────────────────────────────────── */
-  getStepScore(step) {
-    const B = this.B;
-    const fields = this.getStepFields(step);
-    if (!fields.length) return 100;
-    const filled = fields.filter(f => {
-      const v = B[f];
-      return v && v.toString().trim().length > 0;
-    });
-    let score = (filled.length / fields.length) * 100;
-    // Penalidade por campos genéricos
-    const warns = this.getStepWarnings(step);
-    score = Math.max(0, score - warns.length * 8);
-    return Math.round(score);
-  },
-
-  getStepFields(step) {
-    const maps = {
-      1: ['nome_cliente', 'nome_marca', 'segmento', 'tipo'],
-      2: ['whatsapp', 'email', 'horarios', 'gtm_id'],
-      3: ['instagram', 'tiktok', 'youtube'],
-      4: ['modalidade', 'endereco', 'cidades_atendimento'],
-      5: ['servicos_lista', 'servicos_descricao', 'servico_principal', 'objetivo_conversao'],
-      6: ['publico_primario', 'publico_dor', 'publico_resultado', 'faq'],
-      7: ['diferencial', 'historia', 'frase_impacto', 'depoimentos', 'google_business'],
-      8: ['estilo_desejado', 'sensacao_visitante', 'vocabulario_usa', 'restricoes', 'briefing_bruto'],
-    };
-    return maps[step] || [];
-  },
-
-  getStepWarnings(step) {
-    const B = this.B;
-    const warns = [];
-    GENERIC_CHECKS.forEach(check => {
-      const v = (B[check.field] || '').toLowerCase().trim();
-      if (!v) return;
-      const tooShort = check.minLen && v.length < check.minLen;
-      const hasGenericTerm = check.terms && check.terms.some(t => v.includes(t));
-      if (tooShort || hasGenericTerm) {
-        warns.push({ field: check.field, msg: check.msg });
-      }
-    });
-    return warns.filter(w => this.getStepFields(step).includes(w.field));
-  },
-
-  getAllWarnings() {
-    const warns = [];
-    for (let s = 1; s <= 8; s++) warns.push(...this.getStepWarnings(s));
-    return warns;
-  },
-
-  getMissingCritical() {
-    const B = this.B;
-    const missing = [];
-    for (const [step, fields] of Object.entries(CRITICAL_FIELDS)) {
-      fields.forEach(f => {
-        const v = B[f];
-        if (!v || !v.toString().trim()) {
-          missing.push({ field: f, step: parseInt(step) });
-        }
-      });
-    }
-    return missing;
-  },
-
-  getGlobalScore() {
-    let total = 0;
-    for (let s = 1; s <= 8; s++) total += this.getStepScore(s);
-    return Math.round(total / 8);
-  },
-
-  getScoreClass(score) {
-    if (score >= 80) return 'high';
-    if (score >= 50) return 'medium';
-    return 'low';
-  },
-
-  getScoreColor(score) {
-    if (score >= 80) return 'var(--success)';
-    if (score >= 50) return 'var(--warning)';
-    return 'var(--danger)';
-  },
-
-  canGenerate() {
-    const missing = this.getMissingCritical();
-    const hasKey = Object.values(this.state.apiKeys).some(k => k.trim().length > 10);
-    const score = this.getGlobalScore();
-    return missing.length === 0 && hasKey && score >= 55;
-  },
-
-  /* ─────────────────────────────────────────────────────
-     SIDEBAR E TOPBAR
-  ───────────────────────────────────────────────────── */
-  updateSidebar() {
-    const B = this.B;
-    const P = this.P;
-    if (!P) return;
-
-    // Projeto ativo
-    document.getElementById('sidebar-project-name').textContent = P.name || 'Sem nome';
-    document.getElementById('sidebar-project-segment').textContent = B.segmento || '—';
-
-    // Score
-    const score = this.getGlobalScore();
-    document.getElementById('sidebar-score-fill').style.width = score + '%';
-    document.getElementById('sidebar-score-label').textContent = score + '%';
-
-    // API status
-    const configured = API_PROVIDERS.filter(p => this.state.apiKeys[p.id]?.trim().length > 10);
-    const dot = document.getElementById('sidebar-api-dot');
-    const label = document.getElementById('sidebar-api-label');
-    if (configured.length === 0) {
-      dot.className = 'status-dot';
-      label.textContent = 'Sem API';
-    } else if (configured.length === API_PROVIDERS.length) {
-      dot.className = 'status-dot ok';
-      label.textContent = 'Todas configuradas';
-    } else {
-      dot.className = 'status-dot partial';
-      label.textContent = `${configured.length}/${API_PROVIDERS.length} APIs`;
-    }
-
-    // Steps nav
-    this.renderStepsNav();
-  },
-
-  updateTopbar() {
-    const screen = this.state.screen;
-    const step = this.state.currentStep;
-    let title, sub;
-
-    if (screen === 'intake') {
-      title = 'Intake Inteligente';
-      sub = 'Cole o briefing do cliente — a IA preenche tudo para você revisar';
-    } else if (screen === 'art') {
-      title = 'Direção de Arte';
-      sub = 'Defina referências visuais e ativos — a IA monta a ficha de direção';
-    } else if (screen === 'review') {
-      title = 'Revisão e Geração';
-      sub = 'Revise o score e gere o documento final';
-    } else if (screen === 'step') {
-      const s = STEPS.find(x => x.id === step);
-      title = s ? s.name : '';
-      sub = s ? s.sub : '';
-    }
-
-    document.getElementById('topbar-title').textContent = title;
-    document.getElementById('topbar-subtitle').textContent = sub;
-    this.updateTopbarScore();
-    this.updateProgress();
-  },
-
-  updateTopbarScore() {
-    const wrap = document.getElementById('topbar-score');
-    const label = document.getElementById('topbar-score-label');
-    if (this.state.screen === 'step') {
-      const score = this.getStepScore(this.state.currentStep);
-      const cls = this.getScoreClass(score);
-      wrap.style.display = '';
-      label.className = `score-badge ${cls}`;
-      label.textContent = score + '%';
-    } else {
-      wrap.style.display = 'none';
-    }
-  },
-
-  updateProgress() {
-    const fill = document.getElementById('progress-fill');
-    let pct = 0;
-    if (this.state.screen === 'intake') pct = 0;
-    else if (this.state.screen === 'step') pct = ((this.state.currentStep - 1) / 10) * 100;
-    else if (this.state.screen === 'art') pct = 85;
-    else if (this.state.screen === 'review') pct = 100;
-    fill.style.width = pct + '%';
-    fill.parentElement.setAttribute('aria-valuenow', pct);
-  },
-
-  renderStepsNav() {
-    const nav = document.getElementById('steps-nav');
-    if (!nav) return;
-    nav.innerHTML = STEPS.map(s => {
-      const score = this.getStepScore(s.id);
-      const visited = this.P?.visitedSteps?.includes(s.id);
-      const isActive = this.state.screen === 'step' && this.state.currentStep === s.id;
-      const isDone = visited && score >= 80;
-      const hasErr = visited && score < 50;
-      let cls = 'step-nav-item';
-      if (isActive) cls += ' active';
-      if (isDone) cls += ' done';
-      if (hasErr) cls += ' has-error';
-
-      let dotContent = `<span class="step-dot-inner">${s.id}</span>`;
-      if (isDone) dotContent = `<i data-lucide="check" style="width:10px;height:10px;color:var(--accent-text)"></i>`;
-      if (hasErr) dotContent = `<i data-lucide="x" style="width:10px;height:10px"></i>`;
-
-      return `
-        <button class="${cls}" role="listitem" data-step="${s.id}" aria-label="${s.name}" aria-current="${isActive ? 'step' : 'false'}">
-          <span class="step-dot">${dotContent}</span>
-          <span class="step-label">${s.name}</span>
-        </button>
-      `;
-    }).join('');
-    lucide.createIcons({ nodes: [nav] });
-
-    // Events
-    nav.querySelectorAll('[data-step]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        this.goToStep(parseInt(btn.dataset.step));
-      });
-    });
-
-    // Art & Review
-    const artBtn = document.getElementById('btn-goto-art');
-    const revBtn = document.getElementById('btn-goto-review');
-    if (artBtn) {
-      artBtn.className = 'step-nav-item step-art' + (this.state.screen === 'art' ? ' active' : '');
-      artBtn.onclick = () => this.goToScreen('art');
-    }
-    if (revBtn) {
-      revBtn.className = 'step-nav-item step-review' + (this.state.screen === 'review' ? ' active' : '');
-      revBtn.onclick = () => this.goToScreen('review');
-    }
-  },
-
-  /* ─────────────────────────────────────────────────────
-     NAVEGAÇÃO
-  ───────────────────────────────────────────────────── */
-  goToStep(n) {
-    this.state.screen = 'step';
-    this.state.currentStep = n;
-    if (this.P && !this.P.visitedSteps.includes(n)) {
-      this.P.visitedSteps.push(n);
-    }
-    this.updateTopbar();
-    this.renderStepsNav();
-    this.renderScreen();
-    this.renderBottombar();
-  },
-
-  goToScreen(s) {
-    this.state.screen = s;
-    this.updateTopbar();
-    this.renderStepsNav();
-    this.renderScreen();
-    this.renderBottombar();
-  },
-
+  goToStep(n) { this.state.screen = 'step'; this.state.currentStep = n; this.renderAll(); },
+  goToScreen(s) { this.state.screen = s; this.renderAll(); },
   goNext() {
-    if (this.state.screen === 'intake') { this.goToStep(1); return; }
-    if (this.state.screen === 'step') {
-      if (this.state.currentStep < 8) { this.goToStep(this.state.currentStep + 1); return; }
-      this.goToScreen('art'); return;
-    }
-    if (this.state.screen === 'art') { this.goToScreen('review'); return; }
+    if (this.state.screen === 'intake') this.goToStep(1);
+    else if (this.state.screen === 'step') this.state.currentStep < 8 ? this.goToStep(this.state.currentStep+1) : this.goToScreen('art');
+    else if (this.state.screen === 'art') this.goToScreen('review');
+  },
+  goPrev() {
+    if (this.state.screen === 'review') this.goToScreen('art');
+    else if (this.state.screen === 'art') this.goToStep(8);
+    else if (this.state.screen === 'step') this.state.currentStep > 1 ? this.goToStep(this.state.currentStep-1) : this.goToScreen('intake');
   },
 
-  goPrev() {
-    if (this.state.screen === 'step') {
-      if (this.state.currentStep > 1) { this.goToStep(this.state.currentStep - 1); return; }
-      this.goToScreen('intake'); return;
-    }
-    if (this.state.screen === 'art') { this.goToStep(8); return; }
-    if (this.state.screen === 'review') { this.goToScreen('art'); return; }
+  renderAll() {
+    this.renderScreen();
+    this.renderStepsNav();
+    this.updateTopbar();
+    this.updateSidebar();
+    this.renderBottombar();
   },
 
   /* ─────────────────────────────────────────────────────
@@ -1241,191 +730,64 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
   buildStep5() {
     const B = this.B;
     return `
-      <p class="form-section-title">Serviços e Produto</p>
-
+      <p class="form-section-title">Serviços e Preço</p>
       <div class="field-group">
         ${this.fieldLabel('servico_principal', 'Serviço principal — foco da campanha', true)}
-        <input type="text" class="field-input" data-field="servico_principal" placeholder="Ex: Mentoria de adestramento comportamental canino online" value="${B.servico_principal || ''}">
-        <span class="field-hint">Em uma linha. É o que a H1 da landing page vai espelhar.</span>
+        <input type="text" class="field-input" data-field="servico_principal" placeholder="Ex: Mentoria de adestramento canino" value="${B.servico_principal || ''}">
       </div>
-
       <div class="field-group">
-        ${this.fieldLabel('servicos_lista', 'Lista de serviços / produtos', false, true)}
-        <textarea class="field-textarea" data-field="servicos_lista" placeholder="Um por linha:
-Mentoria individual semanal
-Mentoria intensiva (2x por semana)
-Consultoria pontual de diagnóstico">${B.servicos_lista || ''}</textarea>
+        ${this.fieldLabel('servicos_descricao', 'Descrição detalhada', true)}
+        <textarea class="field-textarea tall" data-field="servicos_descricao" placeholder="O que inclui, como funciona...">${B.servicos_descricao || ''}</textarea>
       </div>
-
       <div class="field-group">
-        ${this.fieldLabel('servicos_descricao', 'Descrição detalhada de cada serviço', true)}
-        <textarea class="field-textarea tall" data-field="servicos_descricao"
-          placeholder="Descreva cada serviço: o que é, como funciona, para quem é, o que inclui, duração.
-Quanto mais detalhe aqui, mais precisa e autêntica será a copy gerada.
-
-Não precisa ser bonito — escreva como falaria para um colega.">${B.servicos_descricao || ''}</textarea>
-        <span class="field-hint">Mínimo recomendado: 100 caracteres por serviço. Sem detalhe, a copy fica genérica.</span>
-      </div>
-
-      <div class="form-divider"></div>
-      <p class="form-section-title">Preço</p>
-
-      <div class="field-group">
-        ${this.fieldLabel('preco_exibir', 'Exibir preço no site?', true)}
+        ${this.fieldLabel('preco_exibir', 'Exibir preço?', true)}
         <div class="chip-group">
           <button class="chip ${B.preco_exibir === 'sim' ? 'on' : ''}" data-field="preco_exibir" data-chip="sim">Sim</button>
           <button class="chip ${B.preco_exibir === 'nao' ? 'on' : ''}" data-field="preco_exibir" data-chip="nao">Não</button>
         </div>
       </div>
-
-      ${B.preco_exibir === 'sim' ? `
-        <div class="form-row">
-          <div class="field-group">
-            ${this.fieldLabel('preco_valor', 'Valor e forma de cobrança', true)}
-            <input type="text" class="field-input" data-field="preco_valor" placeholder="Ex: R$ 697/mês | R$ 350/sessão | R$ 1.200 pacote 4 sessões" value="${B.preco_valor || ''}">
-          </div>
-          <div class="field-group">
-            ${this.fieldLabel('preco_condicao', 'Condição especial ou oferta', false, true)}
-            <input type="text" class="field-input" data-field="preco_condicao" placeholder="Ex: 5% off no 1º mês via Pix" value="${B.preco_condicao || ''}">
-          </div>
-        </div>
-        <div class="field-group">
-          ${this.fieldLabel('oferta_especial', 'Oferta especial para destacar no site', false, true)}
-          <input type="text" class="field-input" data-field="oferta_especial" placeholder="Ex: Vagas limitadas para o mês de maio" value="${B.oferta_especial || ''}">
-        </div>
-      ` : ''}
     `;
   },
 
   buildStep6() {
     const B = this.B;
-    const warns = this.getStepWarnings(6);
-    const pubWarn = warns.find(w => w.field === 'publico_primario');
     return `
       <p class="form-section-title">Público-Alvo</p>
-
       <div class="field-group">
-        ${this.fieldLabel('publico_primario', 'Público primário — perfil do cliente ideal', true)}
-        <textarea class="field-textarea" data-field="publico_primario"
-          placeholder="Seja específico: idade, profissão, situação de vida, contexto, o que tem em comum.
-Ex: Donos de cães com comportamentos agressivos ou destrutivos, 28–45 anos, que já tentaram adestramento tradicional sem resultado e buscam uma abordagem gentil e efetiva.">${B.publico_primario || ''}</textarea>
-        ${pubWarn ? `<div class="field-warning"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i>${pubWarn.msg}</div>` : ''}
-        <span class="field-hint">Evite "homens", "mulheres", "pessoas". Seja específico — a H1 vai falar diretamente com essa pessoa.</span>
+        ${this.fieldLabel('publico_primario', 'Perfil do cliente ideal', true)}
+        <textarea class="field-textarea" data-field="publico_primario" placeholder="Idade, dores, desejos...">${B.publico_primario || ''}</textarea>
       </div>
-
       <div class="field-group">
-        ${this.fieldLabel('publico_dor', 'Principal dor / problema antes de contratar', true)}
-        <textarea class="field-textarea" data-field="publico_dor"
-          placeholder="O problema real que fez ele pesquisar no Google. Escreva como ele falaria — não em termos técnicos.
-Ex: Meu cachorro pula em todo mundo, late sem parar e eu não consigo corrigir. Já tentei de tudo e não funciona.">${B.publico_dor || ''}</textarea>
-        <span class="field-hint">Escreva na voz do cliente — não na voz do profissional. É isso que vai na H1.</span>
+        ${this.fieldLabel('publico_dor', 'Principal dor / problema', true)}
+        <textarea class="field-textarea" data-field="publico_dor" placeholder="O problema que ele quer resolver AGORA.">${B.publico_dor || ''}</textarea>
       </div>
-
       <div class="field-group">
-        ${this.fieldLabel('publico_resultado', 'O que ele quer alcançar — o "depois"', true)}
-        <textarea class="field-textarea" data-field="publico_resultado"
-          placeholder="O que ele imagina conquistar ao contratar. O resultado desejado em termos concretos.
-Ex: Ter um cão equilibrado que não envergonhe em público, poder receber visitas e passear sem estresse.">${B.publico_resultado || ''}</textarea>
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('publico_secundario', 'Público secundário', false, true)}
-        <textarea class="field-textarea" data-field="publico_secundario"
-          placeholder="Ex: Adestradores iniciantes buscando mentoria técnica para atender com mais segurança.">${B.publico_secundario || ''}</textarea>
-      </div>
-
-      <div class="form-divider"></div>
-
-      <div class="field-group">
-        ${this.fieldLabel('faq', 'Perguntas frequentes dos clientes', false, true)}
-        <textarea class="field-textarea tall" data-field="faq"
-          placeholder="Liste as dúvidas reais que seus clientes têm. Formato:
-P: Funciona para cachorro adulto?
-R: Sim, funciona em qualquer idade — o processo é adaptado ao histórico do animal.
-
-P: É realmente possível fazer online?
-R: Sim — o que mais importa é você aprender a conduzir, e isso acontece onde você está.">${B.faq || ''}</textarea>
-        <span class="field-hint">Se não tiver, a IA vai inferir baseado no nicho — mas fornecendo aqui o resultado é muito mais preciso.</span>
+        ${this.fieldLabel('publico_resultado', 'Resultado esperado', true)}
+        <textarea class="field-textarea" data-field="publico_resultado" placeholder="Como ele se sente após contratar?">${B.publico_resultado || ''}</textarea>
       </div>
     `;
   },
 
   buildStep7() {
     const B = this.B;
-    const warns = this.getStepWarnings(7);
-    const diffWarn = warns.find(w => w.field === 'diferencial');
     return `
       <p class="form-section-title">Diferenciais e Autoridade</p>
-
       <div class="field-group">
-        ${this.fieldLabel('diferencial', 'O que concretamente diferencia esse profissional?', true)}
-        <textarea class="field-textarea tall" data-field="diferencial"
-          placeholder="Evite qualidade/excelência/comprometimento. Diga fatos reais:
-- Anos de experiência com casos específicos
-- Método proprietário ou técnica diferenciada
-- Resultados concretos: X clientes atendidos, Y% de resolução
-- Especialização específica que poucos têm
-- História que explica por que faz diferente">${B.diferencial || ''}</textarea>
-        ${diffWarn ? `<div class="field-warning"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i>${diffWarn.msg}</div>` : ''}
+        ${this.fieldLabel('diferencial', 'O que diferencia o profissional?', true)}
+        <textarea class="field-textarea tall" data-field="diferencial" placeholder="Método, experiência, resultados...">${B.diferencial || ''}</textarea>
       </div>
-
       <div class="field-group">
-        ${this.fieldLabel('frase_impacto', 'Frase de impacto', true)}
-        <input type="text" class="field-input" data-field="frase_impacto" placeholder="Ex: Eu não treino cachorros — eu ensino donos a se comunicar." value="${B.frase_impacto || ''}">
-        <span class="field-hint">Uma frase poderosa e direta que captura a essência. Será usada na copy do hero.</span>
+        ${this.fieldLabel('frase_impacto', 'Frase de impacto (Hero)', true)}
+        <input type="text" class="field-input" data-field="frase_impacto" value="${B.frase_impacto || ''}" placeholder="Ex: O adestramento que respeita o seu tempo.">
       </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('historia', 'História / origem (opcional mas poderosa)', false, true)}
-        <textarea class="field-textarea" data-field="historia"
-          placeholder="Uma história real que explica por que esse profissional faz o que faz. Por que escolheu esse caminho? O que o fez especializar nisso?
-Histórias genuínas criam conexão. Não precisa ser dramática — precisa ser verdadeira.">${B.historia || ''}</textarea>
-      </div>
-
-      <div class="field-group">
-        ${this.fieldLabel('casos_resultados', 'Cases e resultados concretos', false, true)}
-        <textarea class="field-textarea" data-field="casos_resultados"
-          placeholder="Números, transformações, resultados documentados.
-Ex: Mais de 200 cães atendidos | Taxa de sucesso em 94% dos casos | Atendimento em 8 estados">${B.casos_resultados || ''}</textarea>
-      </div>
-
-      <div class="form-divider"></div>
-      <p class="form-section-title">Prova Social</p>
-
       <div class="form-row">
         <div class="field-group">
-          ${this.fieldLabel('depoimentos', 'Tem depoimentos de clientes?', true)}
+          ${this.fieldLabel('depoimentos', 'Tem depoimentos?', true)}
           <div class="chip-group">
             <button class="chip ${B.depoimentos === 'sim' ? 'on' : ''}" data-field="depoimentos" data-chip="sim">Sim</button>
             <button class="chip ${B.depoimentos === 'nao' ? 'on' : ''}" data-field="depoimentos" data-chip="nao">Não</button>
           </div>
         </div>
-        <div class="field-group">
-          ${this.fieldLabel('google_business', 'Tem perfil no Google Business?', true)}
-          <div class="chip-group">
-            <button class="chip ${B.google_business === 'sim' ? 'on' : ''}" data-field="google_business" data-chip="sim">Sim</button>
-            <button class="chip ${B.google_business === 'nao' ? 'on' : ''}" data-field="google_business" data-chip="nao">Não</button>
-          </div>
-        </div>
-      </div>
-
-      ${B.depoimentos === 'sim' ? `
-        <div class="form-row-3">
-          <div class="field-group">
-            ${this.fieldLabel('depoimentos_qtd', 'Quantidade de depoimentos', true)}
-            <input type="number" class="field-input" data-field="depoimentos_qtd" placeholder="Ex: 12" value="${B.depoimentos_qtd || ''}">
-          </div>
-          <div class="field-group" style="grid-column: span 2">
-            ${this.fieldLabel('depoimentos_formato', 'Formato disponível', true)}
-            <div class="chip-group">
-              ${['Print', 'Texto', 'Vídeo'].map(f => `
-                <button class="chip ${(B.depoimentos_formato || []).includes(f.toLowerCase()) ? 'on' : ''}"
-                  data-field="depoimentos_formato" data-chip="${f.toLowerCase()}" data-multi="true">${f}</button>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      ` : ''}
 
       ${B.google_business === 'sim' ? `
         <div class="form-row">

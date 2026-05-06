@@ -1,31 +1,62 @@
-# LandingAI — Adsgator
+# LandingAI v3 — Adsgator
 
-Sistema interno de geração de briefing e Ficha de Implementação (Doc 3) para projetos Astro da Adsgator.
+Sistema interno de geração de Fichas de Implementação para projetos de landing page.
 
 ## Como usar
 
-1. Abra `index.html` no Chrome ou Edge.
-2. Obtenha uma API Key do Gemini em: [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey).
-3. Preencha as 8 etapas de briefing com as informações coletadas do cliente.
-4. Na etapa 9:
-   - **Modo Prompt:** Baixe o arquivo `briefing.md` para usar o prompt manualmente em qualquer IA.
-   - **Modo Direto:** Insira sua API Key e clique em "Gerar Doc 3" para que o sistema gere o documento completo via Gemini 2.5 Pro.
-5. Envie o arquivo `doc3-[slug].md` gerado para o Roo Code iniciar a implementação.
+1. Abra `index.html` no Chrome ou Edge (duplo clique)
+2. Configure ao menos uma API Key em **Config. API**
+3. Cole o briefing do cliente na tela de Intake
+4. Clique em **Analisar e preencher** — a IA preenche os 8 steps automaticamente
+5. Percorra os steps, revise e ajuste
+6. Vá para **Direção de Arte** — adicione referências, clique em analisar
+7. Aprove a ficha de arte
+8. Vá para **Revisão e Geração**
+9. Clique em **Gerar Ficha de Implementação**
+10. Envie o `doc-impl-[slug].md` ao Roo Code para implementação
 
-## Modos de Operação
+## Modo sem API
 
-- **Com API Gemini:** Gera o Doc 3 completo, com todas as seções, copy, metadados e configurações técnicas prontas para cópia.
-- **Sem API:** Gera um briefing estruturado que inclui o "Prompt Mestre", permitindo que você gere o Doc 3 em interfaces externas de IA.
+Preencha os steps manualmente e baixe o **DOC-1** na tela de revisão.
+O DOC-1 é um prompt completo que pode ser usado em qualquer IA externamente.
 
-## Stack dos projetos gerados
+## Modelos suportados
 
-As landing pages geradas seguem o padrão Adsgator:
-- **Framework:** Astro
-- **Estilização:** Tailwind CSS
-- **Animações:** GSAP (ScrollTrigger) + Framer Motion
-- **Scroll:** Lenis
-- **Formulários:** Web3Forms
-- **Deploy:** Vercel ou Netlify (output estático)
+| Modelo | Provider | Nível |
+|---|---|---|
+| Gemini 2.5 Pro | Google | Pago |
+| Gemini 2.5 Flash | Google | Gratuito |
+| Claude Sonnet 4 | Anthropic | Pago |
+| Claude Haiku 4.5 | Anthropic | Gratuito |
+| Grok 3 | xAI | Pago |
+| Mistral Large | Mistral AI | Pago |
 
----
-*v2.0 — Desenvolvido para uso interno da Adsgator*
+## Onde obter API Keys
+
+- **Gemini:** https://aistudio.google.com/app/apikey
+- **Claude:** https://console.anthropic.com
+- **Grok:** https://console.x.ai
+- **Mistral:** https://console.mistral.ai
+
+## O que o sistema gera
+
+- **DOC-1** (`doc1-[slug].md`) — briefing estruturado + prompt completo. Funciona sem API.
+- **DOC-IMPL** (`doc-impl-[slug].md`) — Ficha de Implementação completa para o Roo. Requer API.
+- **Preview** — mockup HTML simplificado do hero + 3 seções + footer.
+
+## Stack dos projetos gerados pelo sistema
+
+Astro · Tailwind CSS · GSAP · ScrollTrigger · Framer Motion · Lenis · Web3Forms  
+Deploy: Vercel (output: hybrid) ou Netlify  
+Analytics: Vercel Analytics + Speed Insights  
+LGPD: Cookie Banner + Google Consent Mode v2
+
+## Dados e privacidade
+
+Todos os dados ficam exclusivamente no `localStorage` do seu browser.
+Nenhuma informação é enviada a servidores da Adsgator.
+As chamadas de API vão diretamente do browser para o provider escolhido.
+
+## Suporte
+
+Sistema interno Adsgator — v3.0.0

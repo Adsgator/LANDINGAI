@@ -1,1624 +1,4470 @@
-const REGRAS_FIXAS_ADSGATOR = `
-> A PARTE 11 contém as Regras Fixas da Adsgator. Você não precisa alterar ou pensar sobre elas.
-> Utilize estas regras integralmente ao gerar o Doc 3. Não resuma e não invente regras novas.
-> Estas regras são aplicadas em 100% dos projetos.
+/* ============================================================
+   LandingAI v3 — Aplicação Completa
+   Adsgator · Sistema Interno
+   ============================================================ */
 
-### Stack Técnica
+'use strict';
 
-NÚCLEO IMUTÁVEL
-───────────────
-Astro          → Framework base. Saída estática por padrão. Zero JS desnecessário.
-                 astro.config.mjs: output: 'static', site: 'https://[dominio].com.br'
-                 @astrojs/sitemap instalado e configurado.
-                 Exclui do sitemap: /links, /politica-de-privacidade, /termos-de-uso, /404
+/* ── Constantes ─────────────────────────────────────────────── */
 
-Tailwind CSS   → Toda estilização. Tokens em tailwind.config.js.
-                 Sem style="" onde Tailwind resolve.
-                 Sem HEX hardcoded no código — sempre via token.
+/* ============================================================
+   LandingAI v3 — Constantes Globais
+   ============================================================ */
 
-Node.js        → Ambiente de build.
+const VERSION = '3.0.0';
 
-Lenis          → Smooth scroll global.
-                 npm install @studio-freight/lenis
-                 Inicializado em <script is:inline> no Layout.astro.
-                 duration: 1.2 | easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
-                 Integrado ao GSAP: lenis.on('scroll', ScrollTrigger.update)
-                 gsap.ticker.add((time) => { lenis.raf(time * 1000) })
-                 gsap.ticker.lagSmoothing(0)
+/* ── Storage Keys ──────────────────────────────────────────── */
+const STORAGE_KEYS = {
+  PROJECTS: 'landingai_v3_projects',
+  ACTIVE:   'landingai_v3_active',
+  API_KEYS: 'landingai_v3_apikeys',
+  SETTINGS: 'landingai_v3_settings',
+};
 
-ANALYTICS E MONITORAMENTO
-──────────────────────────
-Vercel Analytics   → npm install @vercel/analytics
-                     Import em Layout.astro: import { Analytics } from '@vercel/analytics/astro'
-                     Inserir <Analytics /> no Layout.astro após o conteúdo.
-                     Coleta pageviews e eventos automaticamente sem configuração extra.
+const STORAGE_LIMIT_BYTES = 4 * 1024 * 1024; // 4MB warning threshold
 
-Vercel Speed Insights → npm install @vercel/speed-insights
-                     Import em Layout.astro: import { SpeedInsights } from '@vercel/speed-insights/astro'
-                     Inserir <SpeedInsights /> no Layout.astro.
-                     Monitora Web Vitals reais (LCP, CLS, FID) em produção.
-
-EXTENSÕES (apenas onde necessário)
-───────────────────────────────────
-React          → Somente para componentes com estado dinâmico real:
-                 MobileMenu.tsx, InstagramFeed.tsx (se ativo), ContactForm.tsx, CookieBanner.tsx
-                 Sempre com client:visible ou client:idle (nunca client:load sem justificativa)
-
-GSAP + ScrollTrigger → Animações de scroll e timelines.
-                 Direto em <script> dentro dos .astro — nunca via import em bundle React.
-                 gsap.registerPlugin(ScrollTrigger) obrigatório antes de qualquer uso.
-
-Framer Motion  → Dentro de islands React.
-                 Menu mobile fullscreen (AnimatePresence), hover em cards, CTA spring.
-
-Web3Forms        → Backend do formulário de contato (se formulário ativo).
-                 npm install web3forms
-                 Variável: FORMS_ACCESS_KEY no .env
-
-DEPLOY E INFRAESTRUTURA
-────────────────────────
-Target: Vercel — output: 'static' em astro.config.mjs
-Alternativa aceita: Netlify — mesma configuração
-
-GIT — OBRIGATÓRIO ANTES DE QUALQUER CÓDIGO
-────────────────────────────────────────────
-git init                           → inicializar repositório no primeiro passo do projeto
-.gitignore padrão Astro:           → node_modules/, dist/, .env
-Commit inicial:                    → "init: projeto Astro base" antes de qualquer código
-Repositório remoto:                → conectar ao GitHub ou GitLab antes do primeiro deploy
-CI/CD:                             → Vercel conecta ao repositório para deploy automático a cada push
-Convenção de branches:
-  main   → produção (deploy automático na Vercel)
-  dev    → desenvolvimento local
-
-ARQUIVOS OBRIGATÓRIOS
-──────────────────────
-public/robots.txt    → Permite: / | Proíbe: /links | Sitemap: https://[dominio]/sitemap-index.xml
-public/manifest.json → name, short_name, start_url "/", display "standalone",
-                       background_color e theme_color via tokens do projeto
-.env.example         → entregar com o projeto — todas as variáveis documentadas, sem valores reais
-                       Variáveis padrão:
-                         GTM_ID=GTM-XXXXXXX
-                         WHATSAPP_NUMBER=
-                         FORMS_ACCESS_KEY= (se formulário ativo)
-                         INSTAGRAM_TOKEN= (se feed ativo)
-                         GOOGLE_MAPS_API_KEY= (se mapa avançado ativo)
-
-### Componentes Globais (criar isolados, sem repetição)
-
-Componentes Astro obrigatórios:
-  Layout.astro          → Shell global. Contém: <head> com SEO, GTM snippet (is:inline),
-                          Consent Mode v2, Lenis init, GSAP, Vercel Analytics, Speed Insights,
-                          componente de menu, botão WhatsApp flutuante, rodapé.
-  Button.astro          → Props: label, href, variant (primary | secondary | ghost), tracking-id.
-                          Nunca escrever botão inline nas seções.
-  SectionHeader.astro   → Props: label (pequeno texto acima), title, subtitle.
-                          Usado em todas as seções que têm título + subtítulo.
-  FeatureCard.astro     → Props: icon, title, description. Usado em Diferenciais e Como Funciona.
-  TestimonialCard.astro → Props: name, role, text, avatar (opcional). Prova social.
-  ReviewCard.astro      → Props: name, rating, text, date. Avaliações Google.
-
-Componentes React (islands):
-  MobileMenu.tsx        → Fullscreen overlay com Framer Motion AnimatePresence.
-                          Props: links[], ctaLabel, ctaHref.
-  InstagramFeed.tsx     → Grid de posts. Props: username, token (env var).
-                          Sempre com ErrorBoundary — se API falhar, exibe placeholder neutro.
-  ContactForm.tsx       → Multi-step se aplicável. Props: whatsappFallback.
-                          ErrorBoundary: se falhar, exibe link direto para WhatsApp.
-  CookieBanner.tsx      → Banner LGPD + Google Consent Mode v2.
-                          Props: gtmId. client:idle. Estado via localStorage.
-
-### Padrão de Assets
-
-Localização: src/assets/images/[nome-do-arquivo].webp
-Convenção:
-  hero-principal.webp       → foto principal do profissional ou serviço
-  profissional-retrato.webp → foto para seção de diferenciais
-  servico-[numero].webp     → fotos de serviços específicos
-  depoimento-[nome].webp    → avatares de depoimentos
-  og-image.webp             → 1200x630px — compartilhamento social
-  favicon.svg               → SVG nativo, nunca PNG
-  avatar-links.webp         → 192x192px — foto para /links
-
-Componente de imagem: sempre <Image /> nativo do Astro
-  loading="eager"           → apenas hero-principal.webp
-  loading="lazy"            → todo o resto
-  width e height            → sempre definidos (evita layout shift)
-  format="webp"             → explícito
-
-Placeholders (quando asset não disponível):
-  Fundo: token bg-surface
-  Label descritivo: ex: "[Foto do profissional — 800x1000px]"
-  Nunca cor sólida genérica sem label
-
-### Design de Viewport — Regra Adsgator
-
-Filosofia:
-  O site não fica preso em um container central. Usar o viewport completo é uma decisão
-  de design, não um descuido. Containers são ferramentas de legibilidade — não prisões.
-
-Aplicação por tipo de bloco:
-  Hero:            full-bleed. Fundo vai de borda a borda. Texto e imagem no container interno.
-  Seções de fundo alternado: full-bleed com cor/textura própria — cria ritmo visual sem depender
-                   só de espaçamento entre seções.
-  Seções de texto: container centralizado (max-w-prose ou max-w-2xl) para legibilidade.
-  Seções de grid:  container mais largo (max-w-7xl) com padding lateral.
-  CTA Final:       full-bleed com cor de destaque — contraste máximo com o restante da página.
-  Footer:          full-bleed — nunca container estreito no footer.
-  Imagens heroicas: podem sangrar para fora do grid em desktop — quebrar o ritmo é intencional.
-
-Ritmo visual entre seções:
-  Alternar backgrounds (claro → levemente diferente → claro) cria profundidade sem divisórias.
-  Mínimo 3 variações de fundo ao longo da página: background, surface, e um tom de destaque.
-  Espaçamento vertical generoso: py-24 como mínimo em mobile, py-32 a py-40 em desktop.
-
-### Performance e SEO Técnico
-
-Preload de assets críticos (no <head> via Layout.astro):
-  <link rel="preconnect"> para domínio da fonte
-  <link rel="preload"> do woff2 da fonte principal com crossorigin="anonymous"
-  <link rel="preload"> da hero-principal.webp com fetchpriority="high" as="image"
-  Impacto direto no LCP — esses três itens sozinhos movem 0.5s–1.5s.
-
-Font loading — evitar FOIT:
-  font-display: swap obrigatório em toda @font-face.
-  Fontsource já inclui swap por padrão — confirmar que não está sendo sobrescrito.
-  Fallback stack explícito no tailwind.config.js:
-    fontFamily: { sans: ['NomeDaFonte', 'ui-sans-serif', 'system-ui', 'sans-serif'] }
-
-Canonical URL:
-  <link rel="canonical" href="https://[domínio]/[path]" />
-  Cada página recebe seu canonical absoluto via prop canonicalUrl no Layout.
-
-### Sistema de Rastreamento
-
-Google Tag Manager:
-  Snippet head: dentro do <head>, imediatamente após <meta charset>
-  Snippet body: imediatamente após abertura do <body>
-  Diretiva Astro: <script is:inline> — obrigatório. Nunca processar com bundler.
-  Componente: GTM.astro → recebe ID via prop. Usado dentro do Layout.astro.
-
-Conversões Google Ads — padrão Adsgator:
-  contato_wpp   → cliques em links WhatsApp
-  view_content  → pageview da landing page principal
-  view_links    → pageview da /links
-
-Data attributes obrigatórios em todos os CTAs:
-  id="btn-[local]"
-  data-tracking="[ação]-[destino]"
-  data-section="[nome-da-seção]"
-
-### UX Obrigatório
-
-Header Inteligente:
-  Sticky top-0 z-50
-  Esconde ao scrollar para baixo (GSAP translateY -100%, 0.3s ease-in-out)
-  Reaparece ao scrollar para cima
-  Fundo opaco ou backdrop-blur após 80px de scroll (transition 0.2s)
-  Sempre contém logo + CTA principal rastreado
-  Logo: link para #top, SVG nativo
-
-Menu Mobile — Padrão Alto Padrão Adsgator:
-  Acionado por botão hambúrguer com morphing animado (3 linhas → X, Framer Motion)
-  Fullscreen overlay com AnimatePresence
-  Fundo: cor da marca com opacidade alta ou dark overlay
-  Links: stagger 0.05s de delay, slide de baixo para cima
-  Tipografia: grande, impactante — não uma lista discreta
-  Elemento de destaque: número de telefone OU CTA em destaque no fundo do overlay
-  Fechar: clique fora, Escape ou botão X
-  Scroll do body bloqueado enquanto aberto (overflow-hidden no html)
-
-Botão WhatsApp flutuante:
-  Oculto no carregamento
-  Aparece após o Hero sair do viewport (IntersectionObserver)
-  Desaparece quando o footer entra no viewport
-  fixed bottom-6 right-6 (mobile) / bottom-8 right-8 (desktop)
-  Mínimo 56x56px, touch target 64x64px
-  Entrada: scale 0→1 + opacity 0→1, 0.3s ease-out
-  SVG nativo do WhatsApp (cor #25D366), sem biblioteca externa
-  data-tracking="click-whatsapp" data-section="floating-button"
-
-Smooth Scroll (Lenis):
-  Inicializar no Layout.astro via <script is:inline>
-  duration: 1.2, easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t))
-  Integrado ao GSAP: lenis.on('scroll', ScrollTrigger.update)
-  requestAnimationFrame loop padrão do Lenis
-
-Mobile First — Padrão Absoluto:
-  Design começa em 375px — não adapta para mobile, começa no mobile
-  Base para mobile, sobrescrever com sm: md: lg: xl:
-  Breakpoint principal para 2 colunas: xl: (1280px)
-  Texto nunca menor que 16px no mobile
-  Touch targets mínimo 44x44px
-  Padding lateral mobile mínimo px-5
-  Tap highlight removido: -webkit-tap-highlight-color: transparent
-  Hero: 100svh em mobile (usa svh, não vh — evita barra de endereço cortando)
-  Nenhuma seção com overflow horizontal — testar sempre em 375px
-
-Rodapé — Padrão de Excelência Adsgator:
-  O footer é a última impressão do site — tratado com o mesmo cuidado do Hero.
-
-  Estrutura obrigatória:
-    Logo da marca — mesma proporção do header, com respiro vertical
-    Tagline curta ou frase de encerramento — opcional mas poderosa quando usada
-    Links essenciais: Política de Privacidade + Termos de Uso (se houver) + redes sociais confirmadas
-    CNPJ do cliente (se fornecido no briefing)
-    Copyright: © {new Date().getFullYear()} [Nome do Cliente]. Todos os direitos reservados.
-    Logo da Adsgator: SVG com currentColor, discreto, com link para adsgator.com.br
-      Texto: "Desenvolvido por Adsgator" ou apenas o logo — IA decide com base no espaço
-
-  Design:
-    Não use o mesmo fundo da última seção — crie separação visual clara
-    Opções de fundo: cor primária escurecida / off-black / tom de destaque da paleta
-    Tipografia: hierarquia visual real — não uma lista plana de links
-    Espaçamento interno generoso: py-16 no mínimo
-    Links com hover sutil — opacity ou cor, não sublinhado óbvio
-    Ícones de redes sociais: tamanho mínimo 20px, monocromáticos, com aria-label
-
-  Mobile:
-    Coluna única, texto centralizado ou alinhado à esquerda (IA decide com base no tom)
-    Logo acima, links abaixo, Adsgator no final
-    Nenhum elemento cortado ou comprimido
-
-Card CTA Final (bloco antes do footer):
-  Posicionado imediatamente antes do footer, sempre
-  Maior contraste visual da página
-  Headline diferente do Hero — segundo ângulo de persuasão
-  Botão com id="btn-cta-final" e data-tracking rastreado
-
-### Banner de Consentimento (LGPD + Google Consent Mode v2)
-
-Componente: CookieBanner.tsx (island React, client:idle)
-Posição: fixed bottom-0 left-0 right-0, z-[9999]
-Aparece: apenas se não houver consentimento no localStorage
-  Chave: 'adsgator-consent' | Valor: 'granted' | 'denied'
-
-Comportamento:
-  Não bloqueia conteúdo — página carrega normalmente
-  Banner aparece após idle (client:idle) — não compete com LCP
-  Dois botões: "Aceitar" (primary) e "Recusar" (ghost)
-  Clicar em qualquer um fecha e registra a escolha
-
-Design:
-  Barra horizontal discreta — não modal, não fullscreen
-  Fundo: token bg-surface com backdrop-blur leve
-  Borda superior sutil: border-t border-border
-  Texto pequeno (text-sm), direto — sem juridiquês
-  Link para /politica-de-privacidade (target _blank)
-  Entrada: slide de baixo para cima, opacity 0→1, 0.3s ease-out (Framer Motion)
-  Saída: slide para baixo + opacity 0, 0.25s ease-in (AnimatePresence)
-
-Google Consent Mode v2 — integração com GTM:
-  Antes do snippet do GTM (via <script is:inline>):
-  gtag('consent', 'default', {
-    'ad_storage': 'denied',
-    'analytics_storage': 'denied',
-    'ad_user_data': 'denied',
-    'ad_personalization': 'denied',
-    'wait_for_update': 500
-  })
-  Ao aceitar: gtag('consent', 'update', { todos: 'granted' })
-  Ao recusar: manter 'denied' — não disparar update
-
-### Sistema de Animação — Padrão Adsgator
-
-Filosofia:
-  Animação tem função: revelar, guiar, confirmar. Nunca decorativa.
-  prefers-reduced-motion: todas as animações GSAP encapsuladas em
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {}
-
-Tokens GSAP:
-  Duração padrão entrada:   0.7s
-  Duração rápida (micro):   0.3s
-  Duração lenta (hero):     1.0s–1.4s
-  Easing entrada:           power2.out
-  Easing saída:             power2.in
-
-Triggers de entrada:
-  Hero:             timeline imediata (sem ScrollTrigger)
-                    stagger: H1 → subtítulo → CTA → imagem
-                    opacity: 0→1, y: 30→0, duração 1.0s, stagger 0.15s
-  Seções internas:  ScrollTrigger start="top 80%"
-                    opacity: 0→1, y: 40→0, duração 0.7s
-  Cards em grid:    ScrollTrigger + stagger 0.1s por card
-  CTA Final:        ScrollTrigger start="top 75%"
-                    scale: 0.96→1 + opacity: 0→1, duração 0.8s, power3.out
-
-Tokens Framer Motion (islands React):
-  Hambúrguer → X:   rotate + scale, 0.3s, spring stiffness 300 damping 20
-  Menu overlay:     opacity 0→1, 0.25s ease-out
-  Links do menu:    stagger 0.05s, y: 20→0 + opacity: 0→1
-  Hover em cards:   y: -4px, scale: 1.01, 0.2s ease-out
-  Hover em botões:  scale: 1.03, 0.15s spring
-
-### Acessibilidade Mínima Obrigatória
-
-Filosofia: acessibilidade é critério de Quality Score no Google Ads.
-Páginas com baixa acessibilidade têm CPC mais alto.
-
-Contraste: WCAG AA mínimo — ratio 4.5:1 para texto normal, 3:1 para texto grande
-Imagens: alt descritivo e específico. alt="" só em imagens puramente decorativas.
-Botões icon-only: aria-label obrigatório (WhatsApp flutuante, hambúrguer, fechar)
-Links externos: rel="noopener noreferrer"
-Focus: focus-visible em todos os elementos interativos — nunca outline:none sem substituto
-  Classes Tailwind: focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary
-Menu mobile: focus trap enquanto aberto. Escape fecha.
-Semântica: <h1> única por página (no Hero). Hierarquia h1→h2→h3 — nunca pular nível.
-  <main>, <header>, <footer>, <nav>, <section> com roles corretos.
-Formulários: <label> associado via htmlFor/id. Mensagens de erro acessíveis via aria-describedby.
-
-### Comportamento Responsivo por Tipo de Seção
-
-Hero:
-  mobile:   coluna única, texto em cima, imagem embaixo ou background full-bleed
-  desktop:  2 colunas — texto (55%) | imagem (45%)
-
-Diferenciais / Features:
-  mobile:   1 coluna, cards empilhados
-  tablet:   2 colunas
-  desktop:  3 ou 4 colunas
-
-Como Funciona:
-  mobile:   vertical, numerado, com linha conectora
-  desktop:  horizontal com seta entre etapas, ou alternado esquerda/direita
-
-Prova Social:
-  mobile:   slider/carousel 1 item (Framer Motion drag)
-  desktop:  grid 2 ou 3 colunas
-
-Avaliações Google:
-  mobile:   horizontal scroll (overflow-x-auto, snap-mandatory)
-  desktop:  grid 3 colunas
-
-Feed Instagram:
-  mobile:   grid 2x3
-  desktop:  grid 3x2
-
-FAQ:
-  accordion, sempre 1 coluna, max-w-2xl centralizado
-
-Mapa:
-  mobile:   embed full width, 300px de altura
-  desktop:  60% width + info de endereço ao lado, 400px
-
-CTA Final:
-  mobile:   coluna única, headline grande, botão full width
-  desktop:  centralizado, max-w-3xl, botão não full width
-
-### Integrações Técnicas
-
-Google Maps:
-  Embed API (iframe) — sem chave para embed básico
-  Parâmetros: q=[endereço URL-encoded]&output=embed&z=16&language=pt-BR
-  Sempre incluir bloco de endereço textual ao lado ou abaixo
-
-Google Reviews:
-  Places API (chave fornecida pelo gestor) ou widget Elfsight
-  Exibir: foto, nome, nota em estrelas (SVG), texto, data relativa
-  Máximo: 6 desktop, 3 mobile. Nota geral + total de avaliações acima dos cards.
-
-Instagram Feed:
-  Island React (client:visible) — não bloqueia carregamento
-  Token: INSTAGRAM_TOKEN no .env — nunca hardcoded
-  ErrorBoundary: se falhar, exibe "Ver no Instagram →" linkado ao perfil
-
-Formulário de Contato:
-  Simples: Astro nativo com Resend
-  Multi-step: island React com Framer Motion AnimatePresence
-  Honeypot: campo oculto via CSS (position absolute left -9999px)
-  Submit: feedback inline — sem redirecionamento externo
-  ErrorBoundary: fallback para WhatsApp se submit falhar
-
-Links WhatsApp — formato canônico:
-  https://wa.me/[DDI+DDD+NÚMERO]?text=[MENSAGEM_URL_ENCODED]
-  Nunca api.whatsapp.com/send — sempre wa.me
-
-### Schema.org — Dados Estruturados
-
-Obrigatório em 100% dos projetos.
-Tipo base: LocalBusiness (ou subtipo específico do nicho).
-
-Subtipos por nicho:
-  Dentista: Dentist | Nutricionista: Nutritionist | Fisioterapeuta: MedicalBusiness
-  Advogado: LegalService | Psicólogo: MedicalBusiness | Salão/Estética: HealthAndBeautyBusiness
-  Outros: LocalBusiness como fallback
-
-Campos obrigatórios (JSON-LD no <head> via Layout.astro):
-  @context, @type, name, description, url, telephone, image, openingHours, sameAs
-  address e geo: apenas se atendimento presencial confirmado com endereço autorizado
-  aggregateRating: apenas se avaliações reais confirmadas no briefing — nunca inventar
-  priceRange: se valor fornecido no briefing
-
-Nunca inventar dados. Se o campo não foi fornecido, omiti-lo.
-`;
-
+/* ── Modelos de IA ─────────────────────────────────────────── */
 const AI_MODELS = {
-  'gemini-3-flash': { name: 'Gemini 3.0 Flash', provider: 'gemini', endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent', maxTokens: 65536, temp: 0.65 },
-  'gemini-3-pro': { name: 'Gemini 3.0 Pro', provider: 'gemini', endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent', maxTokens: 65536, temp: 0.65 },
-  'claude-sonnet': { name: 'Claude Sonnet 3.5', provider: 'claude', endpoint: 'https://api.anthropic.com/v1/messages', maxTokens: 8192, temp: 0.7 },
-  'grok-3': { name: 'Grok 3', provider: 'grok', endpoint: 'https://api.x.ai/v1/chat/completions', maxTokens: 32000, temp: 0.7 },
-  'mistral-large': { name: 'Mistral Large', provider: 'mistral', endpoint: 'https://api.mistral.ai/v1/chat/completions', maxTokens: 32000, temp: 0.6 }
+  'gemini-2.5-pro': {
+    label:    'Gemini 2.5 Pro',
+    provider: 'gemini',
+    tier:     'paid',
+    group:    'Google',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
+    maxTokens: 16000,
+    temp:      0.65,
+  },
+  'gemini-2.5-flash': {
+    label:    'Gemini 2.5 Flash',
+    provider: 'gemini',
+    tier:     'free',
+    group:    'Google',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+    maxTokens: 12000,
+    temp:      0.70,
+  },
+  'claude-sonnet-4-20250514': {
+    label:    'Claude Sonnet 4',
+    provider: 'claude',
+    tier:     'paid',
+    group:    'Anthropic',
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    maxTokens: 16000,
+    temp:      0.65,
+  },
+  'claude-haiku-4-5-20251001': {
+    label:    'Claude Haiku 4.5',
+    provider: 'claude',
+    tier:     'free',
+    group:    'Anthropic',
+    endpoint: 'https://api.anthropic.com/v1/messages',
+    maxTokens: 8000,
+    temp:      0.70,
+  },
+  'grok-3': {
+    label:    'Grok 3',
+    provider: 'grok',
+    tier:     'paid',
+    group:    'xAI',
+    endpoint: 'https://api.x.ai/v1/chat/completions',
+    maxTokens: 12000,
+    temp:      0.65,
+  },
+  'mistral-large-latest': {
+    label:    'Mistral Large',
+    provider: 'mistral',
+    tier:     'paid',
+    group:    'Mistral',
+    endpoint: 'https://api.mistral.ai/v1/chat/completions',
+    maxTokens: 12000,
+    temp:      0.65,
+  },
 };
 
-const defaultBriefing = {
-  nome_cliente: '', nome_marca: '', slug: '', segmento: '', tipo: '',
-  whatsapp: '', email: '', horarios: '', gtm_id: '',
-  instagram: '', tiktok: '', youtube: '', outras_redes: '',
-  modalidade: '', endereco: '', exibir_localizacao: '', cidades_atendimento: '', plataforma_online: '',
-  servicos_lista: '', servicos_descricao: '', servico_principal: '', objetivo_conversao: '', objetivo_outro: '', preco_exibir: '', preco_valor: '', preco_condicao: '', oferta_especial: '',
-  publico_primario: '', publico_dor: '', publico_resultado: '', publico_secundario: '', faq: '',
-  diferencial: '', historia: '', frase_impacto: '', depoimentos: '', depoimentos_formato: [], depoimentos_qtd: '', google_business: '', google_nota: '', google_qtd: '', casos_resultados: '',
-  estilo_desejado: '', sensacao_visitante: '', referencias_pessoais: '', referencias_nicho: '', cor_principal: '', cor_secundaria: '', logo_disponivel: '', tema: '', intensidade_visual: '', footer_tom: '', footer_elemento: '', footer_sensacao: '', menu_mobile_estilo: '', menu_mobile_especial: '', o_que_nao_quero: '', referencia_marca: '',
-  foto_profissional: '', assets_outros: '', dominio: '', cnpj: '', aviso_legal: '', restricoes: '', integracoes: [], instrucoes_adicionais: '', briefing_bruto: ''
+/* ── Steps ─────────────────────────────────────────────────── */
+const STEPS = [
+  { id: 1, label: 'Identificação',        icon: 'user',          fields: ['nome_cliente','segmento','tipo','whatsapp','email','horarios','gtm_id','objetivo_conversao'] },
+  { id: 2, label: 'Contato e Redes',      icon: 'share-2',       fields: ['instagram','tiktok','youtube','outras_redes','integracoes'] },
+  { id: 3, label: 'Atendimento',          icon: 'map-pin',       fields: ['modalidade','endereco','exibir_localizacao','cidades_atendimento','plataforma_online'] },
+  { id: 4, label: 'Serviços e Preço',     icon: 'briefcase',     fields: ['servico_principal','servicos_descricao','preco_exibir'] },
+  { id: 5, label: 'Preço',               icon: 'tag',           fields: ['preco_exibir'] },
+  { id: 6, label: 'Público-Alvo',         icon: 'target',        fields: ['publico_primario','publico_dor','publico_resultado'] },
+  { id: 7, label: 'Diferenciais',         icon: 'star',          fields: ['diferencial','frase_impacto','depoimentos','google_business'] },
+  { id: 8, label: 'Tom e Identidade',     icon: 'palette',       fields: ['estilo_desejado','sensacao_visitante','vocabulario_usa','vocabulario_nunca'] },
+];
+
+/* ── Validações ────────────────────────────────────────────── */
+const REQUIRED_FIELDS = {
+  1: ['nome_cliente','segmento','tipo','whatsapp','objetivo_conversao'],
+  2: [],
+  3: ['modalidade'],
+  4: ['servico_principal','servicos_descricao','preco_exibir'],
+  5: [],
+  6: ['publico_primario','publico_dor','publico_resultado'],
+  7: ['diferencial','frase_impacto','depoimentos','google_business'],
+  8: ['estilo_desejado','sensacao_visitante'],
 };
 
-const criticalFields = {
-  1: ['nome_cliente', 'tipo', 'segmento'],
-  2: ['whatsapp', 'objetivo_conversao'],
-  4: ['modalidade'],
-  5: ['servico_principal', 'servicos_descricao'],
-  6: ['publico_primario', 'publico_dor', 'publico_resultado'],
-  7: ['diferencial', 'frase_impacto'],
-  8: ['estilo_desejado', 'tema', 'intensidade_visual'],
-  9: ['dominio']
+const FIELD_WARNINGS = {
+  publico_primario: { min: 80,  msg: 'Muito curto — quanto mais específico, melhor a copy gerada.' },
+  publico_dor:      { min: 60,  msg: 'Descreva a dor com as palavras do cliente, não termos técnicos.' },
+  servicos_descricao:{ min: 100, msg: 'Pouco detalhe — a copy ficará genérica com menos de 100 caracteres.' },
+  diferencial:      { min: 80,  msg: 'Evite qualidade/excelência — cite fatos concretos e específicos.' },
 };
 
-const STEP_TITLES = {
-  1: "Identificação", 2: "Contato", 3: "Redes Sociais", 4: "Localização", 5: "Serviços",
-  6: "Público", 7: "Diferenciais", 8: "Direção Visual", 9: "Revisão e Assets"
+/* ── Mapa de erros de API ──────────────────────────────────── */
+const ERROR_MAP = {
+  '429': {
+    cause: 'Limite de requisições da API atingido (rate limit).',
+    tip:   'Aguarde 30 segundos e tente novamente, ou troque de modelo.',
+  },
+  'quota': {
+    cause: 'Cota da API esgotada para hoje.',
+    tip:   'Use outro modelo ou aguarde a renovação da cota.',
+  },
+  '401': {
+    cause: 'API Key inválida ou sem permissão.',
+    tip:   'Verifique a chave em Config. API e tente novamente.',
+  },
+  '403': {
+    cause: 'Acesso negado — API Key sem permissão para este modelo.',
+    tip:   'Verifique o plano e permissões da sua API Key.',
+  },
+  '500': {
+    cause: 'Erro interno no servidor da IA.',
+    tip:   'Aguarde alguns segundos e tente novamente.',
+  },
+  'response too short': {
+    cause: 'A IA retornou uma resposta muito curta ou incompleta.',
+    tip:   'Tente com Gemini 2.5 Pro ou aumente o detalhamento do briefing.',
+  },
+  'failed to fetch': {
+    cause: 'Sem conexão com a internet ou CORS bloqueado.',
+    tip:   'Verifique sua conexão. Se persistir, tente em outro navegador.',
+  },
+  'no key': {
+    cause: 'Nenhuma API Key configurada para o modelo selecionado.',
+    tip:   'Abra Config. API e insira a chave do provedor.',
+  },
 };
+
+function defaultBriefing() {
+  return {
+    nome_cliente: '', nome_marca: '', slug: '', segmento: '', tipo: '',
+    whatsapp: '', email: '', horarios: '', gtm_id: '',
+    instagram: '', tiktok: '', youtube: '', outras_redes: '',
+    modalidade: '', endereco: '', exibir_localizacao: '', cidades_atendimento: '', plataforma_online: '',
+    servicos_lista: '', servicos_descricao: '', servico_principal: '', objetivo_conversao: '', objetivo_outro: '',
+    preco_exibir: '', preco_valor: '', preco_condicao: '', oferta_especial: '',
+    publico_primario: '', publico_dor: '', publico_resultado: '', publico_secundario: '', faq: '',
+    diferencial: '', historia: '', frase_impacto: '',
+    depoimentos: '', depoimentos_formato: [], depoimentos_qtd: '',
+    google_business: '', google_nota: '', google_qtd: '', casos_resultados: '',
+    estilo_desejado: '', sensacao_visitante: '', restricoes: '', frase_tom: '',
+    vocabulario_usa: '', vocabulario_nunca: '', briefing_bruto: '',
+    instrucoes_adicionais: '',
+    // Preenchidos na tela de arte (não nos steps)
+    arte_referencias_pessoais: [], // [{link, gostei, adaptar}]
+    arte_referencias_nicho: [],    // [{link, gostei, adaptar}]
+    arte_cor_principal: '', arte_cor_secundaria: '',
+    arte_logo: '', arte_fotos: '', arte_outros_assets: '',
+    arte_tema: '', arte_intensidade: '', arte_menu_mobile: '',
+    arte_footer_tom: '', arte_o_que_nao_quero: '', arte_referencia_marca: '',
+    arte_ficha_aprovada: '', // JSON string da ficha aprovada
+    // Meta
+    dominio: '', cnpj: '', aviso_legal: '',
+    integracoes: [], // ['maps','reviews','instagram','formulario','whatsapp','ligacao']
+  };
+}
+
+function defaultProject(name) {
+  return {
+    id: crypto.randomUUID(),
+    name: name || 'Novo Projeto',
+    slug: '',
+    status: 'rascunho',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    visitedSteps: [],
+    briefing: defaultBriefing(),
+    versions: [],
+  };
+}
+
+/* ── App Object ─────────────────────────────────────────────── */
 
 const App = {
-  state: {
-    currentStep: 1, totalSteps: 9, projects: {}, activeProjectId: null,
-    visitedSteps: new Set(),
-    apiKeys: { gemini: '', claude: '', grok: '', mistral: '' },
-    selectedModel: 'gemini-3-flash', isGenerating: false
-  },
-  briefing: { ...defaultBriefing },
-  _saveTimeout: null, _toastTimeout: null,
 
+  /* ── Estado ──────────────────────────────────────────── */
+  state: {
+    screen: 'intake',       // 'intake' | 'step' | 'art' | 'review'
+    currentStep: 1,
+    projects: {},
+    activeId: null,
+    apiKeys: { gemini: '', claude: '', grok: '', mistral: '' },
+    selectedModel: 'gemini-2.5-flash',
+    isGenerating: false,
+    lastError: null,
+    lastDocImpl: '',
+    lastDoc1: '',
+    artAnalyzed: false,
+    intakeFiles: [],         // File[] de upload no intake
+    artFiles: [],            // File[] de upload na arte
+    notifPermission: 'default',
+  },
+
+  /* ── Alias ───────────────────────────────────────────── */
+  get B() { return this.state.projects[this.state.activeId]?.briefing || defaultBriefing(); },
+  get P() { return this.state.projects[this.state.activeId] || null; },
+
+  /* ─────────────────────────────────────────────────────
+     INIT
+  ───────────────────────────────────────────────────── */
   init() {
-    this.checkDraft();
-    const storedKeys = localStorage.getItem('landingai_keys');
-    if (storedKeys) this.state.apiKeys = JSON.parse(storedKeys);
-    const storedModel = localStorage.getItem('landingai_model');
-    if (storedModel) this.state.selectedModel = storedModel;
-    
+    this.loadStorage();
     this.requestNotificationPermission();
     this.renderApp();
-    this.setupEvents();
-    
-    // Create first project if empty
-    if (!this.state.activeProjectId) this.createProject();
+    this.setupGlobalEvents();
+    lucide.createIcons();
+    this.updateSidebar();
+    this.updateTopbar();
+    this.renderScreen();
+    this.checkStorageUsage();
   },
 
-  createProject() {
-    const id = crypto.randomUUID();
-    this.state.projects[id] = {
-      id, name: 'Novo Projeto', slug: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(),
-      status: 'rascunho', briefing: { ...defaultBriefing }, visitedSteps: [], versions: []
-    };
-    this.state.activeProjectId = id;
-    this.briefing = { ...defaultBriefing };
-    this.state.visitedSteps = new Set();
-    this.state.currentStep = 1;
-    this.autosave();
-    this.renderApp();
+  renderApp() {
+    // Render estático do HTML já está no index.html
+    // Apenas monta as partes dinâmicas
+    this.renderStepsNav();
+    this.renderModelDropdown();
+    this.renderApiModal();
   },
 
-  loadProject(id) {
-    if (this.state.projects[id]) {
-      this.state.activeProjectId = id;
-      this.briefing = { ...this.state.projects[id].briefing };
-      this.state.visitedSteps = new Set(this.state.projects[id].visitedSteps);
-      this.state.currentStep = 1;
-      this.renderApp();
-      this.closeModal('modal-projects');
+  /* ─────────────────────────────────────────────────────
+     STORAGE
+  ───────────────────────────────────────────────────── */
+  loadStorage() {
+    try {
+      const projects = JSON.parse(localStorage.getItem(STORAGE_KEYS.PROJECTS) || '{}');
+      const activeId = localStorage.getItem(STORAGE_KEYS.ACTIVE);
+      const apiKeys  = JSON.parse(localStorage.getItem(STORAGE_KEYS.API_KEYS) || '{}');
+      const settings = JSON.parse(localStorage.getItem(STORAGE_KEYS.SETTINGS) || '{}');
+
+      this.state.projects = projects;
+      this.state.apiKeys = { gemini: '', claude: '', grok: '', mistral: '', ...apiKeys };
+      this.state.selectedModel = settings.selectedModel || 'gemini-2.5-flash';
+
+      // Verifica se activeId existe
+      if (activeId && projects[activeId]) {
+        this.state.activeId = activeId;
+      } else {
+        // Cria projeto padrão
+        const p = defaultProject('Novo Projeto');
+        this.state.projects[p.id] = p;
+        this.state.activeId = p.id;
+        this.saveStorage();
+      }
+    } catch (e) {
+      console.error('[LandingAI] loadStorage erro:', e);
+      const p = defaultProject('Novo Projeto');
+      this.state.projects = { [p.id]: p };
+      this.state.activeId = p.id;
+    }
+  },
+
+  saveStorage() {
+    try {
+      if (this.P) {
+        this.P.updatedAt = new Date().toISOString();
+      }
+      localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(this.state.projects));
+      localStorage.setItem(STORAGE_KEYS.ACTIVE, this.state.activeId);
+      localStorage.setItem(STORAGE_KEYS.API_KEYS, JSON.stringify(this.state.apiKeys));
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({ selectedModel: this.state.selectedModel }));
+    } catch (e) {
+      if (e.name === 'QuotaExceededError') {
+        this.showToast('⚠ Armazenamento cheio — delete versões antigas para continuar.', 'warning');
+      } else {
+        console.error('[LandingAI] saveStorage erro:', e);
+      }
+    }
+  },
+
+  checkStorageUsage() {
+    let total = 0;
+    for (const k of Object.values(STORAGE_KEYS)) {
+      const v = localStorage.getItem(k) || '';
+      total += new Blob([v]).size;
+    }
+    if (total > STORAGE_LIMIT_BYTES) {
+      this.showToast(`⚠ Armazenamento em ${Math.round(total/1024)}KB — próximo do limite.`, 'warning');
     }
   },
 
   autosave() {
-    clearTimeout(this._saveTimeout);
-    this._saveTimeout = setTimeout(() => {
-      const p = this.state.projects[this.state.activeProjectId];
-      if (!p) return;
-      p.briefing = { ...this.briefing };
-      p.name = this.briefing.nome_cliente || 'Novo Projeto';
-      p.slug = this.briefing.slug;
-      p.visitedSteps = Array.from(this.state.visitedSteps);
-      p.updatedAt = new Date().toISOString();
-      localStorage.setItem('landingai_projects', JSON.stringify(this.state.projects));
-      localStorage.setItem('landingai_active', this.state.activeProjectId);
-      this.renderSidebar(); // update name
+    clearTimeout(this._saveTimer);
+    this.showSaving();
+    this._saveTimer = setTimeout(() => {
+      this.saveStorage();
+      this.showSaved();
+      this.updateSidebar();
     }, 1500);
   },
 
-  checkDraft() {
-    const raw = localStorage.getItem('landingai_projects');
-    const activeId = localStorage.getItem('landingai_active');
-    if (raw) {
-      this.state.projects = JSON.parse(raw);
-      if (activeId && this.state.projects[activeId]) {
-        this.state.activeProjectId = activeId;
-        this.briefing = { ...this.state.projects[activeId].briefing };
-        this.state.visitedSteps = new Set(this.state.projects[activeId].visitedSteps || []);
+  showSaving() {
+    const el = document.getElementById('sidebar-save-indicator');
+    if (!el) return;
+    el.className = 'save-indicator saving';
+    el.querySelector('span').textContent = 'Salvando...';
+  },
+
+  showSaved() {
+    const el = document.getElementById('sidebar-save-indicator');
+    if (!el) return;
+    el.className = 'save-indicator saved';
+    el.querySelector('span').textContent = 'Salvo';
+  },
+
+  /* ─────────────────────────────────────────────────────
+     PROJETOS
+  ───────────────────────────────────────────────────── */
+  createProject() {
+    const p = defaultProject('Novo Projeto');
+    this.state.projects[p.id] = p;
+    this.state.activeId = p.id;
+    this.state.screen = 'intake';
+    this.state.currentStep = 1;
+    this.saveStorage();
+    this.closeModal('modal-projects');
+    this.updateSidebar();
+    this.renderScreen();
+    this.showToast('Projeto criado', 'success');
+  },
+
+  loadProject(id) {
+    if (!this.state.projects[id]) return;
+    this.state.activeId = id;
+    this.state.screen = 'intake';
+    this.state.currentStep = 1;
+    this.saveStorage();
+    this.closeModal('modal-projects');
+    this.updateSidebar();
+    this.renderScreen();
+  },
+
+  cloneProject(id) {
+    const src = this.state.projects[id];
+    if (!src) return;
+    const clone = JSON.parse(JSON.stringify(src));
+    clone.id = crypto.randomUUID();
+    clone.name = src.name + ' (cópia)';
+    clone.status = 'rascunho';
+    clone.createdAt = new Date().toISOString();
+    clone.updatedAt = new Date().toISOString();
+    clone.versions = [];
+    this.state.projects[clone.id] = clone;
+    this.saveStorage();
+    this.renderProjectsList();
+    this.showToast('Projeto clonado', 'success');
+  },
+
+  deleteProject(id) {
+    if (!this.state.projects[id]) return;
+    if (!confirm(`Excluir "${this.state.projects[id].name}"? Esta ação não pode ser desfeita.`)) return;
+    delete this.state.projects[id];
+
+    // Se era o ativo, seleciona outro
+    if (this.state.activeId === id) {
+      const ids = Object.keys(this.state.projects);
+      if (ids.length === 0) {
+        const p = defaultProject('Novo Projeto');
+        this.state.projects[p.id] = p;
+        this.state.activeId = p.id;
+      } else {
+        this.state.activeId = ids[0];
       }
     }
+    this.saveStorage();
+    this.renderProjectsList();
+    this.updateSidebar();
   },
 
-  setField(field, val) {
-    this.briefing[field] = val;
-    if (field === 'nome_cliente' && !this.briefing.slug) {
-      this.briefing.slug = val.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
-      document.getElementById('field_slug').value = this.briefing.slug;
+  renameProject(id, name) {
+    if (!this.state.projects[id]) return;
+    this.state.projects[id].name = name;
+    this.saveStorage();
+    this.updateSidebar();
+  },
+
+  exportProject() {
+    if (!this.P) return;
+    const data = JSON.stringify(this.P, null, 2);
+    this.downloadText(data, `projeto-${this.P.slug || 'landingai'}.json`, 'application/json');
+    this.showToast('Projeto exportado', 'success');
+  },
+
+  importProject(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const p = JSON.parse(e.target.result);
+        if (!p.id || !p.briefing) throw new Error('Arquivo inválido');
+        p.id = crypto.randomUUID(); // Novo ID para evitar conflito
+        p.name = p.name + ' (importado)';
+        this.state.projects[p.id] = p;
+        this.saveStorage();
+        this.renderProjectsList();
+        this.showToast('Projeto importado', 'success');
+      } catch (err) {
+        this.showToast('Erro ao importar: arquivo inválido', 'error');
+      }
+    };
+    reader.readAsText(file);
+  },
+
+  saveVersion(doc1, docImpl, model) {
+    if (!this.P) return;
+    const versions = this.P.versions || [];
+    versions.push({
+      v: versions.length + 1,
+      savedAt: new Date().toISOString(),
+      model,
+      // Salva apenas os primeiros 50KB de cada doc para não estourar localStorage
+      doc1: doc1.substring(0, 50000),
+      docImpl: docImpl ? docImpl.substring(0, 50000) : '',
+    });
+    // Mantém apenas as últimas 5 versões
+    if (versions.length > 5) versions.splice(0, versions.length - 5);
+    this.P.versions = versions;
+    this.saveStorage();
+  },
+
+  /* ─────────────────────────────────────────────────────
+     BRIEFING FIELDS
+  ───────────────────────────────────────────────────── */
+  setField(field, value) {
+    if (!this.P) return;
+    this.P.briefing[field] = value;
+
+    // Efeitos especiais por campo
+    if (field === 'nome_cliente') {
+      const slug = value.toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-|-$/g, '');
+      this.P.briefing.slug = slug;
+      this.P.name = value || 'Novo Projeto';
+      this.updateSidebar();
     }
+
+    if (field === 'segmento') this.updateSidebar();
+    if (field === 'whatsapp') this.P.briefing.whatsapp = value.replace(/\D/g, '');
+
     this.autosave();
-    if (this.state.currentStep === 9) this.renderStep9();
+    this.updateTopbarScore();
   },
 
-  toggleArrayField(field, val) {
-    if (!this.briefing[field]) this.briefing[field] = [];
-    if (!Array.isArray(this.briefing[field])) this.briefing[field] = [this.briefing[field]];
-    const idx = this.briefing[field].indexOf(val);
-    if (idx > -1) this.briefing[field].splice(idx, 1);
-    else this.briefing[field].push(val);
+  toggleArray(field, value) {
+    if (!this.P) return;
+    const arr = this.P.briefing[field] || [];
+    const idx = arr.indexOf(value);
+    if (idx >= 0) arr.splice(idx, 1); else arr.push(value);
+    this.P.briefing[field] = arr;
     this.autosave();
-    this.renderStepContent();
   },
 
-  goToStep(n) {
-    this.state.visitedSteps.add(this.state.currentStep);
-    this.state.currentStep = n;
-    this.renderApp();
-    document.getElementById('step-content').scrollTop = 0;
+  /* ─────────────────────────────────────────────────────
+     VALIDAÇÃO
+  ───────────────────────────────────────────────────── */
+  getStepScore(step) {
+    const B = this.B;
+    const fields = this.getStepFields(step);
+    if (!fields.length) return 100;
+    const filled = fields.filter(f => {
+      const v = B[f];
+      return v && v.toString().trim().length > 0;
+    });
+    let score = (filled.length / fields.length) * 100;
+    // Penalidade por campos genéricos
+    const warns = this.getStepWarnings(step);
+    score = Math.max(0, score - warns.length * 8);
+    return Math.round(score);
   },
 
-  renderApp() {
-    this.renderSidebar();
-    this.renderTopbar();
-    this.renderBottombar();
-    this.renderStepContent();
-    lucide.createIcons();
+  getStepFields(step) {
+    const maps = {
+      1: ['nome_cliente', 'nome_marca', 'segmento', 'tipo'],
+      2: ['whatsapp', 'email', 'horarios', 'gtm_id'],
+      3: ['instagram', 'tiktok', 'youtube'],
+      4: ['modalidade', 'endereco', 'cidades_atendimento'],
+      5: ['servicos_lista', 'servicos_descricao', 'servico_principal', 'objetivo_conversao'],
+      6: ['publico_primario', 'publico_dor', 'publico_resultado', 'faq'],
+      7: ['diferencial', 'historia', 'frase_impacto', 'depoimentos', 'google_business'],
+      8: ['estilo_desejado', 'sensacao_visitante', 'vocabulario_usa', 'restricoes', 'briefing_bruto'],
+    };
+    return maps[step] || [];
   },
 
-  renderSidebar() {
-    const sb = document.getElementById('sidebar');
-    const p = this.state.projects[this.state.activeProjectId];
-    const name = p ? p.name : 'Novo Projeto';
-    const hasKeys = Object.values(this.state.apiKeys).some(k => k.length > 0);
-    
-    let stepsHtml = '';
-    for(let i=1; i<=9; i++) {
-      const active = i === this.state.currentStep ? 'active' : '';
-      const visited = this.state.visitedSteps.has(i) ? 'visited' : '';
-      let icon = 'circle';
-      if (i === this.state.currentStep) icon = 'circle-dot';
-      else if (visited) icon = 'check-circle';
-      
-      stepsHtml += `
-        <div class="nav-item ${active} ${visited}" onclick="App.goToStep(${i})">
-          <i data-lucide="${icon}" class="icon"></i> ${i}. ${STEP_TITLES[i]}
-        </div>
-      `;
+  getStepWarnings(step) {
+    const B = this.B;
+    const warns = [];
+    GENERIC_CHECKS.forEach(check => {
+      const v = (B[check.field] || '').toLowerCase().trim();
+      if (!v) return;
+      const tooShort = check.minLen && v.length < check.minLen;
+      const hasGenericTerm = check.terms && check.terms.some(t => v.includes(t));
+      if (tooShort || hasGenericTerm) {
+        warns.push({ field: check.field, msg: check.msg });
+      }
+    });
+    return warns.filter(w => this.getStepFields(step).includes(w.field));
+  },
+
+  getAllWarnings() {
+    const warns = [];
+    for (let s = 1; s <= 8; s++) warns.push(...this.getStepWarnings(s));
+    return warns;
+  },
+
+  getMissingCritical() {
+    const B = this.B;
+    const missing = [];
+    for (const [step, fields] of Object.entries(CRITICAL_FIELDS)) {
+      fields.forEach(f => {
+        const v = B[f];
+        if (!v || !v.toString().trim()) {
+          missing.push({ field: f, step: parseInt(step) });
+        }
+      });
+    }
+    return missing;
+  },
+
+  getGlobalScore() {
+    let total = 0;
+    for (let s = 1; s <= 8; s++) total += this.getStepScore(s);
+    return Math.round(total / 8);
+  },
+
+  getScoreClass(score) {
+    if (score >= 80) return 'high';
+    if (score >= 50) return 'medium';
+    return 'low';
+  },
+
+  getScoreColor(score) {
+    if (score >= 80) return 'var(--success)';
+    if (score >= 50) return 'var(--warning)';
+    return 'var(--danger)';
+  },
+
+  canGenerate() {
+    const missing = this.getMissingCritical();
+    const hasKey = Object.values(this.state.apiKeys).some(k => k.trim().length > 10);
+    const score = this.getGlobalScore();
+    return missing.length === 0 && hasKey && score >= 55;
+  },
+
+  /* ─────────────────────────────────────────────────────
+     SIDEBAR E TOPBAR
+  ───────────────────────────────────────────────────── */
+  updateSidebar() {
+    const B = this.B;
+    const P = this.P;
+    if (!P) return;
+
+    // Projeto ativo
+    document.getElementById('sidebar-project-name').textContent = P.name || 'Sem nome';
+    document.getElementById('sidebar-project-segment').textContent = B.segmento || '—';
+
+    // Score
+    const score = this.getGlobalScore();
+    document.getElementById('sidebar-score-fill').style.width = score + '%';
+    document.getElementById('sidebar-score-label').textContent = score + '%';
+
+    // API status
+    const configured = API_PROVIDERS.filter(p => this.state.apiKeys[p.id]?.trim().length > 10);
+    const dot = document.getElementById('sidebar-api-dot');
+    const label = document.getElementById('sidebar-api-label');
+    if (configured.length === 0) {
+      dot.className = 'status-dot';
+      label.textContent = 'Sem API';
+    } else if (configured.length === API_PROVIDERS.length) {
+      dot.className = 'status-dot ok';
+      label.textContent = 'Todas configuradas';
+    } else {
+      dot.className = 'status-dot partial';
+      label.textContent = `${configured.length}/${API_PROVIDERS.length} APIs`;
     }
 
-    sb.innerHTML = `
-      <div class="logo">
-        <h2 class="syne text-accent">LandingAI</h2>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Projeto Ativo</div>
-        <div class="project-active-card" onclick="App.openModal('modal-projects')">
-          <div class="project-active-title">${name}</div>
-          <div class="project-active-meta">Clique para trocar</div>
-        </div>
-      </div>
-      <div class="sidebar-section">
-        <div class="sidebar-section-title">Briefing</div>
-        ${stepsHtml}
-      </div>
-      <div style="margin-top: auto; padding: 24px;">
-        <button class="btn btn-ghost" style="width: 100%; margin-bottom: 12px;" onclick="App.openModal('modal-api')">
-          <i data-lucide="key" class="icon"></i> Config. API
+    // Steps nav
+    this.renderStepsNav();
+  },
+
+  updateTopbar() {
+    const screen = this.state.screen;
+    const step = this.state.currentStep;
+    let title, sub;
+
+    if (screen === 'intake') {
+      title = 'Intake Inteligente';
+      sub = 'Cole o briefing do cliente — a IA preenche tudo para você revisar';
+    } else if (screen === 'art') {
+      title = 'Direção de Arte';
+      sub = 'Defina referências visuais e ativos — a IA monta a ficha de direção';
+    } else if (screen === 'review') {
+      title = 'Revisão e Geração';
+      sub = 'Revise o score e gere o documento final';
+    } else if (screen === 'step') {
+      const s = STEPS.find(x => x.id === step);
+      title = s ? s.name : '';
+      sub = s ? s.sub : '';
+    }
+
+    document.getElementById('topbar-title').textContent = title;
+    document.getElementById('topbar-subtitle').textContent = sub;
+    this.updateTopbarScore();
+    this.updateProgress();
+  },
+
+  updateTopbarScore() {
+    const wrap = document.getElementById('topbar-score');
+    const label = document.getElementById('topbar-score-label');
+    if (this.state.screen === 'step') {
+      const score = this.getStepScore(this.state.currentStep);
+      const cls = this.getScoreClass(score);
+      wrap.style.display = '';
+      label.className = `score-badge ${cls}`;
+      label.textContent = score + '%';
+    } else {
+      wrap.style.display = 'none';
+    }
+  },
+
+  updateProgress() {
+    const fill = document.getElementById('progress-fill');
+    let pct = 0;
+    if (this.state.screen === 'intake') pct = 0;
+    else if (this.state.screen === 'step') pct = ((this.state.currentStep - 1) / 10) * 100;
+    else if (this.state.screen === 'art') pct = 85;
+    else if (this.state.screen === 'review') pct = 100;
+    fill.style.width = pct + '%';
+    fill.parentElement.setAttribute('aria-valuenow', pct);
+  },
+
+  renderStepsNav() {
+    const nav = document.getElementById('steps-nav');
+    if (!nav) return;
+    nav.innerHTML = STEPS.map(s => {
+      const score = this.getStepScore(s.id);
+      const visited = this.P?.visitedSteps?.includes(s.id);
+      const isActive = this.state.screen === 'step' && this.state.currentStep === s.id;
+      const isDone = visited && score >= 80;
+      const hasErr = visited && score < 50;
+      let cls = 'step-nav-item';
+      if (isActive) cls += ' active';
+      if (isDone) cls += ' done';
+      if (hasErr) cls += ' has-error';
+
+      let dotContent = `<span class="step-dot-inner">${s.id}</span>`;
+      if (isDone) dotContent = `<i data-lucide="check" style="width:10px;height:10px;color:var(--accent-text)"></i>`;
+      if (hasErr) dotContent = `<i data-lucide="x" style="width:10px;height:10px"></i>`;
+
+      return `
+        <button class="${cls}" role="listitem" data-step="${s.id}" aria-label="${s.name}" aria-current="${isActive ? 'step' : 'false'}">
+          <span class="step-dot">${dotContent}</span>
+          <span class="step-label">${s.name}</span>
         </button>
-        <div class="api-status">
-          <span class="status-dot ${hasKeys ? 'active' : ''}"></span>
-          ${hasKeys ? 'API Configurada' : 'Sem API'}
+      `;
+    }).join('');
+    lucide.createIcons({ nodes: [nav] });
+
+    // Events
+    nav.querySelectorAll('[data-step]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.goToStep(parseInt(btn.dataset.step));
+      });
+    });
+
+    // Art & Review
+    const artBtn = document.getElementById('btn-goto-art');
+    const revBtn = document.getElementById('btn-goto-review');
+    if (artBtn) {
+      artBtn.className = 'step-nav-item step-art' + (this.state.screen === 'art' ? ' active' : '');
+      artBtn.onclick = () => this.goToScreen('art');
+    }
+    if (revBtn) {
+      revBtn.className = 'step-nav-item step-review' + (this.state.screen === 'review' ? ' active' : '');
+      revBtn.onclick = () => this.goToScreen('review');
+    }
+  },
+
+  /* ─────────────────────────────────────────────────────
+     NAVEGAÇÃO
+  ───────────────────────────────────────────────────── */
+  goToStep(n) {
+    this.state.screen = 'step';
+    this.state.currentStep = n;
+    if (this.P && !this.P.visitedSteps.includes(n)) {
+      this.P.visitedSteps.push(n);
+    }
+    this.updateTopbar();
+    this.renderStepsNav();
+    this.renderScreen();
+    this.renderBottombar();
+  },
+
+  goToScreen(s) {
+    this.state.screen = s;
+    this.updateTopbar();
+    this.renderStepsNav();
+    this.renderScreen();
+    this.renderBottombar();
+  },
+
+  goNext() {
+    if (this.state.screen === 'intake') { this.goToStep(1); return; }
+    if (this.state.screen === 'step') {
+      if (this.state.currentStep < 8) { this.goToStep(this.state.currentStep + 1); return; }
+      this.goToScreen('art'); return;
+    }
+    if (this.state.screen === 'art') { this.goToScreen('review'); return; }
+  },
+
+  goPrev() {
+    if (this.state.screen === 'step') {
+      if (this.state.currentStep > 1) { this.goToStep(this.state.currentStep - 1); return; }
+      this.goToScreen('intake'); return;
+    }
+    if (this.state.screen === 'art') { this.goToStep(8); return; }
+    if (this.state.screen === 'review') { this.goToScreen('art'); return; }
+  },
+
+  /* ─────────────────────────────────────────────────────
+     RENDER SCREENS
+  ───────────────────────────────────────────────────── */
+  renderScreen() {
+    const container = document.getElementById('screen-content');
+    if (!this.state.screen) return;
+
+    switch (this.state.screen) {
+      case 'intake': container.innerHTML = this.buildIntakeScreen(); break;
+      case 'step':   container.innerHTML = this.buildStepScreen(this.state.currentStep); break;
+      case 'art':    container.innerHTML = this.buildArtScreen(); break;
+      case 'review': container.innerHTML = this.buildReviewScreen(); break;
+    }
+
+    lucide.createIcons({ nodes: [container] });
+    this.bindScreenEvents(container);
+    this.renderBottombar();
+    // Scroll to top
+    container.scrollTo(0, 0);
+  },
+
+  bindScreenEvents(container) {
+    // Inputs text/textarea
+    container.querySelectorAll('[data-field]').forEach(el => {
+      el.addEventListener('input', e => this.setField(el.dataset.field, el.value));
+      el.addEventListener('change', e => this.setField(el.dataset.field, el.value));
+      // Restaura valor salvo
+      const saved = this.B[el.dataset.field];
+      if (saved !== undefined && saved !== null && el.value === '') {
+        if (el.type === 'color') el.value = saved || '#000000';
+        else el.value = saved;
+      }
+    });
+
+    // Chips
+    container.querySelectorAll('[data-chip]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const field = chip.dataset.field;
+        const value = chip.dataset.chip;
+        const multi = chip.dataset.multi === 'true';
+        if (multi) {
+          this.toggleArray(field, value);
+          chip.classList.toggle('on');
+        } else {
+          // Radio-style
+          container.querySelectorAll(`[data-field="${field}"][data-chip]`).forEach(c => c.classList.remove('on', 'on-accent'));
+          this.setField(field, value);
+          chip.classList.add('on');
+        }
+      });
+      // Marca estado atual
+      const B = this.B;
+      const field = chip.dataset.field;
+      const value = chip.dataset.chip;
+      const multi = chip.dataset.multi === 'true';
+      if (multi) {
+        const arr = B[field] || [];
+        if (arr.includes(value)) chip.classList.add('on');
+      } else {
+        if (B[field] === value) chip.classList.add('on');
+      }
+    });
+
+    // Sel-cards
+    container.querySelectorAll('[data-selcard]').forEach(card => {
+      card.addEventListener('click', () => {
+        const field = card.dataset.field;
+        const value = card.dataset.selcard;
+        container.querySelectorAll(`[data-field-group="${field}"] [data-selcard]`).forEach(c => c.classList.remove('on'));
+        this.setField(field, value);
+        card.classList.add('on');
+      });
+      if (this.B[card.dataset.field] === card.dataset.selcard) card.classList.add('on');
+    });
+
+    // WA preview
+    const wInput = container.querySelector('[data-field="whatsapp"]');
+    const wPreview = container.querySelector('#wa-preview');
+    if (wInput && wPreview) {
+      const update = () => {
+        const v = (this.B.whatsapp || '').replace(/\D/g, '');
+        wPreview.textContent = v ? `wa.me/${v}` : '—';
+      };
+      update();
+      wInput.addEventListener('input', update);
+    }
+
+    // Upload intake
+    const intakeUpload = container.querySelector('#intake-upload-zone');
+    if (intakeUpload) this.setupUploadZone(intakeUpload, 'intake');
+
+    // Analyze btn
+    const analyzeBtn = container.querySelector('#btn-analyze');
+    if (analyzeBtn) {
+      analyzeBtn.addEventListener('click', () => this.runIntakeAnalysis());
+    }
+
+    // Art uploads
+    const artUpload = container.querySelector('#art-upload-zone');
+    if (artUpload) this.setupUploadZone(artUpload, 'art');
+
+    // Add reference btn
+    container.querySelectorAll('[data-add-ref]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const type = btn.dataset.addRef;
+        this.addArtReference(type);
+        this.renderScreen();
+      });
+    });
+
+    // Analyze art btn
+    const artAnalyzeBtn = container.querySelector('#btn-analyze-art');
+    if (artAnalyzeBtn) {
+      artAnalyzeBtn.addEventListener('click', () => this.runArtAnalysis());
+    }
+
+    // Review actions
+    const doc1Btn = container.querySelector('#btn-download-doc1');
+    if (doc1Btn) doc1Btn.addEventListener('click', () => this.downloadDoc1());
+
+    const genBtn = container.querySelector('#btn-generate-docimpl');
+    if (genBtn) genBtn.addEventListener('click', () => this.generateDocImpl());
+
+    // Review step cards
+    container.querySelectorAll('[data-goto-step]').forEach(card => {
+      card.addEventListener('click', () => this.goToStep(parseInt(card.dataset.gotoStep)));
+    });
+
+    // Warning goto
+    container.querySelectorAll('[data-goto-step-warn]').forEach(el => {
+      el.addEventListener('click', () => this.goToStep(parseInt(el.dataset.gotoStepWarn)));
+    });
+  },
+
+  /* ─────────────────────────────────────────────────────
+     BUILD: INTAKE SCREEN
+  ───────────────────────────────────────────────────── */
+  buildIntakeScreen() {
+    const B = this.B;
+    return `
+    <div class="intake-screen">
+
+      <div class="intake-hero">
+        <div class="intake-badge">
+          <i data-lucide="zap" style="width:12px;height:12px"></i>
+          v3 — Assistente Inteligente
+        </div>
+        <h2 class="intake-title">Cole o briefing.<br>A IA faz o resto.</h2>
+        <p class="intake-subtitle">
+          Cole o briefing preenchido pelo cliente, textos de WhatsApp, PDFs ou qualquer material coletado.
+          A IA analisa, extrai e preenche todos os steps automaticamente.
+          Você só revisa e ajusta.
+        </p>
+      </div>
+
+      <!-- Box principal: Briefing -->
+      <div class="intake-box">
+        <div class="intake-box-header">
+          <i data-lucide="file-text" class="intake-box-icon" style="width:18px;height:18px"></i>
+          <span class="intake-box-title">Material do cliente</span>
+          <span class="intake-box-desc">Cole texto, links ou suba arquivos</span>
+        </div>
+        <div class="intake-box-body">
+
+          <div class="field-group">
+            ${this.fieldLabel('briefing_bruto', 'Briefing e materiais do cliente', false)}
+            <textarea
+              class="field-textarea xtall"
+              data-field="briefing_bruto"
+              placeholder="Cole aqui tudo que você tem: briefing preenchido pelo cliente, textos de WhatsApp, observações da conversa, links relevantes, qualquer coisa.
+
+A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor o resultado."
+            >${B.briefing_bruto || ''}</textarea>
+            <span class="field-hint">Pode colar em formato bruto — não precisa formatar nada.</span>
+          </div>
+
+          <div class="intake-or">ou anexe arquivos</div>
+
+          <div id="intake-upload-zone" class="upload-zone">
+            <input type="file" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.md,.txt">
+            <i data-lucide="upload-cloud" class="upload-zone-icon"></i>
+            <p class="upload-zone-label">Arraste ou clique para enviar</p>
+            <p class="upload-zone-hint">PDF, imagens, .md, .txt — até 10MB por arquivo</p>
+          </div>
+          <div id="intake-files-list" class="upload-preview-list"></div>
+
+          <div class="intake-actions">
+            <div class="field-group" style="flex:1">
+              ${this.fieldLabel('', 'Modelo para análise', false)}
+              <div class="btn-model" style="width:fit-content;cursor:default">
+                <i data-lucide="cpu" style="width:14px;height:14px"></i>
+                <span id="intake-model-name">${AI_MODELS[this.state.selectedModel]?.label}</span>
+              </div>
+            </div>
+            <button id="btn-analyze" class="btn-primary" style="align-self:flex-end">
+              <i data-lucide="zap" style="width:16px;height:16px"></i>
+              Analisar e Preencher Steps
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Hint SOP -->
+      <div class="intake-sop-hint">
+        <i data-lucide="info" class="intake-sop-hint-icon" style="width:15px;height:15px"></i>
+        <p class="intake-sop-hint-text">
+          <strong>Dica do SOP:</strong> Quanto mais contexto você colocar — briefing preenchido, conversa de WhatsApp, observações suas sobre tom de voz —
+          mais precisa será a análise. Se quiser preencher manualmente, use a navegação no lado esquerdo para ir direto a qualquer step.
+        </p>
+      </div>
+
+      <!-- Atalho: ir direto para step 1 -->
+      <div style="text-align:center">
+        <button class="btn-ghost btn-sm" onclick="App.goToStep(1)">
+          <i data-lucide="list" style="width:14px;height:14px"></i>
+          Preencher manualmente sem análise
+        </button>
+      </div>
+
+    </div>
+    `;
+  },
+
+  /* ─────────────────────────────────────────────────────
+     BUILD: STEP SCREENS
+  ───────────────────────────────────────────────────── */
+  buildStepScreen(step) {
+    const builders = {
+      1: () => this.buildStep1(),
+      2: () => this.buildStep2(),
+      3: () => this.buildStep3(),
+      4: () => this.buildStep4(),
+      5: () => this.buildStep5(),
+      6: () => this.buildStep6(),
+      7: () => this.buildStep7(),
+      8: () => this.buildStep8(),
+    };
+    return builders[step] ? `<div class="step-inner">${builders[step]()}</div>` : '';
+  },
+
+  fieldLabel(field, text, required = false, optional = false) {
+    const req = required ? '<span class="field-required">*</span>' : '';
+    const opt = optional ? '<span class="field-optional">(opcional)</span>' : '';
+    const tip = TOOLTIPS[field] ? `
+      <span class="field-tooltip">
+        <i data-lucide="help-circle" class="field-tooltip-icon"></i>
+        <span class="field-tooltip-bubble">${TOOLTIPS[field]}</span>
+      </span>` : '';
+    return `<label class="field-label">${text}${req}${opt}${tip}</label>`;
+  },
+
+  buildStep1() {
+    const B = this.B;
+    return `
+      <p class="form-section-title">Identidade do Projeto</p>
+
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('nome_cliente', 'Nome do cliente', true)}
+          <input type="text" class="field-input" data-field="nome_cliente" placeholder="Ex: Beatriz Mattos" value="${B.nome_cliente || ''}">
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('nome_marca', 'Nome da marca', false, true)}
+          <input type="text" class="field-input" data-field="nome_marca" placeholder="Ex: BM Adestramento" value="${B.nome_marca || ''}">
+        </div>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('segmento', 'Segmento / profissão', true)}
+        <input type="text" class="field-input" data-field="segmento" placeholder="Ex: Adestramento comportamental canino online" value="${B.segmento || ''}">
+        <span class="field-hint">Seja específico — não "pet" mas "adestramento comportamental canino". Impacta toda a copy.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('tipo', 'Tipo de negócio', true)}
+        <div class="sel-cards" data-field-group="tipo">
+          ${[
+            { v: 'servico', icon: 'briefcase', title: 'Serviço', desc: 'Adestramento, fisioterapia, advocacia, consultórios' },
+            { v: 'mentoria', icon: 'graduation-cap', title: 'Mentoria', desc: 'Mentoria individual, em grupo, programa online' },
+            { v: 'consultoria', icon: 'bar-chart', title: 'Consultoria', desc: 'B2B, consultoria especializada, assessoria' },
+            { v: 'produto', icon: 'package', title: 'Produto', desc: 'Venda física, produto digital, ecommerce' },
+            { v: 'saas', icon: 'monitor', title: 'SaaS / Digital', desc: 'Software, app, ferramenta, plataforma' },
+          ].map(o => `
+            <div class="sel-card" data-field="tipo" data-selcard="${o.v}" tabindex="0" role="option" aria-selected="${B.tipo === o.v}">
+              <i data-lucide="${o.icon}" class="sel-card-icon" style="width:18px;height:18px"></i>
+              <div>
+                <div class="sel-card-title">${o.title}</div>
+                <div class="sel-card-desc">${o.desc}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Domínio e Legalização</p>
+
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('dominio', 'Domínio desejado', true)}
+          <input type="text" class="field-input" data-field="dominio" placeholder="Ex: beatrizmattos.com.br" value="${B.dominio || ''}">
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('cnpj', 'CNPJ', false, true)}
+          <input type="text" class="field-input" data-field="cnpj" placeholder="00.000.000/0000-00" value="${B.cnpj || ''}">
+        </div>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('aviso_legal', 'Aviso legal / registro profissional', false, true)}
+        <input type="text" class="field-input" data-field="aviso_legal" placeholder="Ex: CRM 12345-SP · CRP 06/12345 · OAB/SP 123456" value="${B.aviso_legal || ''}">
+      </div>
+    `;
+  },
+
+  buildStep2() {
+    const B = this.B;
+    return `
+      <p class="form-section-title">Contato e Conversão</p>
+
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('whatsapp', 'WhatsApp', true)}
+          <input type="text" class="field-input" data-field="whatsapp"
+            placeholder="Ex: 5511999999999"
+            value="${B.whatsapp || ''}"
+            inputmode="numeric"
+          >
+          <div id="wa-preview" class="field-preview" style="display:${B.whatsapp ? '' : 'none'}">
+            ${B.whatsapp ? `wa.me/${B.whatsapp}` : ''}
+          </div>
+          <span class="field-hint">Somente dígitos: DDI + DDD + número. O link wa.me é gerado automaticamente.</span>
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('email', 'E-mail de contato', false, true)}
+          <input type="email" class="field-input" data-field="email" placeholder="contato@email.com.br" value="${B.email || ''}">
+        </div>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('horarios', 'Dias e horários de atendimento', false, true)}
+        <input type="text" class="field-input" data-field="horarios" placeholder="Ex: Segunda a sexta, 9h às 18h. Sábados mediante agendamento." value="${B.horarios || ''}">
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Rastreamento e Analytics</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('gtm_id', 'ID do Google Tag Manager', false, true)}
+        <input type="text" class="field-input" data-field="gtm_id" placeholder="Ex: GTM-XXXXXXX" value="${B.gtm_id || ''}">
+        <span class="field-hint">Fornecido pelo gestor de tráfego. Formato: GTM- seguido de 7 caracteres.</span>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Objetivo de Conversão</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('objetivo_conversao', 'Como o lead entra em contato?', true)}
+        <div class="sel-cards" data-field-group="objetivo_conversao">
+          ${[
+            { v: 'whatsapp',   icon: 'message-circle', title: 'WhatsApp',          desc: 'Botão direto para conversa no WA. Mais rápido.' },
+            { v: 'formulario', icon: 'mail',            title: 'Formulário',         desc: 'Formulário no site. Bom para triagem inicial.' },
+            { v: 'agendamento',icon: 'calendar',        title: 'Agendamento Online', desc: 'Link para Calendly, Cal.com ou similar.' },
+            { v: 'outro',      icon: 'link',            title: 'Outro',              desc: 'Especifique abaixo.' },
+          ].map(o => `
+            <div class="sel-card" data-field="objetivo_conversao" data-selcard="${o.v}" tabindex="0">
+              <i data-lucide="${o.icon}" class="sel-card-icon" style="width:18px;height:18px"></i>
+              <div>
+                <div class="sel-card-title">${o.title}</div>
+                <div class="sel-card-desc">${o.desc}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      ${B.objetivo_conversao === 'outro' ? `
+        <div class="field-group">
+          ${this.fieldLabel('objetivo_outro', 'Descreva o objetivo de conversão', true)}
+          <input type="text" class="field-input" data-field="objetivo_outro" placeholder="Ex: Link para checkout do Hotmart" value="${B.objetivo_outro || ''}">
+        </div>
+      ` : ''}
+    `;
+  },
+
+  buildStep3() {
+    const B = this.B;
+    return `
+      <p class="form-section-title">Redes Sociais e Presença Digital</p>
+      <p class="form-section-title" style="font-size:12px;font-family:var(--font-body);font-weight:400;color:var(--text-secondary);border:none;padding:0;margin-top:-16px">
+        Preencha apenas o que existe e está ativo. Cada rede ativada aqui pode virar um bloco ou integração no site.
+      </p>
+
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('instagram', 'Instagram', false, true)}
+          <input type="text" class="field-input" data-field="instagram" placeholder="@handle ou URL" value="${B.instagram || ''}">
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('tiktok', 'TikTok', false, true)}
+          <input type="text" class="field-input" data-field="tiktok" placeholder="@handle" value="${B.tiktok || ''}">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('youtube', 'YouTube', false, true)}
+          <input type="text" class="field-input" data-field="youtube" placeholder="URL do canal" value="${B.youtube || ''}">
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('outras_redes', 'Outras redes', false, true)}
+          <input type="text" class="field-input" data-field="outras_redes" placeholder="LinkedIn, Pinterest, etc" value="${B.outras_redes || ''}">
+        </div>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Integrações no Site</p>
+      <p class="form-section-title" style="font-size:12px;font-family:var(--font-body);font-weight:400;color:var(--text-secondary);border:none;padding:0;margin-top:-16px">
+        Marque somente o que foi confirmado. Ativo não confirmado = não inclui.
+      </p>
+
+      <div class="chip-group">
+        ${[
+          { v: 'maps',       label: 'Google Maps Embed' },
+          { v: 'reviews',    label: 'Google Reviews Widget' },
+          { v: 'instagram',  label: 'Feed do Instagram' },
+          { v: 'formulario', label: 'Formulário de Contato' },
+          { v: 'whatsapp',   label: 'WhatsApp Flutuante' },
+          { v: 'ligacao',    label: 'Botão de Ligação' },
+        ].map(o => `
+          <button class="chip ${(B.integracoes || []).includes(o.v) ? 'on' : ''}"
+            data-field="integracoes" data-chip="${o.v}" data-multi="true">
+            ${o.label}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  },
+
+  buildStep4() {
+    const B = this.B;
+    return `
+      <p class="form-section-title">Localização e Modalidade</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('modalidade', 'Como o cliente atende?', true)}
+        <div class="chip-group">
+          ${[
+            { v: 'presencial', label: 'Presencial' },
+            { v: 'online',     label: 'Online' },
+            { v: 'hibrido',    label: 'Híbrido (presencial + online)' },
+          ].map(o => `
+            <button class="chip ${B.modalidade === o.v ? 'on' : ''}" data-field="modalidade" data-chip="${o.v}">
+              ${o.label}
+            </button>
+          `).join('')}
+        </div>
+        <span class="field-hint">Define se o site terá seção de mapa (presencial) ou plataforma online.</span>
+      </div>
+
+      ${(B.modalidade === 'presencial' || B.modalidade === 'hibrido') ? `
+        <div class="field-group">
+          ${this.fieldLabel('endereco', 'Endereço completo', true)}
+          <textarea class="field-textarea" data-field="endereco" placeholder="Rua, número, bairro, cidade, estado, CEP. Ponto de referência se útil.">${B.endereco || ''}</textarea>
+        </div>
+
+        <div class="field-group">
+          ${this.fieldLabel('exibir_localizacao', 'Como exibir a localização no site?', true)}
+          <div class="chip-group">
+            ${[
+              { v: 'completo', label: 'Endereço completo' },
+              { v: 'cidade',   label: 'Só cidade / região' },
+              { v: 'nao',      label: 'Não exibir' },
+            ].map(o => `
+              <button class="chip ${B.exibir_localizacao === o.v ? 'on' : ''}" data-field="exibir_localizacao" data-chip="${o.v}">
+                ${o.label}
+              </button>
+            `).join('')}
+          </div>
+          <span class="field-hint">"Só cidade" é mais seguro para quem atende em casa.</span>
+        </div>
+
+        <div class="field-group">
+          ${this.fieldLabel('cidades_atendimento', 'Cidades de atendimento presencial', false, true)}
+          <input type="text" class="field-input" data-field="cidades_atendimento" placeholder="Ex: São Paulo, Guarulhos, Santo André" value="${B.cidades_atendimento || ''}">
+        </div>
+      ` : ''}
+
+      ${(B.modalidade === 'online' || B.modalidade === 'hibrido') ? `
+        <div class="field-group">
+          ${this.fieldLabel('plataforma_online', 'Plataforma de atendimento online', false, true)}
+          <input type="text" class="field-input" data-field="plataforma_online" placeholder="Ex: Google Meet, Zoom, Calendly" value="${B.plataforma_online || ''}">
+        </div>
+      ` : ''}
+    `;
+  },
+
+  buildStep5() {
+    const B = this.B;
+    return `
+      <p class="form-section-title">Serviços e Produto</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('servico_principal', 'Serviço principal — foco da campanha', true)}
+        <input type="text" class="field-input" data-field="servico_principal" placeholder="Ex: Mentoria de adestramento comportamental canino online" value="${B.servico_principal || ''}">
+        <span class="field-hint">Em uma linha. É o que a H1 da landing page vai espelhar.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('servicos_lista', 'Lista de serviços / produtos', false, true)}
+        <textarea class="field-textarea" data-field="servicos_lista" placeholder="Um por linha:
+Mentoria individual semanal
+Mentoria intensiva (2x por semana)
+Consultoria pontual de diagnóstico">${B.servicos_lista || ''}</textarea>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('servicos_descricao', 'Descrição detalhada de cada serviço', true)}
+        <textarea class="field-textarea tall" data-field="servicos_descricao"
+          placeholder="Descreva cada serviço: o que é, como funciona, para quem é, o que inclui, duração.
+Quanto mais detalhe aqui, mais precisa e autêntica será a copy gerada.
+
+Não precisa ser bonito — escreva como falaria para um colega.">${B.servicos_descricao || ''}</textarea>
+        <span class="field-hint">Mínimo recomendado: 100 caracteres por serviço. Sem detalhe, a copy fica genérica.</span>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Preço</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('preco_exibir', 'Exibir preço no site?', true)}
+        <div class="chip-group">
+          <button class="chip ${B.preco_exibir === 'sim' ? 'on' : ''}" data-field="preco_exibir" data-chip="sim">Sim</button>
+          <button class="chip ${B.preco_exibir === 'nao' ? 'on' : ''}" data-field="preco_exibir" data-chip="nao">Não</button>
+        </div>
+      </div>
+
+      ${B.preco_exibir === 'sim' ? `
+        <div class="form-row">
+          <div class="field-group">
+            ${this.fieldLabel('preco_valor', 'Valor e forma de cobrança', true)}
+            <input type="text" class="field-input" data-field="preco_valor" placeholder="Ex: R$ 697/mês | R$ 350/sessão | R$ 1.200 pacote 4 sessões" value="${B.preco_valor || ''}">
+          </div>
+          <div class="field-group">
+            ${this.fieldLabel('preco_condicao', 'Condição especial ou oferta', false, true)}
+            <input type="text" class="field-input" data-field="preco_condicao" placeholder="Ex: 5% off no 1º mês via Pix" value="${B.preco_condicao || ''}">
+          </div>
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('oferta_especial', 'Oferta especial para destacar no site', false, true)}
+          <input type="text" class="field-input" data-field="oferta_especial" placeholder="Ex: Vagas limitadas para o mês de maio" value="${B.oferta_especial || ''}">
+        </div>
+      ` : ''}
+    `;
+  },
+
+  buildStep6() {
+    const B = this.B;
+    const warns = this.getStepWarnings(6);
+    const pubWarn = warns.find(w => w.field === 'publico_primario');
+    return `
+      <p class="form-section-title">Público-Alvo</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('publico_primario', 'Público primário — perfil do cliente ideal', true)}
+        <textarea class="field-textarea" data-field="publico_primario"
+          placeholder="Seja específico: idade, profissão, situação de vida, contexto, o que tem em comum.
+Ex: Donos de cães com comportamentos agressivos ou destrutivos, 28–45 anos, que já tentaram adestramento tradicional sem resultado e buscam uma abordagem gentil e efetiva.">${B.publico_primario || ''}</textarea>
+        ${pubWarn ? `<div class="field-warning"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i>${pubWarn.msg}</div>` : ''}
+        <span class="field-hint">Evite "homens", "mulheres", "pessoas". Seja específico — a H1 vai falar diretamente com essa pessoa.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('publico_dor', 'Principal dor / problema antes de contratar', true)}
+        <textarea class="field-textarea" data-field="publico_dor"
+          placeholder="O problema real que fez ele pesquisar no Google. Escreva como ele falaria — não em termos técnicos.
+Ex: Meu cachorro pula em todo mundo, late sem parar e eu não consigo corrigir. Já tentei de tudo e não funciona.">${B.publico_dor || ''}</textarea>
+        <span class="field-hint">Escreva na voz do cliente — não na voz do profissional. É isso que vai na H1.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('publico_resultado', 'O que ele quer alcançar — o "depois"', true)}
+        <textarea class="field-textarea" data-field="publico_resultado"
+          placeholder="O que ele imagina conquistar ao contratar. O resultado desejado em termos concretos.
+Ex: Ter um cão equilibrado que não envergonhe em público, poder receber visitas e passear sem estresse.">${B.publico_resultado || ''}</textarea>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('publico_secundario', 'Público secundário', false, true)}
+        <textarea class="field-textarea" data-field="publico_secundario"
+          placeholder="Ex: Adestradores iniciantes buscando mentoria técnica para atender com mais segurança.">${B.publico_secundario || ''}</textarea>
+      </div>
+
+      <div class="form-divider"></div>
+
+      <div class="field-group">
+        ${this.fieldLabel('faq', 'Perguntas frequentes dos clientes', false, true)}
+        <textarea class="field-textarea tall" data-field="faq"
+          placeholder="Liste as dúvidas reais que seus clientes têm. Formato:
+P: Funciona para cachorro adulto?
+R: Sim, funciona em qualquer idade — o processo é adaptado ao histórico do animal.
+
+P: É realmente possível fazer online?
+R: Sim — o que mais importa é você aprender a conduzir, e isso acontece onde você está.">${B.faq || ''}</textarea>
+        <span class="field-hint">Se não tiver, a IA vai inferir baseado no nicho — mas fornecendo aqui o resultado é muito mais preciso.</span>
+      </div>
+    `;
+  },
+
+  buildStep7() {
+    const B = this.B;
+    const warns = this.getStepWarnings(7);
+    const diffWarn = warns.find(w => w.field === 'diferencial');
+    return `
+      <p class="form-section-title">Diferenciais e Autoridade</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('diferencial', 'O que concretamente diferencia esse profissional?', true)}
+        <textarea class="field-textarea tall" data-field="diferencial"
+          placeholder="Evite qualidade/excelência/comprometimento. Diga fatos reais:
+- Anos de experiência com casos específicos
+- Método proprietário ou técnica diferenciada
+- Resultados concretos: X clientes atendidos, Y% de resolução
+- Especialização específica que poucos têm
+- História que explica por que faz diferente">${B.diferencial || ''}</textarea>
+        ${diffWarn ? `<div class="field-warning"><i data-lucide="alert-triangle" style="width:13px;height:13px"></i>${diffWarn.msg}</div>` : ''}
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('frase_impacto', 'Frase de impacto', true)}
+        <input type="text" class="field-input" data-field="frase_impacto" placeholder="Ex: Eu não treino cachorros — eu ensino donos a se comunicar." value="${B.frase_impacto || ''}">
+        <span class="field-hint">Uma frase poderosa e direta que captura a essência. Será usada na copy do hero.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('historia', 'História / origem (opcional mas poderosa)', false, true)}
+        <textarea class="field-textarea" data-field="historia"
+          placeholder="Uma história real que explica por que esse profissional faz o que faz. Por que escolheu esse caminho? O que o fez especializar nisso?
+Histórias genuínas criam conexão. Não precisa ser dramática — precisa ser verdadeira.">${B.historia || ''}</textarea>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('casos_resultados', 'Cases e resultados concretos', false, true)}
+        <textarea class="field-textarea" data-field="casos_resultados"
+          placeholder="Números, transformações, resultados documentados.
+Ex: Mais de 200 cães atendidos | Taxa de sucesso em 94% dos casos | Atendimento em 8 estados">${B.casos_resultados || ''}</textarea>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Prova Social</p>
+
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('depoimentos', 'Tem depoimentos de clientes?', true)}
+          <div class="chip-group">
+            <button class="chip ${B.depoimentos === 'sim' ? 'on' : ''}" data-field="depoimentos" data-chip="sim">Sim</button>
+            <button class="chip ${B.depoimentos === 'nao' ? 'on' : ''}" data-field="depoimentos" data-chip="nao">Não</button>
+          </div>
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('google_business', 'Tem perfil no Google Business?', true)}
+          <div class="chip-group">
+            <button class="chip ${B.google_business === 'sim' ? 'on' : ''}" data-field="google_business" data-chip="sim">Sim</button>
+            <button class="chip ${B.google_business === 'nao' ? 'on' : ''}" data-field="google_business" data-chip="nao">Não</button>
+          </div>
+        </div>
+      </div>
+
+      ${B.depoimentos === 'sim' ? `
+        <div class="form-row-3">
+          <div class="field-group">
+            ${this.fieldLabel('depoimentos_qtd', 'Quantidade de depoimentos', true)}
+            <input type="number" class="field-input" data-field="depoimentos_qtd" placeholder="Ex: 12" value="${B.depoimentos_qtd || ''}">
+          </div>
+          <div class="field-group" style="grid-column: span 2">
+            ${this.fieldLabel('depoimentos_formato', 'Formato disponível', true)}
+            <div class="chip-group">
+              ${['Print', 'Texto', 'Vídeo'].map(f => `
+                <button class="chip ${(B.depoimentos_formato || []).includes(f.toLowerCase()) ? 'on' : ''}"
+                  data-field="depoimentos_formato" data-chip="${f.toLowerCase()}" data-multi="true">${f}</button>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      ` : ''}
+
+      ${B.google_business === 'sim' ? `
+        <div class="form-row">
+          <div class="field-group">
+            ${this.fieldLabel('google_nota', 'Nota média no Google', true)}
+            <input type="number" step="0.1" min="1" max="5" class="field-input" data-field="google_nota" placeholder="Ex: 4.9" value="${B.google_nota || ''}">
+            <span class="field-hint">Mínimo 4.5 para incluir o bloco de reviews.</span>
+          </div>
+          <div class="field-group">
+            ${this.fieldLabel('google_qtd', 'Número de avaliações', true)}
+            <input type="number" class="field-input" data-field="google_qtd" placeholder="Ex: 127" value="${B.google_qtd || ''}">
+            <span class="field-hint">Mínimo 10 para incluir o bloco de reviews.</span>
+          </div>
+        </div>
+      ` : ''}
+    `;
+  },
+
+  buildStep8() {
+    const B = this.B;
+    return `
+      <p class="form-section-title">Tom de Voz e Copy</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('estilo_desejado', 'Como o site deve ser percebido?', true)}
+        <textarea class="field-textarea" data-field="estilo_desejado"
+          placeholder="Descreva com precisão. Não apenas 'moderno' ou 'clean' — diga o quê.
+Ex: Sóbrio, técnico e confiante. Próximo de Linear ou Stripe. Autoridade sem frieza.">${B.estilo_desejado || ''}</textarea>
+        <span class="field-hint">Evite 'profissional', 'moderno', 'clean' sem contexto. Esses termos significam coisas diferentes para pessoas diferentes.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('sensacao_visitante', 'O que o visitante deve sentir ao entrar?', true)}
+        <input type="text" class="field-input" data-field="sensacao_visitante"
+          placeholder="Ex: Segurança imediata — essa é a pessoa certa, entende o meu problema."
+          value="${B.sensacao_visitante || ''}">
+      </div>
+
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('vocabulario_usa', 'Vocabulário que o cliente usa', false, true)}
+          <textarea class="field-textarea" data-field="vocabulario_usa"
+            placeholder="Termos técnicos ou expressões do cliente que devem aparecer na copy.
+Ex: 'manejo', 'vínculo', 'marcadores', 'cão'.">${B.vocabulario_usa || ''}</textarea>
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('vocabulario_nunca', 'Vocabulário que o cliente NUNCA usaria', false, true)}
+          <textarea class="field-textarea" data-field="vocabulario_nunca"
+            placeholder="Expressões que quebram a autenticidade da marca.
+Ex: 'pet', 'fofo', 'amiguinho', 'tutor consciente'.">${B.vocabulario_nunca || ''}</textarea>
+        </div>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('frase_tom', 'Uma frase que resume o tom de voz', false, true)}
+        <input type="text" class="field-input" data-field="frase_tom"
+          placeholder="Ex: Especialista que já viu tudo e fala sem rodeios."
+          value="${B.frase_tom || ''}">
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('restricoes', 'O que NÃO quer de forma alguma no site', false, true)}
+        <textarea class="field-textarea" data-field="restricoes"
+          placeholder="Termos, abordagens, elementos visuais ou textuais que o cliente quer evitar.">${B.restricoes || ''}</textarea>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Instruções Adicionais</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('instrucoes_adicionais', 'Informações extras', false, true)}
+        <textarea class="field-textarea" data-field="instrucoes_adicionais"
+          placeholder="Qualquer coisa que não coube nos campos anteriores — nuances da conversa, contexto extra, observações suas.">${B.instrucoes_adicionais || ''}</textarea>
+      </div>
+    `;
+  },
+
+  /* ─────────────────────────────────────────────────────
+     BUILD: ART DIRECTION SCREEN
+  ───────────────────────────────────────────────────── */
+  buildArtScreen() {
+    const B = this.B;
+    const pessoais = B.arte_referencias_pessoais || [];
+    const nicho    = B.arte_referencias_nicho    || [];
+
+    return `
+    <div class="art-screen">
+
+      <div class="art-screen-header">
+        <h2 class="art-screen-title">Direção de Arte</h2>
+        <p class="art-screen-desc">
+          Cole referências pessoais e do nicho, suba ativos da marca e links.
+          A IA analisa tudo e devolve uma ficha estruturada com paleta, tipografia e tom visual.
+          Você aprova antes de qualquer geração.
+        </p>
+      </div>
+
+      <!-- Ativos da Marca -->
+      <div class="art-section">
+        <div class="art-section-header">
+          <i data-lucide="image" class="art-section-icon" style="color:var(--accent2)"></i>
+          <span class="art-section-title">Ativos da Marca</span>
+        </div>
+        <div class="art-section-body">
+          <div id="art-upload-zone" class="upload-zone">
+            <input type="file" multiple accept=".svg,.png,.jpg,.jpeg,.webp,.pdf">
+            <i data-lucide="upload-cloud" class="upload-zone-icon"></i>
+            <p class="upload-zone-label">Logo, fotos do profissional, materiais de marca</p>
+            <p class="upload-zone-hint">SVG, PNG, JPG, WEBP, PDF — até 10MB por arquivo</p>
+          </div>
+          <div id="art-files-list" class="upload-preview-list"></div>
+
+          <div class="form-row">
+            <div class="field-group">
+              ${this.fieldLabel('arte_logo', 'Status da logo', true)}
+              <div class="chip-group">
+                ${[{v:'svg', l:'SVG disponível'},{v:'png', l:'PNG disponível'},{v:'nao', l:'Sem logo'}].map(o =>
+                  `<button class="chip ${B.arte_logo === o.v ? 'on' : ''}" data-field="arte_logo" data-chip="${o.v}">${o.l}</button>`
+                ).join('')}
+              </div>
+            </div>
+            <div class="field-group">
+              ${this.fieldLabel('arte_fotos', 'Fotos do profissional/produto', true)}
+              <div class="chip-group">
+                ${[{v:'boa', l:'Boa qualidade'},{v:'media', l:'Qualidade média'},{v:'nao', l:'Sem fotos'}].map(o =>
+                  `<button class="chip ${B.arte_fotos === o.v ? 'on' : ''}" data-field="arte_fotos" data-chip="${o.v}">${o.l}</button>`
+                ).join('')}
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field-group">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                ${this.fieldLabel('arte_cor_principal', 'Cor principal da marca', false)}
+              </div>
+              <div class="color-picker-wrap">
+                <div class="color-picker-swatch">
+                  <input type="color" data-field="arte_cor_principal" value="${B.arte_cor_principal || '#000000'}">
+                </div>
+                <input type="text" class="field-input color-picker-input" data-field="arte_cor_principal"
+                  placeholder="#HEX ou 'não definida'" value="${B.arte_cor_principal || ''}">
+              </div>
+            </div>
+            <div class="field-group">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                ${this.fieldLabel('arte_cor_secundaria', 'Cor secundária', false)}
+              </div>
+              <div class="color-picker-wrap">
+                <div class="color-picker-swatch">
+                  <input type="color" data-field="arte_cor_secundaria" value="${B.arte_cor_secundaria || '#000000'}">
+                </div>
+                <input type="text" class="field-input color-picker-input" data-field="arte_cor_secundaria"
+                  placeholder="#HEX ou 'não definida'" value="${B.arte_cor_secundaria || ''}">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Referências Pessoais -->
+      <div class="art-section">
+        <div class="art-section-header">
+          <i data-lucide="heart" class="art-section-icon" style="color:var(--warning)"></i>
+          <span class="art-section-title">Referências Pessoais</span>
+        </div>
+        <div class="art-section-body">
+          <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:4px">
+            Sites, marcas ou projetos que você admira visualmente. A IA vai acessar os links e "ver" o que te atraiu neles.
+            Coloque o que te inspirou <em>e</em> o que adaptar para o nicho do cliente.
+          </p>
+          ${pessoais.map((ref, i) => this.buildRefItem('pessoais', i, ref)).join('')}
+          <button class="btn-ghost btn-sm" data-add-ref="pessoais">
+            <i data-lucide="plus" style="width:14px;height:14px"></i>
+            Adicionar referência pessoal
+          </button>
+        </div>
+      </div>
+
+      <!-- Referências do Nicho -->
+      <div class="art-section">
+        <div class="art-section-header">
+          <i data-lucide="search" class="art-section-icon" style="color:var(--accent)"></i>
+          <span class="art-section-title">Referências do Nicho</span>
+        </div>
+        <div class="art-section-body">
+          <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:4px">
+            Sites de concorrentes ou do mesmo segmento. Ajuda a IA a entender o que o público espera ver
+            — e o que evitar para se diferenciar.
+          </p>
+          ${nicho.map((ref, i) => this.buildRefItem('nicho', i, ref)).join('')}
+          <button class="btn-ghost btn-sm" data-add-ref="nicho">
+            <i data-lucide="plus" style="width:14px;height:14px"></i>
+            Adicionar referência do nicho
+          </button>
+        </div>
+      </div>
+
+      <!-- Direção Geral -->
+      <div class="art-section">
+        <div class="art-section-header">
+          <i data-lucide="sliders" class="art-section-icon" style="color:var(--accent2)"></i>
+          <span class="art-section-title">Direção Geral</span>
+        </div>
+        <div class="art-section-body">
+
+          <div class="field-group">
+            ${this.fieldLabel('arte_tema', 'Tema visual', true)}
+            <div class="chip-group">
+              ${[
+                { v: 'escuro', l: 'Escuro (dark)' },
+                { v: 'claro',  l: 'Claro (light)' },
+                { v: 'ia',     l: 'IA decide baseado na marca' },
+              ].map(o => `
+                <button class="chip ${B.arte_tema === o.v ? 'on' : ''}" data-field="arte_tema" data-chip="${o.v}">${o.l}</button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="field-group">
+            ${this.fieldLabel('arte_intensidade', 'Intensidade visual', true)}
+            <div class="sel-cards" data-field-group="arte_intensidade">
+              ${[
+                { v: 'contido', icon: 'minus-circle', title: 'Contido', desc: 'Animações sutis, foco no conteúdo. Consultórios, clínicas, B2B.' },
+                { v: 'medio',   icon: 'circle',       title: 'Médio',   desc: 'Presença notável. Profissionais criativos, mentores, premium.' },
+                { v: 'alto',    icon: 'zap-off',      title: 'Alto',    desc: 'Efeito uau total. Imersivo, editorial. Diferença imediata.' },
+              ].map(o => `
+                <div class="sel-card" data-field="arte_intensidade" data-selcard="${o.v}" tabindex="0">
+                  <i data-lucide="${o.icon}" class="sel-card-icon" style="width:18px;height:18px"></i>
+                  <div>
+                    <div class="sel-card-title">${o.title}</div>
+                    <div class="sel-card-desc">${o.desc}</div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field-group">
+              ${this.fieldLabel('arte_menu_mobile', 'Menu mobile', false, true)}
+              <div class="chip-group">
+                ${[
+                  { v: 'fullscreen', l: 'Fullscreen' },
+                  { v: 'drawer',     l: 'Drawer lateral' },
+                  { v: 'bottom',     l: 'Bottom sheet' },
+                  { v: 'ia',         l: 'IA decide' },
+                ].map(o => `
+                  <button class="chip ${B.arte_menu_mobile === o.v ? 'on' : ''}" data-field="arte_menu_mobile" data-chip="${o.v}">${o.l}</button>
+                `).join('')}
+              </div>
+            </div>
+            <div class="field-group">
+              ${this.fieldLabel('arte_referencia_marca', 'Referência de marca', false, true)}
+              <input type="text" class="field-input" data-field="arte_referencia_marca"
+                placeholder="Ex: Próximo de Notion, Linear ou Stripe"
+                value="${B.arte_referencia_marca || ''}">
+            </div>
+          </div>
+
+          <div class="field-group">
+            ${this.fieldLabel('arte_footer_tom', 'Como deve ser o footer?', false, true)}
+            <textarea class="field-textarea" data-field="arte_footer_tom"
+              placeholder="Tom visual, elementos que deve ter, sensação que deve causar.
+Ex: Footer escuro com destaque em verde — último empurrão de conversão. Logo, WA, redes e registro profissional.">${B.arte_footer_tom || ''}</textarea>
+          </div>
+
+          <div class="field-group">
+            ${this.fieldLabel('arte_o_que_nao_quero', 'O que NÃO quero visualmente', false, true)}
+            <textarea class="field-textarea" data-field="arte_o_que_nao_quero"
+              placeholder="Elementos visuais, estilos, cores ou abordagens que você quer evitar.
+Ex: Sem gradiente roxo. Sem ilustrações infantis. Sem ícones estilo flaticon genérico.">${B.arte_o_que_nao_quero || ''}</textarea>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Ação: Analisar -->
+      <div style="display:flex;justify-content:flex-end;gap:12px;padding-bottom:40px">
+        ${this.state.artAnalyzed ? `
+          <div style="display:flex;align-items:center;gap:8px;color:var(--success);font-size:13px">
+            <i data-lucide="check-circle" style="width:16px;height:16px"></i>
+            Direção aprovada
+          </div>
+        ` : ''}
+        <button id="btn-analyze-art" class="btn-secondary">
+          <i data-lucide="sparkles" style="width:16px;height:16px"></i>
+          Analisar e gerar ficha de direção
+        </button>
+      </div>
+
+    </div>
+    `;
+  },
+
+  buildRefItem(type, index, ref) {
+    const key = `arte_referencias_${type}`;
+    return `
+      <div class="reference-item">
+        <div class="reference-item-header">
+          <span class="reference-index">#${index + 1}</span>
+          <button onclick="App.removeArtReference('${type}', ${index}); App.renderScreen();" style="color:var(--text-tertiary);padding:2px" title="Remover">
+            <i data-lucide="x" style="width:14px;height:14px"></i>
+          </button>
+        </div>
+        <div class="field-group">
+          <label class="field-label">Link</label>
+          <input type="url" class="field-input" placeholder="https://exemplo.com"
+            value="${ref.link || ''}"
+            onchange="App.updateArtRef('${type}', ${index}, 'link', this.value)">
+        </div>
+        <div class="field-group">
+          <label class="field-label">O que me atraiu nesse site</label>
+          <textarea class="field-textarea" placeholder="Seja específico: tipografia, cor, movimento, layout, hierarquia."
+            onchange="App.updateArtRef('${type}', ${index}, 'gostei', this.value)">${ref.gostei || ''}</textarea>
+        </div>
+        <div class="field-group">
+          <label class="field-label">O que adaptar para este nicho</label>
+          <textarea class="field-textarea" placeholder="O que funciona aqui e o que não se transfere para o nicho do cliente."
+            onchange="App.updateArtRef('${type}', ${index}, 'adaptar', this.value)">${ref.adaptar || ''}</textarea>
         </div>
       </div>
     `;
   },
 
-  renderTopbar() {
-    const tb = document.getElementById('topbar');
-    tb.innerHTML = `
-      <div>
-        <h2 class="syne">${STEP_TITLES[this.state.currentStep]}</h2>
-        <div style="font-size: 12px; color: var(--text-secondary)">Step ${this.state.currentStep} de 9</div>
+  addArtReference(type) {
+    const key = `arte_referencias_${type}`;
+    if (!this.P) return;
+    if (!this.P.briefing[key]) this.P.briefing[key] = [];
+    this.P.briefing[key].push({ link: '', gostei: '', adaptar: '' });
+    this.autosave();
+  },
+
+  removeArtReference(type, index) {
+    const key = `arte_referencias_${type}`;
+    if (!this.P || !this.P.briefing[key]) return;
+    this.P.briefing[key].splice(index, 1);
+    this.autosave();
+  },
+
+  updateArtRef(type, index, prop, value) {
+    const key = `arte_referencias_${type}`;
+    if (!this.P || !this.P.briefing[key]?.[index]) return;
+    this.P.briefing[key][index][prop] = value;
+    this.autosave();
+  },
+
+  /* ─────────────────────────────────────────────────────
+     BUILD: REVIEW SCREEN
+  ───────────────────────────────────────────────────── */
+  buildReviewScreen() {
+    const score = this.getGlobalScore();
+    const cls = this.getScoreClass(score);
+    const color = this.getScoreColor(score);
+    const missing = this.getMissingCritical();
+    const warns = this.getAllWarnings();
+    const canGen = this.canGenerate();
+
+    const statusMsg = score >= 80 ? 'Briefing sólido — pronto para gerar' :
+                      score >= 55 ? 'Briefing razoável — revise os avisos antes de gerar' :
+                      'Briefing incompleto — preencha os campos críticos';
+
+    return `
+    <div class="review-screen">
+
+      <!-- Score Global -->
+      <div class="review-global-score">
+        <div class="review-score-main">
+          <span class="review-score-number" style="color:${color}">${score}%</span>
+          <span class="review-score-label">Completude geral</span>
+        </div>
+        <div class="review-score-bar-wrap">
+          <div class="review-score-bar-bg">
+            <div class="review-score-bar-fill" style="width:${score}%;background:${color}"></div>
+          </div>
+          <span class="review-score-status">${statusMsg}</span>
+        </div>
       </div>
+
+      <!-- Steps Grid -->
+      <div class="review-steps-grid">
+        ${STEPS.map(s => {
+          const ss = this.getStepScore(s.id);
+          const sc = this.getScoreClass(ss);
+          return `
+            <div class="review-step-card" data-goto-step="${s.id}">
+              <div class="review-step-card-header">
+                <span class="review-step-card-name">${s.name}</span>
+                <span class="review-step-card-score ${sc}">${ss}%</span>
+              </div>
+              <div class="review-step-card-bar">
+                <div class="review-step-card-fill" style="width:${ss}%;background:${this.getScoreColor(ss)}"></div>
+              </div>
+              <span class="review-step-card-btn">
+                <i data-lucide="pencil" style="width:11px;height:11px"></i>
+                Editar
+              </span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      <!-- Campos críticos faltando -->
+      ${missing.length > 0 ? `
+        <div class="review-critical-missing">
+          <div style="display:flex;align-items:center;gap:8px;color:var(--danger);font-weight:600;font-size:13px;margin-bottom:10px">
+            <i data-lucide="alert-circle" style="width:16px;height:16px"></i>
+            ${missing.length} campo${missing.length > 1 ? 's' : ''} crítico${missing.length > 1 ? 's' : ''} faltando
+          </div>
+          ${missing.map(m => `
+            <div style="display:flex;align-items:center;justify-content:space-between;font-size:12.5px;color:var(--text-secondary);padding:6px 0">
+              <span>✗ ${m.field.replace(/_/g,' ')}</span>
+              <span class="review-step-card-btn" data-goto-step="${m.step}" style="cursor:pointer;color:var(--accent2)">
+                Step ${m.step} →
+              </span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Warnings -->
+      ${warns.length > 0 ? `
+        <div class="review-warnings">
+          <div class="review-warnings-header">
+            <i data-lucide="alert-triangle" style="width:15px;height:15px"></i>
+            ${warns.length} aviso${warns.length > 1 ? 's' : ''} de qualidade
+          </div>
+          ${warns.map(w => `
+            <div class="review-warning-item">
+              <i data-lucide="alert-triangle" style="width:13px;height:13px;color:var(--warning);flex-shrink:0"></i>
+              <span>${w.msg}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
+
+      <!-- Ações de Geração -->
+      <div class="review-actions-box">
+        <h3 class="review-actions-title">Gerar Documentação</h3>
+
+        <div class="review-action-row">
+          <!-- Saída A: Manual -->
+          <div class="review-action-card">
+            <i data-lucide="download" class="review-action-card-icon" style="width:20px;height:20px"></i>
+            <div class="review-action-card-title">Baixar DOC-1</div>
+            <div class="review-action-card-desc">
+              Briefing estruturado completo em .md, com instrução mestre e regras Adsgator.
+              Use em qualquer IA manualmente para gerar a ficha de implementação.
+            </div>
+            <div class="review-action-card-btn">
+              <button id="btn-download-doc1" class="btn-ghost">
+                <i data-lucide="download" style="width:15px;height:15px"></i>
+                Baixar DOC-1 (.md)
+              </button>
+            </div>
+          </div>
+
+          <!-- Saída B: Automático -->
+          <div class="review-action-card" style="border-color:${canGen ? 'var(--accent-border)' : 'var(--border-default)'}">
+            <i data-lucide="zap" class="review-action-card-icon" style="width:20px;height:20px;color:${canGen ? 'var(--accent)' : 'var(--text-tertiary)'}"></i>
+            <div class="review-action-card-title">Gerar DOC-IMPL via IA</div>
+            <div class="review-action-card-desc">
+              A IA recebe o DOC-1 e gera a Ficha de Implementação completa — código Astro, design system, copy, tudo.
+              Pronto para o Roo Code implementar.
+            </div>
+            ${!canGen && missing.length > 0 ? `
+              <div style="font-size:11px;color:var(--danger);display:flex;gap:5px;align-items:center">
+                <i data-lucide="lock" style="width:12px;height:12px"></i>
+                Preencha os campos críticos primeiro
+              </div>
+            ` : !canGen ? `
+              <div style="font-size:11px;color:var(--warning);display:flex;gap:5px;align-items:center">
+                <i data-lucide="key" style="width:12px;height:12px"></i>
+                Configure uma API Key em Config. API
+              </div>
+            ` : ''}
+            <div class="review-action-card-btn">
+              <button id="btn-generate-docimpl" class="btn-primary" ${!canGen ? 'disabled' : ''}>
+                <i data-lucide="zap" style="width:15px;height:15px"></i>
+                Gerar Ficha de Implementação
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div style="font-size:11.5px;color:var(--text-tertiary);display:flex;align-items:center;gap:6px">
+          <i data-lucide="cpu" style="width:13px;height:13px"></i>
+          Modelo selecionado: <strong style="color:var(--text-secondary)">${AI_MODELS[this.state.selectedModel]?.label}</strong>
+        </div>
+
+      </div>
+    </div>
     `;
-    const pct = ((this.state.currentStep - 1) / 8) * 100;
-    document.getElementById('progress-fill').style.width = `${pct}%`;
   },
 
+  /* ─────────────────────────────────────────────────────
+     BOTTOMBAR
+  ───────────────────────────────────────────────────── */
   renderBottombar() {
-    const bb = document.getElementById('bottombar');
-    let html = '';
-    if (this.state.currentStep > 1) {
-      html += `<button class="btn btn-ghost" onclick="App.goToStep(${this.state.currentStep - 1})">Anterior</button>`;
+    const prev = document.getElementById('btn-prev');
+    const actions = document.getElementById('bottombar-actions');
+    const center = document.getElementById('bottombar-center');
+    if (!prev || !actions) return;
+
+    // Prev
+    const showPrev = this.state.screen !== 'intake';
+    prev.style.display = showPrev ? '' : 'none';
+    prev.onclick = () => this.goPrev();
+
+    // Center: step indicator
+    if (this.state.screen === 'step') {
+      center.innerHTML = `<span style="font-size:12px;color:var(--text-tertiary);font-family:var(--font-mono)">
+        Step ${this.state.currentStep} de ${STEPS.length}
+      </span>`;
     } else {
-      html += `<div></div>`;
+      center.innerHTML = '';
     }
-    if (this.state.currentStep < 9) {
-      html += `<button class="btn btn-primary" onclick="App.goToStep(${this.state.currentStep + 1})">Próximo</button>`;
+
+    // Actions
+    if (this.state.screen === 'review') {
+      actions.innerHTML = ''; // Os botões são na própria review screen
+    } else if (this.state.screen === 'art') {
+      const artLabel = this.state.artAnalyzed ? 'Continuar para Revisão →' : 'Ir para Revisão →';
+      actions.innerHTML = `
+        <button class="btn-ghost" onclick="App.goToScreen('review')">
+          ${artLabel}
+        </button>
+      `;
     } else {
-      html += `<div></div>`;
+      const isLastStep = this.state.screen === 'step' && this.state.currentStep === 8;
+      const nextLabel = isLastStep ? 'Direção de Arte →' :
+                        this.state.screen === 'intake' ? 'Ir para Step 1 →' : 'Próximo →';
+      actions.innerHTML = `
+        <button class="btn-primary" onclick="App.goNext()">
+          ${nextLabel}
+          <i data-lucide="arrow-right" style="width:16px;height:16px"></i>
+        </button>
+      `;
+      lucide.createIcons({ nodes: [actions] });
     }
-    bb.innerHTML = html;
   },
 
-  renderStepContent() {
-    if (this.state.currentStep === 9) {
-      this.renderStep9();
+  /* ─────────────────────────────────────────────────────
+     INTAKE ANALYSIS
+  ───────────────────────────────────────────────────── */
+  async runIntakeAnalysis() {
+    const B = this.B;
+    const text = B.briefing_bruto || '';
+    const files = this.state.intakeFiles || [];
+
+    if (!text.trim() && files.length === 0) {
+      this.showToast('Cole o briefing ou anexe arquivos antes de analisar.', 'warning');
       return;
     }
-    const sc = document.getElementById('step-content');
-    const b = this.briefing;
-    let html = '<div class="content-inner">';
 
-    const input = (id, label, ph, req=false) => `
-      <div class="field-group">
-        <label class="field-label">${label} ${req?'<span class="required">*</span>':''}</label>
-        <input class="field-input" id="field_${id}" value="${b[id]||''}" placeholder="${ph}" oninput="App.setField('${id}', this.value)">
+    const model = AI_MODELS[this.state.selectedModel];
+    const apiKey = this.state.apiKeys[model.provider];
+    if (!apiKey?.trim()) {
+      this.showToast('Configure uma API Key primeiro (Config. API).', 'warning');
+      this.openModal('modal-api');
+      return;
+    }
+
+    // Loading state
+    document.getElementById('screen-content').innerHTML = `
+      <div class="intake-screen">
+        <div class="intake-loading">
+          <i data-lucide="loader-2" class="intake-loading-icon" style="width:40px;height:40px"></i>
+          <div class="intake-loading-title">Analisando briefing...</div>
+          <div class="intake-loading-sub">A IA está lendo o material e preenchendo os steps. Aguarde.</div>
+        </div>
       </div>
     `;
-    const textarea = (id, label, ph, req=false) => `
-      <div class="field-group">
-        <label class="field-label">${label} ${req?'<span class="required">*</span>':''}</label>
-        <textarea class="field-textarea" id="field_${id}" placeholder="${ph}" oninput="App.setField('${id}', this.value)">${b[id]||''}</textarea>
-      </div>
-    `;
-    const selcard = (id, label, opts, req=false) => {
-      let c = `<div class="field-group"><label class="field-label">${label} ${req?'<span class="required">*</span>':''}</label><div class="sel-cards">`;
-      opts.forEach(o => {
-        const on = b[id] === o.val ? 'on' : '';
-        c += `<div class="sel-card ${on}" onclick="App.setField('${id}', '${o.val}'); App.renderStepContent();">
-          <div class="card-title">${o.title}</div><div class="card-desc">${o.desc}</div>
-        </div>`;
-      });
-      return c + `</div></div>`;
-    };
-    const chips = (id, label, opts, isArray=false, req=false) => {
-      let c = `<div class="field-group"><label class="field-label">${label} ${req?'<span class="required">*</span>':''}</label><div class="chip-group">`;
-      opts.forEach(o => {
-        const isOn = isArray ? (b[id] && b[id].includes(o)) : b[id] === o;
-        const action = isArray ? `App.toggleArrayField('${id}', '${o}')` : `App.setField('${id}', '${o}'); App.renderStepContent();`;
-        c += `<div class="chip ${isOn?'on':''}" onclick="${action}">${o}</div>`;
-      });
-      return c + `</div></div>`;
-    };
+    lucide.createIcons({ nodes: [document.getElementById('screen-content')] });
 
-    switch(this.state.currentStep) {
-      case 1:
-        html += input('nome_cliente', 'Nome do Cliente', 'ex: Adsgator', true);
-        html += input('nome_marca', 'Nome da Marca', 'ex: Adsgator LLC', true);
-        html += input('slug', 'Slug', 'ex: adsgator', true);
-        html += input('segmento', 'Segmento', 'ex: Marketing', true);
-        html += selcard('tipo', 'Tipo de Projeto', [
-          {val:'Serviço', title:'Serviço', desc:'Prestação de serviço'},
-          {val:'Produto', title:'Produto', desc:'Produto físico ou digital'},
-          {val:'Mentoria', title:'Mentoria', desc:'Mentoria ou programa'}
-        ], true);
-        break;
-      case 2:
-        html += input('whatsapp', 'WhatsApp', '5511999999999', true);
-        html += selcard('objetivo_conversao', 'Objetivo de Conversão', [
-          {val:'whatsapp', title:'WhatsApp', desc:''},
-          {val:'formulario', title:'Formulário', desc:''},
-          {val:'agendamento', title:'Agendamento', desc:''}
-        ], true);
-        html += input('email', 'E-mail', 'contato@email.com');
-        html += input('gtm_id', 'GTM ID', 'GTM-XXXXXX');
-        break;
-      case 3:
-        html += input('instagram', 'Instagram', '@perfil');
-        html += input('tiktok', 'TikTok', '@perfil');
-        html += input('youtube', 'YouTube', 'URL do canal');
-        break;
-      case 4:
-        html += chips('modalidade', 'Modalidade', ['Presencial', 'Online', 'Híbrido'], false, true);
-        if (b.modalidade === 'Presencial' || b.modalidade === 'Híbrido') {
-          html += textarea('endereco', 'Endereço', 'Rua X...');
-        }
-        break;
-      case 5:
-        html += input('servico_principal', 'Serviço Principal', '', true);
-        html += textarea('servicos_descricao', 'Descrição', '', true);
-        html += textarea('servicos_lista', 'Lista', '');
-        break;
-      case 6:
-        html += textarea('publico_primario', 'Público Primário', '', true);
-        html += textarea('publico_dor', 'Dor do Público', '', true);
-        html += textarea('publico_resultado', 'Resultado Esperado', '', true);
-        break;
-      case 7:
-        html += textarea('diferencial', 'Diferencial', '', true);
-        html += input('frase_impacto', 'Frase de Impacto', '', true);
-        html += chips('depoimentos', 'Depoimentos', ['Sim', 'Não']);
-        html += chips('google_business', 'Google Business', ['Sim', 'Não']);
-        break;
-      case 8:
-        html += textarea('estilo_desejado', 'Estilo', '', true);
-        html += chips('tema', 'Tema', ['Claro', 'Escuro', 'IA Decide'], false, true);
-        html += selcard('intensidade_visual', 'Intensidade Visual', [
-          {val:'Contido', title:'Contido', desc:''},
-          {val:'Médio', title:'Médio', desc:''},
-          {val:'Alto', title:'Alto', desc:''}
-        ], true);
-        break;
+    try {
+      const prompt = this.buildIntakePrompt(text);
+      const response = await this.callAI(prompt);
+      this.parseIntakeResponse(response);
+      this.showToast('Steps preenchidos! Revise os dados.', 'success');
+      this.goToStep(1);
+    } catch (err) {
+      this.state.screen = 'intake';
+      this.renderScreen();
+      this.showToast(`Erro na análise: ${err.message}`, 'error');
+      console.error('[LandingAI] Intake analysis error:', err);
     }
-    
-    // Add Score calculation
-    this.calculateScore();
-    
-    html += '</div>';
-    sc.innerHTML = html;
-    lucide.createIcons();
   },
 
-  calculateScore() {
-    let filled = 0;
-    let total = 0;
-    const b = this.briefing;
-    
-    for (const step in criticalFields) {
-      criticalFields[step].forEach(f => {
-        total++;
-        if (b[f] && String(b[f]).trim() !== '') filled++;
-      });
-    }
-    
-    this.state.score = total > 0 ? Math.round((filled / total) * 100) : 0;
+  buildIntakePrompt(text) {
+    return `Você é um estrategista de marketing digital especializado em landing pages de conversão para prestadores de serviços locais e profissionais liberais.
+
+Leia o material abaixo e extraia as informações para preencher os campos.
+Responda APENAS com JSON válido no formato exato indicado — sem markdown, sem comentários, sem texto adicional.
+Se uma informação não estiver disponível, use string vazia "".
+
+CAMPOS PARA EXTRAIR:
+{
+  "nome_cliente": "Nome completo do profissional/empresa",
+  "nome_marca": "Nome comercial/marca se diferente",
+  "segmento": "Segmento específico de atuação",
+  "tipo": "servico | mentoria | consultoria | produto | saas",
+  "whatsapp": "Somente dígitos com DDI+DDD",
+  "email": "E-mail de contato",
+  "horarios": "Dias e horários de atendimento",
+  "instagram": "Handle ou URL do Instagram",
+  "tiktok": "Handle do TikTok",
+  "youtube": "URL do YouTube",
+  "modalidade": "presencial | online | hibrido",
+  "endereco": "Endereço completo se presencial",
+  "cidades_atendimento": "Cidades atendidas",
+  "servico_principal": "Serviço principal em uma linha",
+  "servicos_lista": "Lista de serviços, um por linha",
+  "servicos_descricao": "Descrição detalhada de cada serviço",
+  "objetivo_conversao": "whatsapp | formulario | agendamento | outro",
+  "preco_exibir": "sim | nao",
+  "preco_valor": "Valor e forma de cobrança",
+  "preco_condicao": "Condição especial se houver",
+  "publico_primario": "Perfil detalhado do cliente ideal",
+  "publico_dor": "Principal problema/dor antes de contratar",
+  "publico_resultado": "O que o cliente quer alcançar",
+  "publico_secundario": "Público secundário se houver",
+  "diferencial": "O que concretamente diferencia esse profissional",
+  "frase_impacto": "Frase de impacto do profissional",
+  "historia": "História/origem do profissional",
+  "depoimentos": "sim | nao",
+  "google_business": "sim | nao",
+  "google_nota": "Nota no Google se houver",
+  "google_qtd": "Número de avaliações",
+  "estilo_desejado": "Como o site deve ser percebido",
+  "sensacao_visitante": "O que o visitante deve sentir",
+  "vocabulario_usa": "Termos que o cliente usa",
+  "vocabulario_nunca": "Termos que o cliente nunca usaria",
+  "frase_tom": "Frase que resume o tom de voz",
+  "restricoes": "O que não quer de forma alguma",
+  "dominio": "Domínio desejado",
+  "cnpj": "CNPJ se fornecido",
+  "aviso_legal": "Registro profissional CRM/CRP/OAB etc"
+}
+
+MATERIAL DO CLIENTE:
+${text}`;
   },
 
-  renderStep9() {
-    const sc = document.getElementById('step-content');
-    this.calculateScore();
-    
-    let scoreClass = 'low';
-    if (this.state.score > 80) scoreClass = 'high';
-    else if (this.state.score > 50) scoreClass = 'medium';
-    
-    const missing = [];
-    for (const step in criticalFields) {
-      criticalFields[step].forEach(f => {
-        if (!this.briefing[f] || String(this.briefing[f]).trim() === '') {
-          missing.push({ step, field: f });
+  parseIntakeResponse(response) {
+    try {
+      // Remove markdown fences se houver
+      const clean = response.replace(/```json|```/g, '').trim();
+      const data = JSON.parse(clean);
+      if (!this.P) return;
+      Object.keys(data).forEach(key => {
+        if (key in this.P.briefing && data[key] !== undefined) {
+          this.P.briefing[key] = data[key];
         }
       });
+      this.autosave();
+    } catch (err) {
+      console.error('[LandingAI] parseIntakeResponse erro:', err);
+      throw new Error('A IA retornou um formato inválido. Tente novamente.');
+    }
+  },
+
+  /* ─────────────────────────────────────────────────────
+     ART ANALYSIS
+  ───────────────────────────────────────────────────── */
+  async runArtAnalysis() {
+    const B = this.B;
+    const model = AI_MODELS[this.state.selectedModel];
+    const apiKey = this.state.apiKeys[model.provider];
+
+    if (!apiKey?.trim()) {
+      this.showToast('Configure uma API Key primeiro.', 'warning');
+      this.openModal('modal-api');
+      return;
     }
 
-    let cardsHtml = '';
-    for(let i=1; i<=8; i++) {
-      let stepTotal = 0;
-      let stepFilled = 0;
-      if (criticalFields[i]) {
-        criticalFields[i].forEach(f => {
-          stepTotal++;
-          if (this.briefing[f] && String(this.briefing[f]).trim() !== '') stepFilled++;
-        });
-      } else {
-        stepTotal = 1;
-        stepFilled = 1; // if no critical fields, consider it 100%
+    const btn = document.getElementById('btn-analyze-art');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" style="width:16px;height:16px;animation:spin 1s linear infinite"></i> Analisando...`;
+      lucide.createIcons({ nodes: [btn] });
+    }
+
+    try {
+      const prompt = this.buildArtPrompt();
+      const response = await this.callAI(prompt);
+      this.renderArtResult(response);
+    } catch (err) {
+      this.showToast(`Erro na análise de arte: ${err.message}`, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="sparkles" style="width:16px;height:16px"></i> Analisar e gerar ficha de direção`;
+        lucide.createIcons({ nodes: [btn] });
       }
-      const pct = Math.round((stepFilled/stepTotal)*100);
-      
-      cardsHtml += `
-        <div class="dashboard-card">
-          <div class="dashboard-card-title">${i}. ${STEP_TITLES[i]}</div>
-          <div class="dashboard-card-score" style="color: var(--${pct===100?'success':pct>50?'warning':'danger'})">
-            <i data-lucide="${pct===100?'check':'circle'}" class="icon" style="width:12px;height:12px;display:inline-block"></i> ${pct}% completo
-          </div>
-          <button class="btn btn-ghost" style="margin-top:8px; padding:6px 12px; font-size:11px;" onclick="App.goToStep(${i})">Editar</button>
-        </div>
-      `;
     }
-
-    let missingHtml = '';
-    if (missing.length > 0) {
-      missingHtml = `
-        <div class="val-card mt-32">
-          <h4><i data-lucide="alert-triangle" class="icon"></i> Campos Críticos Faltando</h4>
-          <ul>
-            ${missing.map(m => `<li>${m.field} (Step ${m.step})</li>`).join('')}
-          </ul>
-        </div>
-      `;
-    }
-
-    sc.innerHTML = `
-      <div class="content-inner">
-        <div style="background:var(--bg-raised); border:1px solid var(--border-default); padding:24px; border-radius:var(--r-md); margin-bottom:32px;">
-          <h3 class="syne" style="margin-bottom:12px;">REVISÃO GERAL</h3>
-          <div style="display:flex; align-items:center; gap:16px;">
-            <div style="flex:1; height:8px; background:var(--bg-surface); border-radius:4px; overflow:hidden;">
-              <div style="width:${this.state.score}%; height:100%; background:var(--${scoreClass=== 'high' ? 'success' : scoreClass === 'medium' ? 'warning' : 'danger'}); transition:width 0.3s"></div>
-            </div>
-            <div class="score-badge ${scoreClass}">${this.state.score}% — ${scoreClass === 'high' ? 'Pronto para gerar' : 'Incompleto'}</div>
-          </div>
-        </div>
-        
-        <div class="dashboard-grid">
-          ${cardsHtml}
-        </div>
-        
-        ${missingHtml}
-        
-        <div style="margin-top: 40px; padding: 24px; background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--r-md);">
-          <h3 class="syne" style="margin-bottom: 16px;">Ações Finais</h3>
-          <div style="display: flex; gap: 16px;">
-            <button class="btn btn-ghost" onclick="App.downloadDoc1()"><i data-lucide="download" class="icon"></i> Baixar DOC-1</button>
-            <button class="btn btn-primary" onclick="App.generateDocImpl()" ${this.state.score < 60 ? 'disabled' : ''}><i data-lucide="zap" class="icon"></i> Gerar DOC-IMPL via IA</button>
-          </div>
-        </div>
-      </div>
-    `;
-    lucide.createIcons();
   },
 
+  buildArtPrompt() {
+    const B = this.B;
+    const pessoais = (B.arte_referencias_pessoais || []).map((r, i) =>
+      `Referência pessoal ${i+1}: ${r.link}\nO que gostei: ${r.gostei}\nO que adaptar: ${r.adaptar}`
+    ).join('\n\n');
+
+    const nicho = (B.arte_referencias_nicho || []).map((r, i) =>
+      `Referência do nicho ${i+1}: ${r.link}\nO que gostei: ${r.gostei}\nO que adaptar: ${r.adaptar}`
+    ).join('\n\n');
+
+    return `Você é um Diretor de Arte e UI Designer de elite especializado em landing pages de conversão.
+
+Analise o briefing de direção de arte abaixo e gere uma FICHA ESTRUTURADA de direção criativa.
+
+CLIENTE: ${B.nome_cliente} | NICHO: ${B.segmento} | TIPO: ${B.tipo}
+
+ATIVOS DA MARCA:
+- Logo: ${B.arte_logo || 'não definida'}
+- Fotos: ${B.arte_fotos || 'não definidas'}
+- Cor principal: ${B.arte_cor_principal || 'não definida'}
+- Cor secundária: ${B.arte_cor_secundaria || 'não definida'}
+
+DIREÇÃO:
+- Tema: ${B.arte_tema || 'não definido'}
+- Intensidade: ${B.arte_intensidade || 'não definida'}
+- Referência de marca: ${B.arte_referencia_marca || 'não definida'}
+- O que NÃO quer: ${B.arte_o_que_nao_quero || 'não especificado'}
+- Menu mobile: ${B.arte_menu_mobile || 'não definido'}
+- Footer: ${B.arte_footer_tom || 'não definido'}
+
+ESTILO DESEJADO: ${B.estilo_desejado}
+SENSAÇÃO VISITANTE: ${B.sensacao_visitante}
+
+REFERÊNCIAS PESSOAIS:
+${pessoais || 'Não fornecidas'}
+
+REFERÊNCIAS DO NICHO:
+${nicho || 'Não fornecidas'}
+
+Gere a ficha em JSON com este formato exato:
+{
+  "paleta": [
+    { "nome": "Principal", "hex": "#XXXXXX", "uso": "CTAs, destaques, botões primários" },
+    { "nome": "Fundo", "hex": "#XXXXXX", "uso": "Background geral das páginas" },
+    { "nome": "Superfície", "hex": "#XXXXXX", "uso": "Cards, seções alternadas" },
+    { "nome": "Texto", "hex": "#XXXXXX", "uso": "Corpo do texto, parágrafos" },
+    { "nome": "Acento", "hex": "#XXXXXX", "uso": "Hover states, links, secundário" }
+  ],
+  "tipografia": {
+    "display": { "fonte": "Nome da fonte", "peso": "700", "uso": "Títulos H1, hero", "google": "URL Google Fonts" },
+    "corpo": { "fonte": "Nome da fonte", "peso": "400/500", "uso": "Parágrafos, labels, UI", "google": "URL Google Fonts" },
+    "mono": { "fonte": "Nome da fonte", "peso": "400", "uso": "Destaque técnico, badges", "google": "URL Google Fonts" }
+  },
+  "tom_visual": "Descrição detalhada do tom visual — estilo, linguagem visual, referências sintetizadas",
+  "referencias_interpretadas": [
+    { "fonte": "URL ou nome", "tipo": "pessoal|nicho", "o_que_usar": "O que será incorporado ao design" }
+  ],
+  "animacoes": "Diretriz de animações — tipo, velocidade, gatilhos, prefers-reduced-motion",
+  "layout": "Diretriz de layout — grid, espaçamento, uso de viewport, assimetria",
+  "mobile_first": "Decisões específicas de mobile: tipografia, espaçamento, hero, menu",
+  "footer": "Especificação do footer: fundo, tipografia, elementos, tom final",
+  "decisoes": ["Decisão criativa 1 com justificativa", "Decisão criativa 2", "Decisão criativa 3"]
+}
+
+Responda APENAS com JSON válido. Sem markdown, sem comentários.`;
+  },
+
+  renderArtResult(response) {
+    try {
+      const clean = response.replace(/```json|```/g, '').trim();
+      const data = JSON.parse(clean);
+      if (this.P) {
+        this.P.briefing.arte_ficha_aprovada = '';
+      }
+
+      const body = document.getElementById('art-result-body');
+      if (!body) { this.openModal('modal-art-result'); return; }
+
+      const modal = document.getElementById('modal-art-result');
+      modal.querySelector('#art-result-body').innerHTML = this.buildArtResultHTML(data);
+      lucide.createIcons({ nodes: [modal] });
+
+      // Store para aprovação
+      this._pendingArtFicha = JSON.stringify(data);
+
+      document.getElementById('btn-art-approve').onclick = () => {
+        if (this.P) this.P.briefing.arte_ficha_aprovada = this._pendingArtFicha;
+        this.state.artAnalyzed = true;
+        this.autosave();
+        this.closeModal('modal-art-result');
+        this.showToast('Direção de arte aprovada!', 'success');
+        this.renderStepsNav();
+      };
+
+      this.openModal('modal-art-result');
+    } catch (err) {
+      this.showToast('Erro ao processar ficha de arte. Tente novamente.', 'error');
+      console.error('[LandingAI] renderArtResult erro:', err);
+    }
+  },
+
+  buildArtResultHTML(data) {
+    const paleta = (data.paleta || []).map(p => `
+      <div class="palette-swatch">
+        <div class="palette-swatch-color" style="background:${p.hex}"></div>
+        <span class="palette-swatch-label">${p.hex}</span>
+        <span style="font-size:10px;color:var(--text-tertiary);max-width:60px;text-align:center">${p.nome}</span>
+      </div>
+    `).join('');
+
+    const refs = (data.referencias_interpretadas || []).map(r => `
+      <div class="review-warning-item">
+        <span class="art-result-tag">${r.tipo}</span>
+        <span style="font-size:12.5px;color:var(--text-secondary)"><strong style="color:var(--text-primary)">${r.fonte}</strong> — ${r.o_que_usar}</span>
+      </div>
+    `).join('');
+
+    const decisoes = (data.decisoes || []).map(d => `
+      <div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid var(--border-subtle)">
+        <i data-lucide="check" style="width:13px;height:13px;color:var(--accent);flex-shrink:0;margin-top:3px"></i>
+        <span class="art-result-text" style="font-size:12.5px">${d}</span>
+      </div>
+    `).join('');
+
+    return `
+      <div class="art-result-card">
+        <div class="art-result-section">
+          <div class="art-result-section-title">Paleta de Cores</div>
+          <div class="palette-swatches">${paleta}</div>
+        </div>
+        <div class="art-result-section">
+          <div class="art-result-section-title">Tipografia</div>
+          ${data.tipografia ? `
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div class="art-result-text"><strong>Display:</strong> ${data.tipografia.display?.fonte} ${data.tipografia.display?.peso} — ${data.tipografia.display?.uso}</div>
+              <div class="art-result-text"><strong>Corpo:</strong> ${data.tipografia.corpo?.fonte} ${data.tipografia.corpo?.peso} — ${data.tipografia.corpo?.uso}</div>
+              ${data.tipografia.mono ? `<div class="art-result-text"><strong>Mono:</strong> ${data.tipografia.mono?.fonte} — ${data.tipografia.mono?.uso}</div>` : ''}
+            </div>
+          ` : ''}
+        </div>
+        <div class="art-result-section">
+          <div class="art-result-section-title">Tom Visual</div>
+          <p class="art-result-text">${data.tom_visual || ''}</p>
+        </div>
+        <div class="art-result-section">
+          <div class="art-result-section-title">Layout e Animações</div>
+          <p class="art-result-text">${data.layout || ''}</p>
+          <p class="art-result-text" style="margin-top:8px">${data.animacoes || ''}</p>
+        </div>
+        <div class="art-result-section">
+          <div class="art-result-section-title">Mobile e Footer</div>
+          <p class="art-result-text"><strong>Mobile:</strong> ${data.mobile_first || ''}</p>
+          <p class="art-result-text" style="margin-top:8px"><strong>Footer:</strong> ${data.footer || ''}</p>
+        </div>
+        ${refs ? `
+          <div class="art-result-section">
+            <div class="art-result-section-title">Referências Interpretadas</div>
+            ${refs}
+          </div>
+        ` : ''}
+        ${decisoes ? `
+          <div class="art-result-section">
+            <div class="art-result-section-title">Decisões Criativas</div>
+            ${decisoes}
+          </div>
+        ` : ''}
+      </div>
+    `;
+  },
+
+  /* ─────────────────────────────────────────────────────
+     DOC GENERATION
+  ───────────────────────────────────────────────────── */
   buildDoc1() {
-    const b = this.briefing;
-    const modelUsed = this.state.apiKeys[AI_MODELS[this.state.selectedModel].provider] ? AI_MODELS[this.state.selectedModel].name : 'manual';
-    
+    const B = this.B;
+    const P = this.P;
+    const now = new Date().toISOString();
+    const fichaArte = B.arte_ficha_aprovada ? JSON.parse(B.arte_ficha_aprovada) : null;
+
+    const integracoesList = (B.integracoes || []).map(i => {
+      const labels = {
+        maps: 'Google Maps Embed',
+        reviews: 'Google Reviews Widget',
+        instagram: 'Feed do Instagram',
+        formulario: 'Formulário de Contato',
+        whatsapp: 'WhatsApp Flutuante',
+        ligacao: 'Botão de Ligação Mobile',
+      };
+      const checks = {
+        maps: B.modalidade?.includes('presencial') && B.exibir_localizacao !== 'nao',
+        reviews: B.google_business === 'sim' && parseInt(B.google_qtd) >= 10,
+        instagram: !!B.instagram,
+        formulario: true,
+        whatsapp: true,
+        ligacao: true,
+      };
+      return `- [${checks[i] ? 'x' : ' '}] ${labels[i] || i}`;
+    }).join('\n');
+
+    const paleta = fichaArte?.paleta?.map(p =>
+      `| ${p.nome} | \`${p.hex}\` | ${p.uso} |`
+    ).join('\n') || '| — | — | — |';
+
     return `---
-title: ${b.nome_cliente || 'Projeto'} — Brainstorm Visual
-date: ${new Date().toISOString()}
-tags: [adsgator, design, doc-2]
+title: ${B.nome_cliente} — Briefing e Direção
+date: ${now}
+tags: [adsgator, briefing, doc-1]
 status: pronto-para-ia
-gerado_por: LandingAI v2
-modelo_ia: ${modelUsed}
+gerado_por: LandingAI v3
+modelo_ia: ${AI_MODELS[this.state.selectedModel]?.label || 'manual'}
+projeto: ${P?.slug || B.slug || ''}
 ---
 
-# ${b.nome_cliente || 'Projeto'} — Brainstorm Visual
+# ${B.nome_cliente} — Briefing e Direção
 
-> **Documento 1 de 2 — Adsgator (gerado pelo LandingAI v2)**
-> Preencha este documento e envie para a IA gerar a Ficha de Implementação.
+> **Documento 1 — Adsgator (gerado pelo LandingAI v3)**
+> Envie este documento para a IA gerar a Ficha de Implementação completa.
+> Não edite — envie como está.
 
 ---
 
 ## INSTRUÇÃO MESTRE PARA A IA
 
-Você é um Diretor de Arte, UI Designer de elite e Engenheiro Front-end Sênior, trabalhando para a agência Adsgator.
+Você é um Diretor de Arte, UI Designer de elite, Copywriter Sênior e Engenheiro Front-end Sênior, trabalhando para a agência Adsgator.
 
-Sua missão é ler este documento inteiro e gerar como output a **Ficha de Implementação**, completa, específica e pronta para ser enviada diretamente ao Claude, Roo Code ou outro agente implementador construir a landing page.
+Sua missão é ler este documento inteiro e gerar como output a **Ficha de Implementação completa** — com código real, design system completo, copy palavra por palavra e ordem de criação de arquivos.
 
-**O que isso significa na prática:**
+**O que isso significa:**
 - Você toma todas as decisões de design que não estão explicitadas — tipografia, escala, tokens, animações, layout de cada seção.
-- Você preenche cada campo da Ficha de Implementação com valores concretos. Sem placeholders. Sem [definir depois]. Sem [a combinar].
-- Você transforma a direção criativa e a copy abaixo em especificações técnicas de implementação.
-- O output que você entrega deve poder ser copiado e enviado para outra IA sem nenhuma edição adicional.
+- Você preenche cada campo com valores concretos. Sem placeholders. Sem [definir depois]. Sem [a combinar].
+- O output deve poder ser copiado e enviado ao Roo Code sem nenhuma edição adicional.
 
-**Padrão de qualidade esperado:**
-O documento gerado deve orquestrar uma landing page com design editorial de alto padrão — atípico, com personalidade visual forte, fora do visual genérico de IA. Pense Raycast, Linear, Family.co. Layouts com intenção. Tipografia com personalidade. Animações que têm razão de existir. Cada decisão de tipografia, espaçamento, cor e animação deve ser intencional e coesa.
+**Padrão de qualidade:**
+Design editorial de alto padrão — atípico, com personalidade visual forte, fora do visual genérico de IA.
+Pense Raycast, Linear, Family.co. Layouts com intenção. Tipografia com personalidade. Animações que têm razão de existir.
 
-**Sobre o viewport:**
-O site não fica preso em um container central. Seções que se beneficiam de ocupar o viewport completo devem fazê-lo — backgrounds que sangram até as bordas, tipografia que respira, imagens que não ficam comprimidas. O container é uma ferramenta de legibilidade, não uma prisão de layout.
+**Sobre mobile:** Mobile não é adaptação — é o ponto de partida. Começa em 375px.
 
-**Sobre o mobile:**
-Mobile não é adaptação — é o ponto de partida. O design começa em 375px. Cada decisão de tipografia, espaçamento, hierarquia e layout é tomada primeiro para mobile e expandida para desktop.
+**Sobre o viewport:** Seções que se beneficiam de ocupar o viewport completo devem fazê-lo. Container é ferramenta, não prisão.
 
-**Sobre o footer:**
-O footer não é um afterthought — é a última impressão. Deve ter identidade visual clara, conectada ao tom da landing page. Hierarquia tipográfica real. Personalidade.
-
-**DNA ADSGATOR — REGRAS INEGOCIÁVEIS DE COPY:**
-- Intenção de Busca em Primeiro Lugar — a H1 justifica o clique no anúncio nos primeiros 3 segundos
-- Primeira Pessoa Sempre — "eu", "meu", "com você" — nunca terceira pessoa
-- Zero Institucional — proibido: "inovador", "excelência", "missão", "visão"
-- Comunicação Direta e Realista — sem promessas milagrosas
-- Tom Conversacional com Autoridade
-- Foco na Ação — cada palavra tem função persuasiva
-
-**STACK TÉCNICA FIXA:**
-Astro + Tailwind CSS + GSAP + ScrollTrigger + Framer Motion + Lenis + Web3Forms
-Deploy: Vercel (output: 'static')
+**Sobre o footer:** Última impressão — identidade visual real, conectada ao tom da página.
 
 ---
 
 ## PARTE 1 — IDENTIDADE DO PROJETO
 
-### Resumo do Projeto
-
 | Campo | Valor |
 |---|---|
-| **Cliente** | ${b.nome_cliente || '—'} |
-| **Marca** | ${b.nome_marca || '—'} |
-| **Slug** | ${b.slug || '—'} |
-| **Segmento** | ${b.segmento || '—'} |
-| **Tipo** | ${b.tipo || '—'} |
-| **Objetivo de conversão** | ${b.objetivo_conversao || '—'} |
-| **WhatsApp** | ${b.whatsapp || '—'} |
-| **E-mail** | ${b.email || '—'} |
-| **Horários** | ${b.horarios || '—'} |
-| **GTM ID** | ${b.gtm_id || '—'} |
-| **Domínio** | ${b.dominio || '—'} |
-| **Modalidade** | ${b.modalidade || '—'} |
-| **CNPJ** | ${b.cnpj || '—'} |
-| **Aviso legal** | ${b.aviso_legal || '—'} |
+| **Cliente** | ${B.nome_cliente || '—'} |
+| **Marca** | ${B.nome_marca || B.nome_cliente || '—'} |
+| **Slug** | ${B.slug || '—'} |
+| **Segmento** | ${B.segmento || '—'} |
+| **Tipo** | ${B.tipo || '—'} |
+| **WhatsApp** | ${B.whatsapp || '—'} |
+| **Link WA** | ${B.whatsapp ? `https://wa.me/${B.whatsapp}` : '—'} |
+| **E-mail** | ${B.email || '—'} |
+| **Horários** | ${B.horarios || '—'} |
+| **GTM ID** | ${B.gtm_id || '—'} |
+| **Domínio** | ${B.dominio || '—'} |
+| **CNPJ** | ${B.cnpj || '—'} |
+| **Aviso legal** | ${B.aviso_legal || '—'} |
+| **Modalidade** | ${B.modalidade || '—'} |
+| **Objetivo de conversão** | ${B.objetivo_conversao || '—'} |
 
 ---
 
 ## PARTE 2 — SERVIÇOS E PRODUTO
 
-### Serviço Principal
-${b.servico_principal || '—'}
+### Serviço Principal (foco da campanha)
+${B.servico_principal || '—'}
 
-### Todos os Serviços
-${b.servicos_lista || '—'}
+### Lista de Serviços
+${B.servicos_lista || '—'}
 
 ### Descrição Detalhada
-${b.servicos_descricao || '—'}
+${B.servicos_descricao || '—'}
 
 ### Preço
-${b.preco_exibir === 'Sim' ? `Exibir preço: ${b.preco_valor || ''} — ${b.preco_condicao || ''}` : 'Não exibir preço'}
-
-### Oferta Especial
-${b.oferta_especial || 'Não há'}
+${B.preco_exibir === 'sim' ? `**Exibir preço:** Sim
+**Valor:** ${B.preco_valor || '—'}
+**Condição especial:** ${B.preco_condicao || '—'}
+**Oferta especial:** ${B.oferta_especial || '—'}` : 'Não exibir preço no site.'}
 
 ---
 
 ## PARTE 3 — PÚBLICO-ALVO
 
-### Público Primário
-${b.publico_primario || '—'}
+### Público Primário — perfil detalhado
+${B.publico_primario || '—'}
 
-### Dor Principal
-${b.publico_dor || '—'}
+### Dor Principal — na voz do cliente
+${B.publico_dor || '—'}
 
-### Resultado Desejado
-${b.publico_resultado || '—'}
+### Resultado Desejado — o "depois"
+${B.publico_resultado || '—'}
 
 ### Público Secundário
-${b.publico_secundario || 'Não definido'}
+${B.publico_secundario || 'Não definido'}
+
+### FAQ — Perguntas Frequentes Reais
+${B.faq || 'Não fornecido — IA deve inferir baseado no nicho e nas objeções mais comuns do segmento.'}
 
 ---
 
 ## PARTE 4 — COPY E PERSUASÃO
 
 ### Diferencial Real
-${b.diferencial || '—'}
+${B.diferencial || '—'}
 
 ### Frase de Impacto
-${b.frase_impacto || '—'}
+${B.frase_impacto || '—'}
 
 ### História / Origem
-${b.historia || 'Não fornecida'}
+${B.historia || 'Não fornecida.'}
 
-### FAQ — Principais Dúvidas
-${b.faq || 'Não fornecido — IA decide baseado no nicho'}
+### Casos e Resultados Concretos
+${B.casos_resultados || 'Não fornecidos.'}
 
 ---
 
-## PARTE 5 — PRESENÇA DIGITAL
+## PARTE 5 — TOM DE VOZ
+
+| Parâmetro | Valor |
+|---|---|
+| **Frase que resume o tom** | ${B.frase_tom || '—'} |
+| **Vocabulário que deve aparecer** | ${B.vocabulario_usa || '—'} |
+| **Vocabulário proibido** | ${B.vocabulario_nunca || '—'} |
+| **Estilo desejado** | ${B.estilo_desejado || '—'} |
+| **Sensação do visitante** | ${B.sensacao_visitante || '—'} |
+| **Restrições de conteúdo** | ${B.restricoes || '—'} |
+
+---
+
+## PARTE 6 — PRESENÇA DIGITAL E PROVA SOCIAL
 
 ### Redes Sociais
 | Rede | Handle/Link |
 |---|---|
-| Instagram | ${b.instagram || '—'} |
-| TikTok | ${b.tiktok || '—'} |
-| YouTube | ${b.youtube || '—'} |
-| Outras | ${b.outras_redes || '—'} |
+| Instagram | ${B.instagram || '—'} |
+| TikTok | ${B.tiktok || '—'} |
+| YouTube | ${B.youtube || '—'} |
+| Outras | ${B.outras_redes || '—'} |
 
 ### Google Business
-${b.google_business === 'Sim' ? `Sim — Nota: ${b.google_nota || '?'} ★ com ${b.google_qtd || '?'} avaliações` : 'Não possui'}
+${B.google_business === 'sim'
+  ? `Sim — Nota: **${B.google_nota} ★** com **${B.google_qtd} avaliações**
+${parseInt(B.google_qtd) >= 10 && parseFloat(B.google_nota) >= 4.5 ? '✅ Incluir bloco de Google Reviews' : '⚠ Avaliações insuficientes ou nota baixa — NÃO incluir bloco de reviews'}`
+  : 'Não possui perfil Google Business.'}
 
 ### Depoimentos
-${b.depoimentos === 'Sim' ? `Sim — Formato: ${(b.depoimentos_formato || []).join(', ')} — Quantidade: ${b.depoimentos_qtd || '?'}` : 'Não há depoimentos disponíveis'}
-
-### Cases / Resultados Concretos
-${b.casos_resultados || 'Não fornecidos'}
-
----
-
-## PARTE 6 — LOCALIZAÇÃO
-
-### Modalidade de Atendimento
-${b.modalidade || '—'}
-
-${b.modalidade === 'Presencial' || b.modalidade === 'Híbrido' ? `### Endereço\n${b.endereco || '—'}\n\n### Exibir Localização\n${b.exibir_localizacao || '—'}\n\n### Cidades de Atendimento\n${b.cidades_atendimento || '—'}` : ''}
-
-${b.modalidade === 'Online' || b.modalidade === 'Híbrido' ? `### Plataforma Online\n${b.plataforma_online || '—'}` : ''}
+${B.depoimentos === 'sim'
+  ? `Sim — Formato: ${(B.depoimentos_formato || []).join(', ')} — Quantidade: ${B.depoimentos_qtd || '—'}
+✅ Incluir bloco de depoimentos`
+  : 'Não há depoimentos disponíveis — NÃO incluir bloco de depoimentos.'}
 
 ---
 
-## PARTE 7 — DIREÇÃO DE DESIGN
+## PARTE 7 — LOCALIZAÇÃO
 
-### Como o site deve ser percebido
-${b.estilo_desejado || '—'}
+### Modalidade
+${B.modalidade || '—'}
 
-### Sensação do visitante
-${b.sensacao_visitante || '—'}
+${(B.modalidade === 'presencial' || B.modalidade === 'hibrido') ? `
+### Endereço
+${B.endereco || '—'}
 
-### Referências Pessoais
-${b.referencias_pessoais || '—'}
+### Como exibir
+${B.exibir_localizacao || '—'}
 
-### Referências do Nicho
-${b.referencias_nicho || 'Não fornecidas'}
+### Cidades
+${B.cidades_atendimento || '—'}
+` : ''}
 
-### Cores da Marca
-| Cor | Valor |
-|---|---|
-| Principal | ${b.cor_principal || 'Não definida'} |
-| Secundária | ${b.cor_secundaria || 'Não definida'} |
+${(B.modalidade === 'online' || B.modalidade === 'hibrido') ? `
+### Plataforma Online
+${B.plataforma_online || 'Não especificada'}
+` : ''}
 
-### Direção Geral
-| Parâmetro | Valor |
-|---|---|
-| Tema | ${b.tema || '—'} |
-| Intensidade Visual | ${b.intensidade_visual || '—'} |
-| Referência de marca | ${b.referencia_marca || 'Não definida'} |
-| O que NÃO quero | ${b.o_que_nao_quero || 'Não especificado'} |
+---
+
+## PARTE 8 — DIREÇÃO DE ARTE
+
+${fichaArte ? `
+### Paleta de Cores Aprovada
+| Nome | HEX | Uso |
+|---|---|---|
+${paleta}
+
+### Tipografia Aprovada
+- **Display:** ${fichaArte.tipografia?.display?.fonte} ${fichaArte.tipografia?.display?.peso} — ${fichaArte.tipografia?.display?.uso}
+- **Corpo:** ${fichaArte.tipografia?.corpo?.fonte} ${fichaArte.tipografia?.corpo?.peso} — ${fichaArte.tipografia?.corpo?.uso}
+${fichaArte.tipografia?.mono ? `- **Mono:** ${fichaArte.tipografia?.mono?.fonte} — ${fichaArte.tipografia?.mono?.uso}` : ''}
+
+### Tom Visual
+${fichaArte.tom_visual}
+
+### Layout
+${fichaArte.layout}
+
+### Animações
+${fichaArte.animacoes}
+
+### Mobile First
+${fichaArte.mobile_first}
 
 ### Footer
-| Parâmetro | Valor |
-|---|---|
-| Tom visual | ${b.footer_tom || 'IA decide'} |
-| Elemento âncora | ${b.footer_elemento || 'IA decide'} |
-| Sensação | ${b.footer_sensacao || 'IA decide'} |
+${fichaArte.footer}
 
-### Menu Mobile
-${b.menu_mobile_estilo || 'IA decide'} — ${b.menu_mobile_especial || 'Padrão'}
+### Decisões Criativas
+${(fichaArte.decisoes || []).map((d, i) => `${i+1}. ${d}`).join('\n')}
+` : `
+### Ativos da Marca
+- Logo: ${B.arte_logo || '—'}
+- Fotos: ${B.arte_fotos || '—'}
+- Cor principal: ${B.arte_cor_principal || 'não definida'}
+- Cor secundária: ${B.arte_cor_secundaria || 'não definida'}
+
+### Direção Geral
+- Tema: ${B.arte_tema || '—'}
+- Intensidade visual: ${B.arte_intensidade || '—'}
+- Referência de marca: ${B.arte_referencia_marca || '—'}
+- Menu mobile: ${B.arte_menu_mobile || '—'}
+- O que NÃO quero: ${B.arte_o_que_nao_quero || '—'}
+- Footer: ${B.arte_footer_tom || '—'}
+
+### Referências Pessoais
+${(B.arte_referencias_pessoais || []).map((r, i) => `
+**Ref. ${i+1}:** ${r.link}
+- O que atraiu: ${r.gostei}
+- O que adaptar: ${r.adaptar}
+`).join('') || 'Não fornecidas.'}
+
+### Referências do Nicho
+${(B.arte_referencias_nicho || []).map((r, i) => `
+**Ref. ${i+1}:** ${r.link}
+- O que atraiu: ${r.gostei}
+- O que adaptar: ${r.adaptar}
+`).join('') || 'Não fornecidas.'}
+
+> ⚠ Ficha de direção de arte não foi gerada/aprovada. A IA deve tomar as decisões de design baseada nas informações acima.
+`}
 
 ---
 
-## PARTE 8 — ASSETS E INTEGRAÇÕES
+## PARTE 9 — INTEGRAÇÕES ATIVAS
 
-### Assets Disponíveis
-| Asset | Status |
-|---|---|
-| Logo | ${b.logo_disponivel || '—'} |
-| Foto do profissional/produto | ${b.foto_profissional || '—'} |
-| Outros | ${b.assets_outros || '—'} |
-
-### Integrações Ativas
-${(b.integracoes || []).map(i => `[x] ${i}`).join('\n')}
+${integracoesList || '- [x] WhatsApp Flutuante (padrão Adsgator)'}
 
 ---
 
-## PARTE 9 — BRIEFING BRUTO DO CLIENTE
+## PARTE 10 — BRIEFING BRUTO DO CLIENTE
 
-> Cole abaixo o briefing exatamente como veio do cliente. A IA usa como fonte primária.
+> Material original fornecido pelo cliente. Use como fonte primária para enriquecer a copy.
 
-${b.briefing_bruto || 'Não fornecido — usar dados dos campos acima'}
-
----
-
-## PARTE 10 — INSTRUÇÕES ADICIONAIS
-
-${b.instrucoes_adicionais || 'Nenhuma instrução adicional'}
+${B.briefing_bruto || 'Não fornecido — use os campos acima como fonte de dados.'}
 
 ---
 
-## PARTE 11 — REGRAS FIXAS ADSGATOR
+## PARTE 11 — INSTRUÇÕES ADICIONAIS
+
+${B.instrucoes_adicionais || 'Nenhuma instrução adicional.'}
+
+---
+
+## PARTE 12 — REGRAS FIXAS ADSGATOR
 
 ${REGRAS_FIXAS_ADSGATOR}
+
+---
+
+## PARTE 13 — PROMPT DE AUDITORIA PÓS-IMPLEMENTAÇÃO
+
+${PROMPT_AUDITORIA}
 `;
   },
 
   downloadDoc1() {
-    const content = this.buildDoc1();
-    this.downloadFile(content, `doc1-${this.briefing.slug||'projeto'}.md`);
+    const doc1 = this.buildDoc1();
+    const slug = this.B.slug || 'briefing';
+    this.state.lastDoc1 = doc1;
+    this.downloadText(doc1, `doc1-${slug}.md`, 'text/markdown');
+    this.showToast('DOC-1 baixado!', 'success');
   },
 
-  downloadFile(content, filename) {
-    const blob = new Blob([content], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-    this.showToast('Download concluído', 'success');
-  },
-
-  buildMasterPrompt(doc1) {
-    return `Você é um Diretor de Arte, UI Designer de elite e Engenheiro Front-end Sênior, trabalhando para a agência Adsgator.
-
-Sua missão é ler este documento inteiro e gerar como output a **Ficha de Implementação**, completa, específica e pronta para ser enviada diretamente ao Claude, Roo Code ou outro agente implementador construir a landing page.
-
-**O que isso significa na prática:**
-- Você toma todas as decisões de design que não estão explicitadas — tipografia, escala, tokens, animações, layout de cada seção.
-- Você preenche cada campo da Ficha de Implementação com valores concretos. Sem placeholders. Sem [definir depois]. Sem [a combinar].
-- Você transforma a direção criativa e a copy abaixo em especificações técnicas de implementação.
-- O output que você entrega deve poder ser copiado e enviado para outra IA sem nenhuma edição adicional.
-
-**Padrão de qualidade esperado:**
-O documento gerado deve orquestrar uma landing page com design editorial de alto padrão — atípico, com personalidade visual forte, fora do visual genérico de IA. Pense Raycast, Linear, Family.co. Layouts com intenção. Tipografia com personalidade. Animações que têm razão de existir. Cada decisão de tipografia, espaçamento, cor e animação deve ser intencional e coesa.
-
-**Sobre o viewport:**
-O site não fica preso em um container central. Seções que se beneficiam de ocupar o viewport completo devem fazê-lo — backgrounds que sangram até as bordas, tipografia que respira, imagens que não ficam comprimidas. O container é uma ferramenta de legibilidade, não uma prisão de layout.
-
-**Sobre o mobile:**
-Mobile não é adaptação — é o ponto de partida. O design começa em 375px. Cada decisão de tipografia, espaçamento, hierarquia e layout é tomada primeiro para mobile e expandida para desktop.
-
-**Sobre o footer:**
-O footer não é um afterthought — é a última impressão. Deve ter identidade visual clara, conectada ao tom da landing page. Hierarquia tipográfica real. Personalidade.
-
-**DNA ADSGATOR — REGRAS INEGOCIÁVEIS DE COPY:**
-- Intenção de Busca em Primeiro Lugar — a H1 justifica o clique no anúncio nos primeiros 3 segundos
-- Primeira Pessoa Sempre — "eu", "meu", "com você" — nunca terceira pessoa
-- Zero Institucional — proibido: "inovador", "excelência", "missão", "visão"
-- Comunicação Direta e Realista — sem promessas milagrosas
-- Tom Conversacional com Autoridade
-- Foco na Ação — cada palavra tem função persuasiva
-
-**STACK TÉCNICA FIXA:**
-Astro + Tailwind CSS + GSAP + ScrollTrigger + Framer Motion + Lenis + Web3Forms
-Deploy: Vercel (output: 'static')
-
----
-Abaixo está o Brainstorm Visual (DOC-1) para gerar a Ficha de Implementação:
-
-${doc1}
-`;
-  },
-
-  updateGenProgress(data) {
-    const genLogs = document.getElementById('gen-status-list');
-    if (!genLogs) return;
-    
-    // Calcula a porcentagem
-    const pct = Math.round((data.step / 6) * 100);
-    document.getElementById('gen-progress-bar').style.width = pct + '%';
-    document.getElementById('gen-pct').innerText = pct + '%';
-    
-    let html = '';
-    for (let i = 1; i <= 6; i++) {
-      if (i < data.step) {
-        html += `<div class="gen-status-item done"><i data-lucide="check-circle" class="icon icon--success"></i> Passo ${i} concluído</div>`;
-      } else if (i === data.step) {
-        html += `<div class="gen-status-item active"><i data-lucide="${data.icon}" class="icon ${data.spinning ? 'icon--spin' : ''}"></i> ${data.label}</div>`;
-      } else {
-        html += `<div class="gen-status-item"><i data-lucide="circle" class="icon icon--muted"></i> Aguardando...</div>`;
-      }
-    }
-    genLogs.innerHTML = html;
-    lucide.createIcons();
-  },
-
+  /* ─────────────────────────────────────────────────────
+     GENERATE DOCIMPL
+  ───────────────────────────────────────────────────── */
   async generateDocImpl() {
-    if (!this.state.apiKeys.gemini && !this.state.apiKeys.claude && !this.state.apiKeys.grok && !this.state.apiKeys.mistral) {
-      this.showToast('Configure uma API Key primeiro', 'error');
-      this.openModal('modal-api');
-      return;
-    }
-    
-    this.calculateScore();
-    if (this.state.score < 60) {
-      this.showToast('Score insuficiente para gerar DOC-IMPL. Preencha mais campos.', 'warning');
-      return;
-    }
-
+    if (this.state.isGenerating) return;
     this.state.isGenerating = true;
+    this.state.lastError = null;
+
     this.openModal('modal-gen');
-    const statusBox = document.getElementById('modal-gen');
-    const modelInfo = AI_MODELS[this.state.selectedModel];
-    
-    statusBox.innerHTML = `
-      <div class="modal">
-        <div class="modal-body">
-          <h3 class="syne" style="margin-bottom:12px"><i data-lucide="zap" class="icon icon--accent"></i> Gerando Ficha de Implementação</h3>
-          <p style="color:var(--text-secondary); margin-bottom:24px; font-size:14px;">Modelo: ${modelInfo.name}</p>
-          
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:12px;">
-            <span>Progresso</span>
-            <span id="gen-pct">0%</span>
-          </div>
-          <div class="gen-progress">
-            <div class="gen-progress-inner" id="gen-progress-bar"></div>
-          </div>
-          
-          <div class="gen-status-list" id="gen-status-list"></div>
-        </div>
-      </div>
+    document.getElementById('modal-gen-title').textContent = 'Gerando Ficha de Implementação';
+    document.getElementById('gen-model-badge').innerHTML = `
+      <i data-lucide="cpu" style="width:14px;height:14px"></i>
+      Modelo: ${AI_MODELS[this.state.selectedModel]?.label}
     `;
-    lucide.createIcons();
+    lucide.createIcons({ nodes: [document.getElementById('gen-model-badge')] });
+
+    const genSteps = [
+      { id: 1, icon: 'file-text',   label: 'Compilando DOC-1...' },
+      { id: 2, icon: 'code',        label: 'Preparando prompt de implementação...' },
+      { id: 3, icon: 'zap',         label: `Chamando ${AI_MODELS[this.state.selectedModel]?.label}...` },
+      { id: 4, icon: 'check-circle',label: 'Processando resposta...' },
+      { id: 5, icon: 'eye',         label: 'Gerando preview...' },
+      { id: 6, icon: 'sparkles',    label: 'Concluído!' },
+    ];
+
+    const renderSteps = (activeId, successIds = [], errorId = null) => {
+      const total = genSteps.length;
+      const done = successIds.length;
+      const pct = Math.round((done / total) * 100);
+      document.getElementById('gen-progress-fill').style.width = pct + '%';
+      document.getElementById('gen-progress-pct').textContent = pct + '%';
+      document.getElementById('gen-progress-fill').parentElement.parentElement
+        .setAttribute('aria-valuenow', pct);
+
+      document.getElementById('gen-steps-list').innerHTML = genSteps.map(s => {
+        const isActive = s.id === activeId;
+        const isDone = successIds.includes(s.id);
+        const isError = s.id === errorId;
+        const iconCls = isActive ? 'gen-step-icon spin' :
+                        isDone   ? 'gen-step-icon done' :
+                        isError  ? 'gen-step-icon err'  : 'gen-step-icon wait';
+        const icon = isActive ? 'loader-2' : isDone ? 'check' : isError ? 'x' : 'circle';
+        return `
+          <div class="gen-step-item ${isActive ? 'active' : ''}">
+            <i data-lucide="${icon}" class="${iconCls}" style="width:16px;height:16px"></i>
+            <span class="gen-step-label">${s.label}</span>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons({ nodes: [document.getElementById('gen-steps-list')] });
+    };
+
+    const done = [];
 
     try {
-      this.updateGenProgress({ icon: 'loader-2', label: 'Compilando DOC-1...', step: 1, spinning: true });
+      renderSteps(1);
       const doc1 = this.buildDoc1();
+      this.state.lastDoc1 = doc1;
       await new Promise(r => setTimeout(r, 400));
-      
-      this.updateGenProgress({ icon: 'brain', label: 'Preparando prompt mestre...', step: 2, spinning: true });
-      const prompt = this.buildMasterPrompt(doc1);
+      done.push(1);
+
+      renderSteps(2, done);
+      const prompt = this.buildDocImplPrompt(doc1);
       await new Promise(r => setTimeout(r, 300));
-      
-      const apiKey = this.state.apiKeys[modelInfo.provider];
-      if (!apiKey) throw new Error(`Chave de API ausente para ${modelInfo.provider}`);
-      
-      this.updateGenProgress({ icon: 'zap', label: `Chamando ${modelInfo.name}...`, step: 3, spinning: true });
-      
-      let docImpl = '';
-      if (modelInfo.provider === 'gemini') {
-        const resp = await fetch(`${modelInfo.endpoint}?key=${apiKey}`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        if (!resp.ok) throw new Error('Erro na API Gemini: ' + resp.status);
-        const data = await resp.json();
-        docImpl = data.candidates[0].content.parts[0].text;
-      } else if (modelInfo.provider === 'claude') {
-        const resp = await fetch(modelInfo.endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': apiKey,
-            'anthropic-version': '2023-06-01',
-            'anthropic-dangerous-direct-browser-access': 'true'
-          },
-          body: JSON.stringify({
-            model: 'claude-3-5-sonnet-20240620',
-            max_tokens: modelInfo.maxTokens,
-            messages: [{ role: 'user', content: prompt }]
-          })
-        });
-        if (!resp.ok) throw new Error('Erro na API Claude: ' + resp.status);
-        const data = await resp.json();
-        docImpl = data.content[0].text;
-      } else if (modelInfo.provider === 'grok') {
-        const resp = await fetch(modelInfo.endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'grok-3',
-            max_tokens: modelInfo.maxTokens,
-            temperature: modelInfo.temp,
-            messages: [{ role: 'user', content: prompt }]
-          })
-        });
-        if (!resp.ok) throw new Error('Erro na API Grok: ' + resp.status);
-        const data = await resp.json();
-        docImpl = data.choices[0].message.content;
-      } else if (modelInfo.provider === 'mistral') {
-        const resp = await fetch(modelInfo.endpoint, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: 'mistral-large-latest',
-            max_tokens: modelInfo.maxTokens,
-            temperature: modelInfo.temp,
-            messages: [{ role: 'user', content: prompt }]
-          })
-        });
-        if (!resp.ok) throw new Error('Erro na API Mistral: ' + resp.status);
-        const data = await resp.json();
-        docImpl = data.choices[0].message.content;
-      } else {
-        throw new Error('Provedor não implementado');
-      }
+      done.push(2);
 
-      this.updateGenProgress({ icon: 'file-text', label: 'Processando resposta...', step: 4, spinning: true });
-      if (!docImpl || docImpl.trim().length < 100) {
-        throw new Error('A IA retornou uma resposta muito curta ou vazia.');
+      renderSteps(3, done);
+      const t0 = Date.now();
+      const docImpl = await this.callAI(prompt);
+      const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+      done.push(3);
+
+      renderSteps(4, done);
+      if (!docImpl || docImpl.trim().length < 200) {
+        throw new Error('response too short — a IA retornou uma resposta muito curta ou vazia.');
       }
-      
-      this.updateGenProgress({ icon: 'eye', label: 'Gerando preview...', step: 5, spinning: true });
+      this.state.lastDocImpl = docImpl;
+      await new Promise(r => setTimeout(r, 300));
+      done.push(4);
+
+      renderSteps(5, done);
       await this.generatePreview(docImpl);
+      done.push(5);
 
-      this.updateGenProgress({ icon: 'check-circle', label: 'Concluído!', step: 6, spinning: false });
-      this.saveVersion(doc1, docImpl);
-      
-      this.showNotification('LandingAI', 'DOC-IMPL gerado com sucesso!');
-      this.downloadFile(docImpl, `doc-impl-${this.briefing.slug||'projeto'}.md`);
-      setTimeout(() => this.closeModal('modal-gen'), 3000);
+      done.push(6);
+      renderSteps(null, done);
+
+      // Salva versão
+      this.saveVersion(doc1, docImpl, this.state.selectedModel);
+
+      // Download automático
+      const slug = this.B.slug || 'projeto';
+      this.downloadText(docImpl, `doc-impl-${slug}.md`, 'text/markdown');
+
+      // Notificação Windows
+      this.showNotification('LandingAI', `Ficha de Implementação gerada! Projeto: ${this.B.nome_cliente}`);
+
+      // Preview
+      setTimeout(() => {
+        this.closeModal('modal-gen');
+        document.getElementById('preview-project-name').textContent = this.B.nome_cliente;
+        document.getElementById('btn-download-docimpl').onclick = () => {
+          this.downloadText(this.state.lastDocImpl, `doc-impl-${slug}.md`, 'text/markdown');
+        };
+        this.openModal('modal-preview');
+      }, 800);
 
     } catch (err) {
-      this.showGenError(err, modelInfo);
+      this.state.lastError = err.message;
+      this.closeModal('modal-gen');
+      this.showGenError(err, done);
+      console.error('[LandingAI] generateDocImpl erro:', err);
     } finally {
       this.state.isGenerating = false;
     }
   },
 
+  buildDocImplPrompt(doc1) {
+    return `${doc1}
+
+---
+
+## COMANDO DE EXECUÇÃO
+
+Leia o documento acima inteiro.
+
+Gere a **Ficha de Implementação Completa** seguindo EXATAMENTE este formato:
+
+1. Ordem de criação dos arquivos (FASE 1 a N)
+2. Código completo de cada arquivo — sem omissões, sem "..." no meio do código
+3. Design system completo: tokens Tailwind com HEX reais, escala tipográfica com clamp() reais
+4. Copy palavra por palavra em cada seção — não resumir
+5. Instruções de instalação e deploy
+6. .env.example com todas as variáveis
+7. Checklist de ação humana (o que você precisa providenciar antes do go-live)
+8. Prompt de auditoria pós-implementação
+
+O documento gerado deve ser auto-suficiente: outra IA deve conseguir construir o projeto completo lendo apenas este documento, sem fazer perguntas.
+
+Formato da resposta: Markdown com blocos de código completos para cada arquivo.
+`;
+  },
+
+  /* ─────────────────────────────────────────────────────
+     PREVIEW
+  ───────────────────────────────────────────────────── */
   async generatePreview(docImpl) {
-    const previewPrompt = `Você recebeu uma Ficha de Implementação de landing page.
-Gere um HTML MOCKUP simplificado — não o código final, apenas um preview visual rápido.
+    try {
+      const model = AI_MODELS[this.state.selectedModel];
+      const apiKey = this.state.apiKeys[model.provider];
+      if (!apiKey?.trim()) throw new Error('no key');
+
+      const previewPrompt = `Você recebeu uma Ficha de Implementação de landing page.
+Gere um HTML MOCKUP simplificado — apenas Hero + 3 seções principais + Footer.
+
 REGRAS:
 - HTML em único arquivo, inline CSS, zero dependências externas
-- Representa apenas Hero + 3 seções principais + Footer
-- Use as cores, fontes e copy EXATAS do documento
-- Visual FIEL ao que será implementado (não genérico)
-- Máximo 200 linhas de HTML
-- Não inclua JavaScript
-- Mobile-first (viewport 375px base)
-- Output APENAS o HTML, sem marcação markdown no inicio ou fim
-FICHA:
-${docImpl.substring(0, 8000)}`;
+- Use as cores, fontes e copy EXATAS da ficha — não genérico
+- Visual fiel ao que será implementado
+- Máximo 180 linhas de HTML
+- Sem JavaScript
+- Mobile-first (viewport 375px)
+- Output APENAS o HTML bruto, sem explicações, sem markdown
 
-    try {
-      const modelInfo = AI_MODELS[this.state.selectedModel];
-      const apiKey = this.state.apiKeys[modelInfo.provider];
-      
-      let html = '';
-      if (modelInfo.provider === 'gemini') {
-        const resp = await fetch(`${modelInfo.endpoint}?key=${apiKey}`, {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: previewPrompt }] }] })
-        });
-        const data = await resp.json();
-        html = data.candidates[0].content.parts[0].text;
+FICHA (trecho):
+${docImpl.substring(0, 6000)}`;
+
+      const html = await this.callAI(previewPrompt);
+      const clean = html.replace(/```html|```/g, '').trim();
+
+      const iframe = document.getElementById('preview-iframe');
+      if (iframe) {
+        const blob = new Blob([clean], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        iframe.src = url;
+
+        // Botão de download do preview
+        document.getElementById('btn-download-preview').onclick = () => {
+          this.downloadText(clean, `preview-${this.B.slug || 'landing'}.html`, 'text/html');
+        };
       }
-      
-      html = html.replace(/```html/g, '').replace(/```/g, '');
-      
-      if (html) {
-        const modal = document.getElementById('modal-preview');
-        modal.innerHTML = `
-          <div class="modal">
-            <div class="modal-header">
-              <h3 class="syne">👁 Preview — ${this.briefing.nome_cliente || 'Projeto'}</h3>
-              <button class="btn btn-ghost" style="padding:4px" onclick="App.closeModal('modal-preview')"><i data-lucide="x" class="icon"></i></button>
-            </div>
-            <div class="modal-body" style="padding:0">
-              <iframe style="width:100%; height:600px; border:none;"></iframe>
-            </div>
-          </div>
-        `;
-        const iframe = modal.querySelector('iframe');
-        const blob = new Blob([html], { type: 'text/html' });
-        iframe.src = URL.createObjectURL(blob);
-        document.getElementById('modal-preview').classList.remove('hidden');
-        lucide.createIcons();
+    } catch (err) {
+      // Preview falhou silenciosamente — DOC-IMPL está disponível normalmente
+      const iframe = document.getElementById('preview-iframe');
+      if (iframe) {
+        iframe.src = 'data:text/html,<p style="font-family:sans-serif;padding:20px;color:#666">Preview não disponível — DOC-IMPL gerado com sucesso.</p>';
       }
-    } catch (e) {
-      this.showToast('Preview não gerado — DOC-IMPL disponível normalmente', 'warning');
     }
   },
 
-  showGenError(err, modelInfo) {
-    const modal = document.getElementById('modal-error');
-    modal.innerHTML = `
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="syne" style="color:var(--danger)">✗ Erro na Geração</h3>
-          <button class="btn btn-ghost" style="padding:4px" onclick="App.closeModal('modal-error'); App.closeModal('modal-gen')"><i data-lucide="x" class="icon"></i></button>
-        </div>
-        <div class="modal-body">
-          <p style="color:var(--text-secondary); margin-bottom:12px;">Modelo: ${modelInfo?.name}</p>
-          <div style="background:var(--bg-raised); border:1px solid var(--border-default); padding:16px; border-radius:var(--r-md); margin-bottom:24px; font-family:var(--font-mono); font-size:12px; color:var(--danger);">
-            ${err.message || err}
-          </div>
-          <p style="color:var(--text-secondary); font-size:14px; margin-bottom:8px;">Possíveis causas:</p>
-          <ul style="font-size:14px; color:var(--text-primary); margin-left:20px; margin-bottom:24px;">
-            <li>Chave de API inválida ou expirada</li>
-            <li>Limite de uso da API atingido (Quota Exceeded)</li>
-            <li>Conexão com a internet interrompida</li>
-          </ul>
-          <div style="display:flex; flex-direction:column; gap:12px;">
-            <button class="btn btn-primary" onclick="App.generateDocImpl()"><i data-lucide="refresh-cw" class="icon"></i> Tentar Novamente</button>
-            <button class="btn btn-ghost" onclick="App.openModal('modal-api')"><i data-lucide="settings" class="icon"></i> Trocar Modelo</button>
-            <button class="btn btn-ghost" onclick="App.downloadDoc1()"><i data-lucide="download" class="icon"></i> Baixar DOC-1 Manualmente</button>
-          </div>
-        </div>
+  /* ─────────────────────────────────────────────────────
+     ERROR MODAL
+  ───────────────────────────────────────────────────── */
+  showGenError(err, completedSteps = []) {
+    const msg = err.message || 'Erro desconhecido';
+    const errorInfo = Object.entries(ERROR_MAP).find(([key]) => msg.toLowerCase().includes(key.toLowerCase()));
+    const cause = errorInfo?.[1]?.cause || 'Erro inesperado.';
+    const tip   = errorInfo?.[1]?.tip   || 'Tente novamente ou use outro modelo.';
+
+    document.getElementById('error-meta').innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--text-tertiary)">
+        <i data-lucide="cpu" style="width:13px;height:13px"></i>
+        Modelo: ${AI_MODELS[this.state.selectedModel]?.label}
+        <span style="color:var(--border-strong)">·</span>
+        Steps concluídos: ${completedSteps.length}/6
       </div>
     `;
-    lucide.createIcons();
+    document.getElementById('error-message').textContent = msg;
+    document.getElementById('error-cause').innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <strong style="font-size:12px;color:var(--text-primary)">Causa provável:</strong>
+        <span>${cause}</span>
+        <span style="color:var(--accent2)">${tip}</span>
+      </div>
+    `;
+
+    document.getElementById('btn-retry').onclick = () => {
+      this.closeModal('modal-error');
+      this.generateDocImpl();
+    };
+    document.getElementById('btn-change-model').onclick = () => {
+      this.closeModal('modal-error');
+      document.getElementById('btn-model-selector').click();
+    };
+    document.getElementById('btn-download-doc1-fallback').onclick = () => {
+      this.closeModal('modal-error');
+      this.downloadDoc1();
+    };
+
+    lucide.createIcons({ nodes: [document.getElementById('modal-error')] });
     this.openModal('modal-error');
   },
 
-  openModal(id) {
-    if (id === 'modal-api') this.renderApiModal();
-    if (id === 'modal-projects') this.renderProjectsModal();
-    document.getElementById(id).classList.remove('hidden');
-  },
-  
-  closeModal(id) {
-    document.getElementById(id).classList.add('hidden');
+buildStep8() {
+    const B = this.B;
+    return `
+      <p class="form-section-title">Tom de Voz</p>
+      <p class="form-section-title" style="font-size:12px;font-family:var(--font-body);font-weight:400;color:var(--text-secondary);border:none;padding:0;margin-top:-16px">
+        Estas informações definem como o profissional fala — e o que jamais diria.
+        São as que mais diferenciam a copy de qualquer output genérico de IA.
+      </p>
+
+      <div class="field-group">
+        ${this.fieldLabel('estilo_desejado', 'Como o site deve ser percebido?', true)}
+        <textarea class="field-textarea" data-field="estilo_desejado"
+          placeholder="Fale como descreveria o projeto para o cliente — sem termos técnicos.
+Ex: Sóbrio e técnico, mas sem ser frio. Algo próximo de uma marca premium europeia. Não quero nada que pareça infoproduto ou clínica genérica.">${B.estilo_desejado || ''}</textarea>
+        <span class="field-hint">Esta frase guia todas as decisões visuais e de copy da IA.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('sensacao_visitante', 'O que o visitante deve SENTIR ao navegar no site?', true)}
+        <textarea class="field-textarea" data-field="sensacao_visitante"
+          placeholder="Ex: Deve sentir que está diante de alguém que domina o assunto, que entende exatamente o problema dele e tem a solução — sem precisar convencer demais.">${B.sensacao_visitante || ''}</textarea>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('frase_tom', 'Frase que resume o tom de voz da marca', false, true)}
+        <input type="text" class="field-input" data-field="frase_tom"
+          placeholder="Ex: Especialista que já viu tudo e fala sem rodeios / Quem cuida com método, não com emoção"
+          value="${B.frase_tom || ''}">
+        <span class="field-hint">Uma frase curta que captura a personalidade. Será usada no brief para a IA.</span>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Vocabulário da Marca</p>
+
+      <div class="field-group">
+        ${this.fieldLabel('vocabulario_usa', 'Termos e expressões que o profissional USA', false, true)}
+        <textarea class="field-textarea" data-field="vocabulario_usa"
+          placeholder="Palavras do campo semântico do cliente — vêm da conversa, não do formulário.
+Ex: 'manejo', 'vínculo', 'marcadores', 'autonomia do animal', 'comportamento funcional'">${B.vocabulario_usa || ''}</textarea>
+        <span class="field-hint">A IA vai incorporar essas palavras naturalmente na copy.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('vocabulario_nunca', 'Termos que o profissional NUNCA usaria', false, true)}
+        <textarea class="field-textarea" data-field="vocabulario_nunca"
+          placeholder="Palavras que quebram a identidade da marca.
+Ex: 'pet', 'fofo', 'amiguinho', 'tutor consciente', 'jornada', 'transformação', 'missão'">${B.vocabulario_nunca || ''}</textarea>
+        <span class="field-hint">Tão importante quanto o vocabulário correto — a IA evita esses termos.</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('restricoes', 'Restrições visuais e de conteúdo', false, true)}
+        <textarea class="field-textarea" data-field="restricoes"
+          placeholder="Tudo que o cliente NÃO quer de forma alguma no site.
+Ex: Sem rosa. Sem visual de pet shop. Sem estética de infoproduto. Sem fontes cursivas. Não mencionar preço.">${B.restricoes || ''}</textarea>
+      </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Metadados do Projeto</p>
+
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('dominio', 'Domínio desejado', false, true)}
+          <input type="text" class="field-input" data-field="dominio"
+            placeholder="Ex: beatrizmattos.com.br"
+            value="${B.dominio || ''}">
+          <span class="field-hint">Confirmar disponibilidade antes do go-live.</span>
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('cnpj', 'CNPJ', false, true)}
+          <input type="text" class="field-input" data-field="cnpj"
+            placeholder="Ex: 00.000.000/0001-00"
+            value="${B.cnpj || ''}">
+        </div>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('aviso_legal', 'Registro profissional ou aviso legal', false, true)}
+        <input type="text" class="field-input" data-field="aviso_legal"
+          placeholder="Ex: CRM 12345-SP | CRP 06/12345 | OAB/SP 123456"
+          value="${B.aviso_legal || ''}">
+        <span class="field-hint">Obrigatório no footer para algumas categorias (médicos, psicólogos, advogados).</span>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('instrucoes_adicionais', 'Instruções adicionais para a IA', false, true)}
+        <textarea class="field-textarea" data-field="instrucoes_adicionais"
+          placeholder="Qualquer informação que não coube nos campos anteriores. Campo livre — a IA lê tudo.">${B.instrucoes_adicionais || ''}</textarea>
+      </div>
+    `;
   },
 
-  renderApiModal() {
-    const m = document.getElementById('modal-api');
-    m.innerHTML = `
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="syne">Configuração de APIs</h3>
-          <button class="btn btn-ghost" style="padding:4px" onclick="App.closeModal('modal-api')"><i data-lucide="x" class="icon"></i></button>
-        </div>
-        <div class="modal-body">
-          <div class="field-group">
-            <label class="field-label">Modelo Padrão para Geração</label>
-            <select class="field-select" id="sel-model">
-              ${Object.entries(AI_MODELS).map(([k,v]) => `<option value="${k}" ${this.state.selectedModel===k?'selected':''}>${v.name}</option>`).join('')}
-            </select>
+buildStepReview() {
+    const B = this.B;
+    const score = this.calcGlobalScore();
+    const allWarnings = this.getAllWarnings();
+    const missingRequired = this.getMissingRequired();
+    const scoreClass = score >= 80 ? 'high' : score >= 50 ? 'medium' : 'low';
+    const scoreLabel = score >= 80 ? 'Briefing rico — excelente qualidade esperada' :
+                       score >= 50 ? 'Briefing adequado — resultado bom' :
+                       'Briefing incompleto — preencha mais campos';
+
+    const stepCards = STEPS.map(step => {
+      const warnings = this.getStepWarnings(step.id);
+      const missing = (REQUIRED_FIELDS[step.id] || []).filter(f => !B[f]?.toString().trim());
+      const statusIcon = missing.length > 0 ? 'x' :
+                         warnings.length > 0 ? 'alert-triangle' : 'check';
+      const statusColor = missing.length > 0 ? 'var(--danger)' :
+                          warnings.length > 0 ? 'var(--warning)' : 'var(--accent)';
+      const cardClass = missing.length > 0 ? 'has-errors' : warnings.length > 0 ? 'has-warnings' : 'complete';
+
+      return `
+        <div class="review-step-card ${cardClass}" onclick="App.goToStep(${step.id})" title="Ir para Step ${step.id}">
+          <div class="review-step-card-header">
+            <span class="review-step-num">STEP ${step.id}</span>
+            <i data-lucide="${statusIcon}" class="review-step-status" style="color:${statusColor}"></i>
           </div>
-          <hr style="border:0; border-top:1px solid var(--border-default); margin: 24px 0;">
-          <div class="field-group">
-            <label class="field-label">Gemini API Key</label>
-            <input type="password" class="field-input" id="key-gemini" value="${this.state.apiKeys.gemini}">
-            <div class="field-hint">Obter em: aistudio.google.com</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Claude API Key</label>
-            <input type="password" class="field-input" id="key-claude" value="${this.state.apiKeys.claude}">
-            <div class="field-hint">Obter em: console.anthropic.com</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Grok API Key</label>
-            <input type="password" class="field-input" id="key-grok" value="${this.state.apiKeys.grok}">
-            <div class="field-hint">Obter em: console.x.ai</div>
-          </div>
-          <div class="field-group">
-            <label class="field-label">Mistral API Key</label>
-            <input type="password" class="field-input" id="key-mistral" value="${this.state.apiKeys.mistral}">
-            <div class="field-hint">Obter em: console.mistral.ai</div>
+          <div class="review-step-name">${step.label}</div>
+          <div class="review-step-detail">
+            ${missing.length > 0 ? `${missing.length} campo(s) obrigatório(s) vazio(s)` :
+              warnings.length > 0 ? `${warnings.length} aviso(s)` : 'Completo'}
           </div>
         </div>
-        <div class="modal-footer">
-          <button class="btn btn-primary" onclick="App.saveApiKeys()">Salvar</button>
+      `;
+    }).join('');
+
+    const warningItems = allWarnings.length > 0 ? `
+      <div>
+        <div class="review-section-title">
+          <i data-lucide="alert-triangle" style="width:16px;height:16px;color:var(--warning)"></i>
+          Avisos (${allWarnings.length})
+        </div>
+        <div class="review-warnings-list">
+          ${allWarnings.map(w => `
+            <div class="review-warning-item">
+              <i data-lucide="alert-triangle" style="width:13px;height:13px"></i>
+              <span><strong>Step ${w.step} — ${w.label}:</strong> ${w.msg}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    const missingItems = missingRequired.length > 0 ? `
+      <div>
+        <div class="review-section-title">
+          <i data-lucide="x-circle" style="width:16px;height:16px;color:var(--danger)"></i>
+          Campos obrigatórios vazios (${missingRequired.length})
+        </div>
+        <div class="review-missing-list">
+          ${missingRequired.map(m => `
+            <div class="review-missing-item">
+              <i data-lucide="x" style="width:13px;height:13px"></i>
+              <span><strong>Step ${m.step} — ${m.label}:</strong> campo "${m.field}" não preenchido</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    ` : '';
+
+    const canGenerate = missingRequired.length === 0;
+    const hasApiKey = Object.values(this.state.apiKeys).some(k => k?.trim());
+
+    return `
+      <div class="review-screen">
+        <div class="review-header">
+          <div class="review-title">Revisão e Geração</div>
+          <div class="review-desc">
+            Confira o briefing antes de gerar a Ficha de Implementação.
+            Clique em qualquer step para voltar e ajustar.
+          </div>
+        </div>
+
+        <div class="review-score-banner">
+          <div class="review-score-circle">${score}%</div>
+          <div class="review-score-info">
+            <div class="review-score-label">${scoreLabel}</div>
+            <div class="review-score-sub">
+              ${missingRequired.length > 0 ? `${missingRequired.length} campo(s) obrigatório(s) pendente(s) ·` : ''}
+              ${allWarnings.length} aviso(s) · Modelo: ${AI_MODELS[this.state.selectedModel]?.label}
+            </div>
+          </div>
+          <div class="score-badge ${scoreClass}">${score >= 80 ? 'Rico' : score >= 50 ? 'OK' : 'Raso'}</div>
+        </div>
+
+        <div class="review-steps-grid">
+          ${stepCards}
+        </div>
+
+        ${missingItems}
+        ${warningItems}
+
+        <div class="review-actions">
+          <div class="review-section-title" style="margin-bottom:0">
+            <i data-lucide="zap" style="width:16px;height:16px;color:var(--accent)"></i>
+            Gerar agora
+          </div>
+          <div class="review-actions-row">
+            <button class="btn-ghost" onclick="App.downloadDoc1()">
+              <i data-lucide="download" style="width:15px;height:15px"></i>
+              Baixar DOC-1 (manual)
+            </button>
+            <button class="btn-primary" onclick="App.generateDocImpl()"
+              ${canGenerate && hasApiKey ? '' : 'disabled'}
+              title="${!canGenerate ? 'Preencha os campos obrigatórios primeiro' : !hasApiKey ? 'Configure uma API Key primeiro' : 'Gerar Ficha de Implementação'}">
+              <i data-lucide="sparkles" style="width:15px;height:15px"></i>
+              Gerar Ficha de Implementação
+            </button>
+          </div>
+          ${!hasApiKey ? `
+            <div style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--warning)">
+              <i data-lucide="key" style="width:13px;height:13px"></i>
+              Nenhuma API Key configurada —
+              <button onclick="App.openModal('modal-api')" style="color:var(--accent2);font-size:12px;text-decoration:underline;text-underline-offset:2px">
+                configurar agora
+              </button>
+            </div>
+          ` : ''}
+          <div class="review-model-note">
+            <i data-lucide="cpu" style="width:12px;height:12px"></i>
+            Modelo ativo: ${AI_MODELS[this.state.selectedModel]?.label}
+            <button onclick="document.getElementById('btn-model-selector').click()" style="color:var(--accent2);font-size:11px;margin-left:4px">trocar</button>
+          </div>
         </div>
       </div>
     `;
-    lucide.createIcons();
   },
 
-  saveApiKeys() {
-    this.state.apiKeys.gemini = document.getElementById('key-gemini').value;
-    this.state.apiKeys.claude = document.getElementById('key-claude').value;
-    this.state.apiKeys.grok = document.getElementById('key-grok').value;
-    this.state.apiKeys.mistral = document.getElementById('key-mistral').value;
-    this.state.selectedModel = document.getElementById('sel-model').value;
-    localStorage.setItem('landingai_keys', JSON.stringify(this.state.apiKeys));
-    localStorage.setItem('landingai_model', this.state.selectedModel);
-    this.closeModal('modal-api');
-    this.showToast('Configurações salvas', 'success');
-    this.renderSidebar();
+buildDoc1() {
+    const B = this.B;
+    const dataAtual = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+    const arteAprovada = B.arte_ficha_aprovada ? (() => {
+      try { return JSON.parse(B.arte_ficha_aprovada); } catch { return null; }
+    })() : null;
+
+    const integracoesList = (B.integracoes || []).map(i => {
+      const labels = {
+        maps: 'Google Maps Embed (endereço presencial confirmado)',
+        reviews: 'Google Reviews Widget (perfil Google Business confirmado)',
+        instagram: 'Feed do Instagram (perfil ativo e relevante)',
+        formulario: 'Formulário de Contato Web3Forms',
+        whatsapp: 'WhatsApp Flutuante (padrão Adsgator)',
+        ligacao: 'Botão de Ligação Mobile',
+      };
+      return `- [x] ${labels[i] || i}`;
+    }).join('\n') || '- [x] WhatsApp Flutuante (padrão Adsgator)';
+
+    const waLink = B.whatsapp
+      ? `https://wa.me/${B.whatsapp.replace(/\D/g, '')}${B.objetivo_conversao === 'whatsapp' ? '' : ''}`
+      : '[INSERIR LINK WA]';
+
+    return `# ${B.nome_cliente || '[Nome do Cliente]'} — DOC-1 Briefing Completo
+
+> **Gerado pelo LandingAI v3 — Adsgator**
+> Data: ${dataAtual}
+> Modelo: ${AI_MODELS[this.state.selectedModel]?.label}
+> Slug: ${B.slug || '[slug]'}
+
+---
+
+## PARTE 1 — INSTRUÇÕES PARA A IA
+
+Você é um Diretor de Arte, UI Designer de elite e Engenheiro Front-end Sênior, trabalhando para a agência Adsgator.
+
+Sua missão é ler este briefing na íntegra e gerar a **Ficha de Implementação Completa** — pronto para o Roo Code implementar sem perguntas adicionais.
+
+**Você toma todas as decisões** de tipografia, escala, tokens, animações e layout que não estão explicitadas.
+**Você preenche todos os campos** com valores concretos. Sem placeholders. Sem "[definir depois]".
+**O output deve ser auto-suficiente:** outra IA deve construir o projeto lendo apenas o documento gerado.
+
+---
+
+## PARTE 2 — IDENTIFICAÇÃO DO PROJETO
+
+| Campo | Valor |
+|---|---|
+| **Cliente / Profissional** | ${B.nome_cliente || '—'} |
+| **Nome Comercial / Marca** | ${B.nome_marca || B.nome_cliente || '—'} |
+| **Slug** | ${B.slug || '—'} |
+| **Segmento** | ${B.segmento || '—'} |
+| **Tipo** | ${B.tipo || '—'} |
+| **Domínio** | ${B.dominio || '[a confirmar]'} |
+| **CNPJ** | ${B.cnpj || '[a confirmar]'} |
+| **Aviso Legal** | ${B.aviso_legal || 'não aplicável'} |
+
+---
+
+## PARTE 3 — CONTATO E CONVERSÃO
+
+| Campo | Valor |
+|---|---|
+| **WhatsApp** | ${B.whatsapp || '—'} |
+| **Link WA** | ${waLink} |
+| **Email** | ${B.email || '—'} |
+| **Horários** | ${B.horarios || '—'} |
+| **GTM ID** | ${B.gtm_id || '[a inserir]'} |
+| **Objetivo de Conversão** | ${B.objetivo_conversao || '—'} |
+| **Objetivo Outro** | ${B.objetivo_outro || 'n/a'} |
+
+---
+
+## PARTE 4 — REDES SOCIAIS E PRESENÇA DIGITAL
+
+| Rede | Handle / URL |
+|---|---|
+| **Instagram** | ${B.instagram || '—'} |
+| **TikTok** | ${B.tiktok || '—'} |
+| **YouTube** | ${B.youtube || '—'} |
+| **Outras** | ${B.outras_redes || '—'} |
+
+---
+
+## PARTE 5 — MODALIDADE E ATENDIMENTO
+
+| Campo | Valor |
+|---|---|
+| **Modalidade** | ${B.modalidade || '—'} |
+| **Endereço** | ${B.endereco || '—'} |
+| **Exibir localização** | ${B.exibir_localizacao || '—'} |
+| **Cidades de atendimento** | ${B.cidades_atendimento || '—'} |
+| **Plataforma online** | ${B.plataforma_online || '—'} |
+
+---
+
+## PARTE 6 — SERVIÇOS E PREÇO
+
+**Serviço Principal:**
+${B.servico_principal || '—'}
+
+**Lista de Serviços:**
+${B.servicos_lista || '—'}
+
+**Descrição Detalhada:**
+${B.servicos_descricao || '—'}
+
+**Exibir Preço:** ${B.preco_exibir === 'sim' ? 'Sim' : 'Não'}
+
+${B.preco_exibir === 'sim' ? `
+**Valor / Forma de cobrança:** ${B.preco_valor || '—'}
+**Condição especial:** ${B.preco_condicao || '—'}
+**Oferta especial:** ${B.oferta_especial || '—'}
+` : ''}
+
+---
+
+## PARTE 7 — PÚBLICO-ALVO E INTENÇÃO DE BUSCA
+
+**Público Primário:**
+${B.publico_primario || '—'}
+
+**Principal Dor / Problema antes de contratar:**
+${B.publico_dor || '—'}
+
+**O que o cliente quer alcançar:**
+${B.publico_resultado || '—'}
+
+**Público Secundário:**
+${B.publico_secundario || '—'}
+
+**FAQ do cliente:**
+${B.faq || 'Não fornecido — inferir baseado no nicho e nas dores acima.'}
+
+---
+
+## PARTE 8 — DIFERENCIAIS E AUTORIDADE
+
+**O que concretamente diferencia esse profissional:**
+${B.diferencial || '—'}
+
+**Frase de impacto:**
+${B.frase_impacto || '—'}
+
+**História / Origem:**
+${B.historia || 'Não fornecida.'}
+
+**Cases e resultados:**
+${B.casos_resultados || 'Não fornecidos.'}
+
+**Depoimentos disponíveis:** ${B.depoimentos === 'sim' ? `Sim — ${B.depoimentos_qtd || '?'} depoimentos em formato: ${(B.depoimentos_formato || []).join(', ') || '?'}` : 'Não'}
+
+**Google Business:** ${B.google_business === 'sim' ? `Sim — ${B.google_nota || '?'} estrelas com ${B.google_qtd || '?'} avaliações` : 'Não'}
+
+---
+
+## PARTE 9 — TOM DE VOZ E IDENTIDADE
+
+**Como o site deve ser percebido:**
+${B.estilo_desejado || '—'}
+
+**O que o visitante deve sentir:**
+${B.sensacao_visitante || '—'}
+
+**Frase do tom de voz:**
+${B.frase_tom || '—'}
+
+**Vocabulário que DEVE aparecer na copy:**
+${B.vocabulario_usa || '—'}
+
+**Vocabulário PROIBIDO:**
+${B.vocabulario_nunca || '—'}
+
+**Restrições visuais e de conteúdo:**
+${B.restricoes || '—'}
+
+---
+
+## PARTE 10 — DIREÇÃO DE ARTE
+
+${arteAprovada ? `
+### Ficha de Direção Aprovada ✓
+
+**Paleta de Cores:**
+${(arteAprovada.paleta || []).map(p => `- **${p.nome}** — \`${p.hex}\` — ${p.uso}`).join('\n')}
+
+**Tipografia:**
+- Display: ${arteAprovada.tipografia?.display?.fonte} ${arteAprovada.tipografia?.display?.peso} — ${arteAprovada.tipografia?.display?.uso}
+- Corpo: ${arteAprovada.tipografia?.corpo?.fonte} ${arteAprovada.tipografia?.corpo?.peso} — ${arteAprovada.tipografia?.corpo?.uso}
+${arteAprovada.tipografia?.mono ? `- Mono: ${arteAprovada.tipografia.mono.fonte} — ${arteAprovada.tipografia.mono.uso}` : ''}
+
+**Tom Visual:**
+${arteAprovada.tom_visual}
+
+**Diretrizes de Animação:**
+${arteAprovada.animacoes}
+
+**Layout:**
+${arteAprovada.layout}
+
+**Mobile First:**
+${arteAprovada.mobile_first}
+
+**Footer:**
+${arteAprovada.footer}
+
+**Decisões Criativas:**
+${(arteAprovada.decisoes || []).map((d, i) => `${i + 1}. ${d}`).join('\n')}
+
+**Referências Interpretadas:**
+${(arteAprovada.referencias_interpretadas || []).map(r => `- [${r.tipo}] ${r.fonte}: ${r.o_que_usar}`).join('\n')}
+` : `
+**Ativos da Marca:**
+- Cor principal: ${B.arte_cor_principal || 'não definida'}
+- Cor secundária: ${B.arte_cor_secundaria || 'não definida'}
+- Logo: ${B.arte_logo || 'não definida'}
+- Fotos: ${B.arte_fotos || 'não definidas'}
+
+**Direção:**
+- Tema: ${B.arte_tema || 'não definido'}
+- Intensidade: ${B.arte_intensidade || 'não definida'}
+- Referência de marca: ${B.arte_referencia_marca || 'não definida'}
+- O que NÃO quer: ${B.arte_o_que_nao_quero || 'não especificado'}
+- Menu mobile: ${B.arte_menu_mobile || 'não definido'}
+
+### Referências Pessoais
+${(B.arte_referencias_pessoais || []).map((r, i) => `
+**Ref. ${i+1}:** ${r.link}
+- O que atraiu: ${r.gostei}
+- O que adaptar: ${r.adaptar}
+`).join('') || 'Não fornecidas.'}
+
+### Referências do Nicho
+${(B.arte_referencias_nicho || []).map((r, i) => `
+**Ref. ${i+1}:** ${r.link}
+- O que atraiu: ${r.gostei}
+- O que adaptar: ${r.adaptar}
+`).join('') || 'Não fornecidas.'}
+
+> ⚠ Ficha de direção de arte não foi gerada/aprovada. A IA deve tomar as decisões de design baseada nas informações acima.
+`}
+
+---
+
+## PARTE 11 — INTEGRAÇÕES ATIVAS
+
+${integracoesList}
+
+---
+
+## PARTE 12 — BRIEFING BRUTO DO CLIENTE
+
+> Material original fornecido pelo cliente. Use como fonte primária para enriquecer a copy.
+
+${B.briefing_bruto || 'Não fornecido — use os campos acima como fonte de dados.'}
+
+---
+
+## PARTE 13 — INSTRUÇÕES ADICIONAIS
+
+${B.instrucoes_adicionais || 'Nenhuma instrução adicional.'}
+
+---
+
+## PARTE 14 — REGRAS FIXAS ADSGATOR
+
+${REGRAS_FIXAS_ADSGATOR}
+
+---
+
+## PARTE 15 — PROMPT DE AUDITORIA PÓS-IMPLEMENTAÇÃO
+
+${PROMPT_AUDITORIA}
+`;
   },
 
-  renderProjectsModal() {
-    const m = document.getElementById('modal-projects');
-    const list = Object.values(this.state.projects).map(p => `
-      <div class="project-list-item">
-        <div class="project-list-info">
-          <div class="project-list-name">${p.name}</div>
-          <div class="project-list-meta">${new Date(p.updatedAt).toLocaleString()}</div>
-        </div>
-        <div class="project-list-actions">
-          <button class="btn btn-ghost" style="padding: 6px" title="Abrir" onclick="App.loadProject('${p.id}')"><i data-lucide="folder-open" class="icon"></i></button>
-          <button class="btn btn-ghost" style="padding: 6px" title="Clonar" onclick="App.cloneProject('${p.id}')"><i data-lucide="copy" class="icon"></i></button>
-          <button class="btn btn-ghost" style="padding: 6px" title="Exportar" onclick="App.exportProject('${p.id}')"><i data-lucide="download" class="icon"></i></button>
-          <button class="btn btn-danger" style="padding: 6px" title="Excluir" onclick="App.deleteProject('${p.id}')"><i data-lucide="trash" class="icon"></i></button>
-        </div>
-      </div>
-    `).join('');
+async callAI(prompt) {
+    const model = AI_MODELS[this.state.selectedModel];
+    if (!model) throw new Error(`Modelo ${this.state.selectedModel} não encontrado.`);
 
-    m.innerHTML = `
-      <div class="modal">
-        <div class="modal-header">
-          <h3 class="syne">Meus Projetos</h3>
-          <div style="display: flex; gap: 8px;">
-            <label class="btn btn-ghost" style="padding: 6px 12px; font-size: 12px; cursor: pointer;">
-              <i data-lucide="upload" class="icon"></i> Importar
-              <input type="file" accept=".json" style="display:none" onchange="App.importProject(event)">
-            </label>
-            <button class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="App.createProject(); App.closeModal('modal-projects')">+ Novo</button>
-            <button class="btn btn-ghost" style="padding:4px" onclick="App.closeModal('modal-projects')"><i data-lucide="x" class="icon"></i></button>
-          </div>
-        </div>
-        <div class="modal-body">
-          ${list || '<p style="color:var(--text-secondary)">Nenhum projeto salvo.</p>'}
-        </div>
-      </div>
-    `;
-    lucide.createIcons();
-  },
+    const apiKey = this.state.apiKeys[model.provider];
+    if (!apiKey?.trim()) throw new Error(`Chave de API para ${model.provider} não configurada.`);
 
-  cloneProject(id) {
-    const p = this.state.projects[id];
-    if (!p) return;
-    const newId = crypto.randomUUID();
-    this.state.projects[newId] = JSON.parse(JSON.stringify(p));
-    this.state.projects[newId].id = newId;
-    this.state.projects[newId].name = p.name + ' (cópia)';
-    this.state.projects[newId].createdAt = new Date().toISOString();
-    this.state.projects[newId].updatedAt = new Date().toISOString();
-    localStorage.setItem('landingai_projects', JSON.stringify(this.state.projects));
-    this.renderProjectsModal();
-    this.showToast('Projeto clonado', 'success');
-  },
-
-  exportProject(id) {
-    const p = this.state.projects[id];
-    if (!p) return;
-    const dataStr = JSON.stringify(p, null, 2);
-    const blob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `projeto-${p.slug || 'export'}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    this.showToast('Projeto exportado', 'success');
-  },
-
-  importProject(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const p = JSON.parse(e.target.result);
-        if (!p.id || !p.briefing) throw new Error('Formato inválido');
-        const newId = crypto.randomUUID();
-        p.id = newId;
-        p.name = p.name + ' (importado)';
-        this.state.projects[newId] = p;
-        localStorage.setItem('landingai_projects', JSON.stringify(this.state.projects));
-        this.renderProjectsModal();
-        this.showToast('Projeto importado', 'success');
-      } catch (err) {
-        this.showToast('Erro ao importar JSON', 'error');
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = '';
-  },
-
-  saveVersion(doc1, docImpl) {
-    const p = this.state.projects[this.state.activeProjectId];
-    if (!p) return;
-    if (!p.versions) p.versions = [];
-    p.versions.push({
-      date: new Date().toISOString(),
-      doc1,
-      docImpl,
-      model: AI_MODELS[this.state.selectedModel]?.name || 'unknown'
-    });
-    localStorage.setItem('landingai_projects', JSON.stringify(this.state.projects));
-  },
-
-  deleteProject(id) {
-    if (confirm('Excluir este projeto?')) {
-      delete this.state.projects[id];
-      if (this.state.activeProjectId === id) {
-        this.state.activeProjectId = null;
-        localStorage.removeItem('landingai_active');
-      }
-      localStorage.setItem('landingai_projects', JSON.stringify(this.state.projects));
-      if (!this.state.activeProjectId) this.createProject();
-      else this.renderProjectsModal();
+    switch (model.provider) {
+      case 'gemini':  return this._callGemini(prompt, model, apiKey);
+      case 'claude':  return this._callClaude(prompt, model, apiKey);
+      case 'grok':    return this._callOpenAICompat(prompt, model, apiKey);
+      case 'mistral': return this._callOpenAICompat(prompt, model, apiKey);
+      default: throw new Error(`Provider ${model.provider} não suportado.`);
     }
   },
 
-  showToast(msg, type='default') {
-    const t = document.getElementById('toast');
-    const icons = { success: 'check-circle', error: 'alert-circle', warning: 'alert-triangle', default: 'info' };
-    t.innerHTML = `<i data-lucide="${icons[type]}" class="icon icon--${type}"></i> <span>${msg}</span>`;
-    t.className = `toast toast--${type} toast--visible`;
-    lucide.createIcons();
-    clearTimeout(this._toastTimeout);
-    this._toastTimeout = setTimeout(() => t.classList.remove('toast--visible'), 3000);
+  async _callGemini(prompt, model, apiKey) {
+    const response = await fetch(`${model.endpoint}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: model.maxTokens,
+          temperature:     model.temp,
+          topP: 0.95,
+        },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT',        threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH',       threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const msg = err.error?.message || `HTTP ${response.status}`;
+      throw new Error(msg);
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('Resposta vazia do Gemini.');
+    return text;
   },
 
-  async requestNotificationPermission() {
-    if ('Notification' in window && Notification.permission !== 'granted') {
-      await Notification.requestPermission();
+  async _callClaude(prompt, model, apiKey) {
+    const response = await fetch(model.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type':            'application/json',
+        'x-api-key':               apiKey,
+        'anthropic-version':       '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model:      this.state.selectedModel,
+        max_tokens: model.maxTokens,
+        temperature: model.temp,
+        system: 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro. Siga as instruções exatamente como especificadas.',
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const msg = err.error?.message || `HTTP ${response.status}`;
+      throw new Error(msg);
+    }
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text;
+    if (!text) throw new Error('Resposta vazia do Claude.');
+    return text;
+  },
+
+  async _callOpenAICompat(prompt, model, apiKey) {
+    // Funciona para Grok (xAI) e Mistral — ambos usam a interface OpenAI
+    const response = await fetch(model.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model:       this.state.selectedModel,
+        max_tokens:  model.maxTokens,
+        temperature: model.temp,
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro. Siga as instruções exatamente como especificadas.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const msg = err.error?.message || `HTTP ${response.status}`;
+      throw new Error(msg);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) throw new Error(`Resposta vazia de ${model.label}.`);
+    return text;
+  },
+
+calcGlobalScore() {
+    const B = this.B;
+    let filled = 0;
+    let total  = 0;
+
+    const weights = {
+      nome_cliente: 3, segmento: 3, tipo: 2, whatsapp: 3,
+      objetivo_conversao: 3, servico_principal: 4, servicos_descricao: 5,
+      publico_primario: 5, publico_dor: 5, publico_resultado: 4,
+      diferencial: 5, frase_impacto: 3, estilo_desejado: 3,
+      sensacao_visitante: 3, depoimentos: 2, google_business: 2,
+      faq: 2, historia: 1, casos_resultados: 2, vocabulario_usa: 2,
+      vocabulario_nunca: 2, modalidade: 2, email: 1, horarios: 1,
+    };
+
+    for (const [field, weight] of Object.entries(weights)) {
+      total += weight;
+      if (B[field]?.toString().trim()) filled += weight;
+    }
+
+    return total > 0 ? Math.round((filled / total) * 100) : 0;
+  },
+
+  getStepWarnings(stepId) {
+    const B = this.B;
+    const warnings = [];
+
+    Object.entries(FIELD_WARNINGS).forEach(([field, cfg]) => {
+      const step = STEPS.find(s => s.fields?.includes(field));
+      if (!step || step.id !== stepId) return;
+      const val = B[field]?.toString().trim() || '';
+      if (val.length > 0 && val.length < cfg.min) {
+        warnings.push({ field, msg: cfg.msg });
+      }
+    });
+
+    return warnings;
+  },
+
+  getAllWarnings() {
+    const warnings = [];
+    STEPS.forEach(step => {
+      const ws = this.getStepWarnings(step.id);
+      ws.forEach(w => warnings.push({ ...w, step: step.id, label: step.label }));
+    });
+    return warnings;
+  },
+
+  getMissingRequired() {
+    const B = this.B;
+    const missing = [];
+    STEPS.forEach(step => {
+      const req = REQUIRED_FIELDS[step.id] || [];
+      req.forEach(field => {
+        if (!B[field]?.toString().trim()) {
+          missing.push({ step: step.id, label: step.label, field });
+        }
+      });
+    });
+    return missing;
+  },
+
+  updateTopbarScore() {
+    const score = this.calcGlobalScore();
+    const fill = document.getElementById('progress-fill');
+    if (fill) fill.style.width = score + '%';
+    const pct = document.getElementById('project-score-pct');
+    if (pct) pct.textContent = score + '%';
+    const bar = document.getElementById('project-score-fill');
+    if (bar) bar.style.width = score + '%';
+  },
+
+fieldLabel(field, label, required = false, optional = false) {
+    const tooltip = FIELD_TOOLTIPS[field];
+    const req = required ? `<span class="field-required">*</span>` : '';
+    const opt = optional ? `<span class="field-optional">opcional</span>` : '';
+    const tip = tooltip ? `
+      <span class="field-tooltip">
+        <i data-lucide="info" class="field-tooltip-icon"></i>
+        <span class="field-tooltip-bubble">${tooltip}</span>
+      </span>` : '';
+
+    return `
+      <label class="field-label">
+        ${label} ${req} ${opt} ${tip}
+      </label>
+    `;
+  },
+
+goToScreen(screen) {
+    this.state.screen = screen;
+    this.renderScreen();
+    this.renderStepsNav();
+    this.renderBottombar();
+    this.updateTopbar();
+    const content = document.getElementById('screen-content');
+    if (content) content.scrollTop = 0;
+  },
+
+  goToStep(n) {
+    if (n < 1 || n > STEPS.length) return;
+    this.state.screen = 'step';
+    this.state.currentStep = n;
+    // Marcar como visitado
+    if (this.P && !this.P.visitedSteps.includes(n)) {
+      this.P.visitedSteps.push(n);
+    }
+    this.renderScreen();
+    this.renderStepsNav();
+    this.renderBottombar();
+    this.updateTopbar();
+    const content = document.getElementById('screen-content');
+    if (content) content.scrollTop = 0;
+  },
+
+  goNext() {
+    const { screen, currentStep } = this.state;
+    if (screen === 'intake') {
+      this.goToStep(1);
+    } else if (screen === 'step') {
+      if (currentStep < STEPS.length) {
+        this.goToStep(currentStep + 1);
+      } else {
+        this.goToScreen('art');
+      }
+    } else if (screen === 'art') {
+      this.goToScreen('review');
+    }
+  },
+
+  goPrev() {
+    const { screen, currentStep } = this.state;
+    if (screen === 'review') {
+      this.goToScreen('art');
+    } else if (screen === 'art') {
+      this.goToStep(STEPS.length);
+    } else if (screen === 'step') {
+      if (currentStep > 1) {
+        this.goToStep(currentStep - 1);
+      } else {
+        this.goToScreen('intake');
+      }
+    }
+  },
+
+renderScreen() {
+    const content = document.getElementById('screen-content');
+    if (!content) return;
+
+    let html = '';
+    switch (this.state.screen) {
+      case 'intake':
+        html = this.buildIntakeHTML();
+        break;
+      case 'step':
+        html = this.buildStepHTML(this.state.currentStep);
+        break;
+      case 'art':
+        html = this.buildArtHTML();
+        break;
+      case 'review':
+        html = `<div class="step-inner">${this.buildStepReview()}</div>`;
+        break;
+      default:
+        html = this.buildIntakeHTML();
+    }
+
+    content.innerHTML = html;
+
+    // Re-aplicar estados salvos de chips e sel-cards
+    this.restoreFieldStates();
+
+    // Registrar eventos dos campos
+    this.bindFieldEvents(content);
+
+    // Render ícones Lucide
+    lucide.createIcons({ nodes: [content] });
+  },
+
+  buildStepHTML(stepId) {
+    const step = STEPS[stepId - 1];
+    if (!step) return '';
+
+    const builders = {
+      1: () => this.buildStep1(),
+      2: () => this.buildStep3(), // redes sociais
+      3: () => this.buildStep4(), // atendimento
+      4: () => this.buildStep5(), // serviços
+      5: () => this.buildStep5(), // preço (embutido no 4 por conveniência)
+      6: () => this.buildStep6(), // público
+      7: () => this.buildStep7(), // diferenciais
+      8: () => this.buildStep8(), // tom
+    };
+
+    const content = builders[stepId] ? builders[stepId]() : '';
+    return `<div class="step-inner animate-in">${content}</div>`;
+  },
+
+  buildIntakeHTML() {
+    const B = this.B;
+    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
+    return `
+      <div class="intake-screen animate-in">
+        <div class="intake-hero">
+          <div class="intake-badge">
+            <i data-lucide="sparkles" style="width:12px;height:12px"></i>
+            LandingAI v3 — Adsgator
+          </div>
+          <div class="intake-title">Cole o briefing.<br>A IA preenche tudo.</div>
+          <div class="intake-subtitle">
+            Cole o material bruto do cliente abaixo e o sistema preenche automaticamente
+            todos os 8 steps. Você revisa e ajusta — não digita do zero.
+          </div>
+        </div>
+
+        <div class="intake-box">
+          <div class="intake-box-header">
+            <i data-lucide="file-text" class="intake-box-icon" style="width:18px;height:18px"></i>
+            <span class="intake-box-title">Material do Cliente</span>
+            <span class="intake-box-desc">Briefing bruto, formulário preenchido, conversa, etc.</span>
+          </div>
+          <div class="intake-box-body">
+            <div class="field-group">
+              <textarea class="field-textarea xtall" id="intake-text" data-field="briefing_bruto"
+                placeholder="Cole aqui qualquer material do cliente:
+
+• Respostas de formulário de briefing
+• Transcrição de conversa ou reunião
+• E-mail do cliente descrevendo o negócio
+• Print de conversa no WhatsApp
+• Qualquer texto com informações sobre o cliente
+
+Quanto mais material, mais preciso o preenchimento automático.">${B.briefing_bruto || ''}</textarea>
+            </div>
+
+            <div class="intake-or">ou anexe arquivos</div>
+
+            <div class="upload-zone" id="intake-upload-zone"
+              onclick="document.getElementById('intake-file-input').click()"
+              ondragover="event.preventDefault();this.classList.add('drag-over')"
+              ondragleave="this.classList.remove('drag-over')"
+              ondrop="App.handleIntakeFileDrop(event)">
+              <input type="file" id="intake-file-input" accept=".pdf,.doc,.docx,.txt,.md"
+                multiple onchange="App.handleIntakeFileSelect(event)">
+              <i data-lucide="upload" class="upload-zone-icon"></i>
+              <div class="upload-zone-label">PDF, Word ou TXT</div>
+              <div class="upload-zone-hint">Arraste ou clique para selecionar</div>
+            </div>
+
+            <div class="upload-preview-list" id="intake-files-list"></div>
+
+            <div class="intake-actions">
+              <div style="font-size:12px;color:var(--text-tertiary)">
+                ${hasKey ? '✓ API configurada' : '⚠ Sem API key — preencha manualmente'}
+              </div>
+              <div style="display:flex;gap:8px">
+                <button class="btn-ghost btn-sm" onclick="App.goToStep(1)">
+                  Preencher manualmente
+                </button>
+                <button class="btn-primary btn-sm" onclick="App.runIntakeAnalysis()" ${hasKey ? '' : 'disabled'}>
+                  <i data-lucide="sparkles" style="width:14px;height:14px"></i>
+                  Analisar e preencher
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="intake-sop-hint">
+          <i data-lucide="info" class="intake-sop-hint-icon" style="width:16px;height:16px"></i>
+          <div class="intake-sop-hint-text">
+            <strong>Sem API key?</strong> Clique em "Preencher manualmente" e percorra os steps.
+            O DOC-1 pode ser baixado sem API e usado em qualquer IA externamente.
+          </div>
+        </div>
+      </div>
+    `;
+  },
+
+  buildArtHTML() {
+    const B = this.B;
+    const artApproved = !!B.arte_ficha_aprovada;
+
+    const addRef = (field, label) => `
+      <div style="margin-bottom:8px">
+        <button class="btn-ghost btn-sm" onclick="App.addArtRef('${field}')">
+          <i data-lucide="plus" style="width:14px;height:14px"></i>
+          Adicionar ${label}
+        </button>
+      </div>
+      <div id="art-refs-${field}">
+        ${(B[field] || []).map((r, i) => `
+          <div class="art-ref-item" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:8px;align-items:start">
+            <input type="text" class="field-input" placeholder="URL ou nome" value="${r.link || ''}"
+              onchange="App.updateArtRef('${field}', ${i}, 'link', this.value)">
+            <input type="text" class="field-input" placeholder="O que me atraiu" value="${r.gostei || ''}"
+              onchange="App.updateArtRef('${field}', ${i}, 'gostei', this.value)">
+            <input type="text" class="field-input" placeholder="O que adaptar" value="${r.adaptar || ''}"
+              onchange="App.updateArtRef('${field}', ${i}, 'adaptar', this.value)">
+            <button class="btn-danger-ghost" style="padding:10px" onclick="App.removeArtRef('${field}', ${i})">
+              <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+            </button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+
+    return `
+      <div class="art-screen animate-in">
+        <div class="art-screen-header">
+          <div class="art-screen-title">Direção de Arte</div>
+          <div class="art-screen-desc">
+            Cole referências visuais e os ativos da marca.
+            A IA analisa e entrega uma ficha estruturada — paleta, tipografia, tom visual e decisões.
+            Você aprova ou revisa.
+          </div>
+        </div>
+
+        ${artApproved ? `
+          <div style="display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:var(--r-md)">
+            <i data-lucide="check-circle" style="width:16px;height:16px;color:var(--accent)"></i>
+            <span style="font-size:13px;color:var(--accent);font-weight:600">Direção de arte aprovada</span>
+            <button class="btn-ghost btn-sm" style="margin-left:auto" onclick="App.clearArtFicha()">Refazer</button>
+          </div>
+        ` : ''}
+
+        <div class="art-section">
+          <div class="art-section-header">
+            <i data-lucide="image" style="width:16px;height:16px;color:var(--text-secondary)"></i>
+            <span style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-primary)">Ativos da Marca</span>
+          </div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+            <div class="form-row">
+              <div class="field-group">
+                ${this.fieldLabel('arte_cor_principal', 'Cor principal da marca', false, true)}
+                <div class="color-picker-wrap">
+                  <div class="color-picker-swatch">
+                    <input type="color" value="${B.arte_cor_principal || '#000000'}"
+                      onchange="App.setField('arte_cor_principal', this.value)">
+                  </div>
+                  <input type="text" class="field-input color-picker-input" data-field="arte_cor_principal"
+                    placeholder="Ex: #1A4731 ou 'sem identidade definida'"
+                    value="${B.arte_cor_principal || ''}">
+                </div>
+              </div>
+              <div class="field-group">
+                ${this.fieldLabel('arte_cor_secundaria', 'Cor secundária / acento', false, true)}
+                <div class="color-picker-wrap">
+                  <div class="color-picker-swatch">
+                    <input type="color" value="${B.arte_cor_secundaria || '#FFFFFF'}"
+                      onchange="App.setField('arte_cor_secundaria', this.value)">
+                  </div>
+                  <input type="text" class="field-input color-picker-input" data-field="arte_cor_secundaria"
+                    placeholder="Ex: #C9A84C ou 'não existe'"
+                    value="${B.arte_cor_secundaria || ''}">
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="field-group">
+                ${this.fieldLabel('arte_logo', 'Logo disponível', false, true)}
+                <input type="text" class="field-input" data-field="arte_logo"
+                  placeholder="SVG / PNG / Não tem"
+                  value="${B.arte_logo || ''}">
+              </div>
+              <div class="field-group">
+                ${this.fieldLabel('arte_fotos', 'Fotos disponíveis', false, true)}
+                <input type="text" class="field-input" data-field="arte_fotos"
+                  placeholder="Sim — alta qualidade / Sim — qualidade média / Não"
+                  value="${B.arte_fotos || ''}">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="art-section">
+          <div class="art-section-header">
+            <i data-lucide="compass" style="width:16px;height:16px;color:var(--text-secondary)"></i>
+            <span style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-primary)">Direção Criativa</span>
+          </div>
+          <div style="padding:20px;display:flex;flex-direction:column;gap:16px">
+            <div class="form-row">
+              <div class="field-group">
+                ${this.fieldLabel('arte_tema', 'Tema')}
+                <div class="chip-group">
+                  ${['Claro','Escuro','IA decide'].map(t => `
+                    <button class="chip ${B.arte_tema === t ? 'on' : ''}" data-field="arte_tema" data-chip="${t}">${t}</button>
+                  `).join('')}
+                </div>
+              </div>
+              <div class="field-group">
+                ${this.fieldLabel('arte_intensidade', 'Intensidade visual')}
+                <div class="chip-group">
+                  ${['Contido','Médio','Alto — efeito uau'].map(t => `
+                    <button class="chip ${B.arte_intensidade === t ? 'on' : ''}" data-field="arte_intensidade" data-chip="${t}">${t}</button>
+                  `).join('')}
+                </div>
+              </div>
+            </div>
+            <div class="field-group">
+              ${this.fieldLabel('arte_referencia_marca', 'Referência de marca', false, true)}
+              <input type="text" class="field-input" data-field="arte_referencia_marca"
+                placeholder="Ex: Próximo da Notion / Editorial como Dezeen / Direto como Stripe"
+                value="${B.arte_referencia_marca || ''}">
+            </div>
+            <div class="field-group">
+              ${this.fieldLabel('arte_menu_mobile', 'Menu mobile', false, true)}
+              <div class="chip-group">
+                ${['Fullscreen overlay','Drawer lateral','Bottom sheet','IA decide'].map(t => `
+                  <button class="chip ${B.arte_menu_mobile === t ? 'on' : ''}" data-field="arte_menu_mobile" data-chip="${t}">${t}</button>
+                `).join('')}
+              </div>
+            </div>
+            <div class="field-group">
+              ${this.fieldLabel('arte_o_que_nao_quero', 'O que NÃO quero de forma alguma')}
+              <textarea class="field-textarea" data-field="arte_o_que_nao_quero"
+                placeholder="Ex: Sem rosa. Nada que pareça infoproduto. Sem gradiente roxo. Sem fontes cursivas.">${B.arte_o_que_nao_quero || ''}</textarea>
+            </div>
+          </div>
+        </div>
+
+        <div class="art-section">
+          <div class="art-section-header">
+            <i data-lucide="link" style="width:16px;height:16px;color:var(--text-secondary)"></i>
+            <span style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-primary)">Referências Visuais Pessoais</span>
+          </div>
+          <div style="padding:20px">
+            ${addRef('arte_referencias_pessoais', 'referência pessoal')}
+          </div>
+        </div>
+
+        <div class="art-section">
+          <div class="art-section-header">
+            <i data-lucide="search" style="width:16px;height:16px;color:var(--text-secondary)"></i>
+            <span style="font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-primary)">Referências do Nicho</span>
+          </div>
+          <div style="padding:20px">
+            ${addRef('arte_referencias_nicho', 'referência do nicho')}
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:center;padding:8px 0">
+          <button class="btn-primary" id="btn-analyze-art" onclick="App.runArtAnalysis()">
+            <i data-lucide="sparkles" style="width:16px;height:16px"></i>
+            Analisar e gerar ficha de direção
+          </button>
+        </div>
+      </div>
+    `;
+  },
+
+renderStepsNav() {
+    const nav = document.getElementById('steps-nav');
+    if (!nav) return;
+
+    const { screen, currentStep } = this.state;
+
+    const items = STEPS.map(step => {
+      const isActive   = screen === 'step' && currentStep === step.id;
+      const isVisited  = this.P?.visitedSteps?.includes(step.id);
+      const warnings   = this.getStepWarnings(step.id);
+      const missing    = (REQUIRED_FIELDS[step.id] || []).filter(f => !this.B[f]?.toString().trim());
+      const isComplete = isVisited && missing.length === 0;
+      const hasError   = isVisited && missing.length > 0;
+      const hasWarn    = isVisited && warnings.length > 0 && missing.length === 0;
+
+      const cls = [
+        'step-nav-item',
+        isActive  ? 'active'    : '',
+        isComplete && !isActive ? 'done' : '',
+        hasError  ? 'has-error' : '',
+      ].filter(Boolean).join(' ');
+
+      const dotContent = isComplete
+        ? `<i data-lucide="check" style="width:10px;height:10px;color:var(--accent)"></i>`
+        : hasError
+        ? `<i data-lucide="x" style="width:10px;height:10px;color:var(--danger)"></i>`
+        : `<span class="step-dot-inner">${step.id}</span>`;
+
+      return `
+        <button class="${cls}" onclick="App.goToStep(${step.id})">
+          <div class="step-dot">${dotContent}</div>
+          <span class="step-label">${step.label}</span>
+          ${hasWarn ? `<i data-lucide="alert-triangle" style="width:11px;height:11px;color:var(--warning);margin-left:auto"></i>` : ''}
+        </button>
+      `;
+    }).join('');
+
+    const artCls = `step-nav-item step-art ${screen === 'art' ? 'active' : ''}`;
+    const reviewCls = `step-nav-item step-review ${screen === 'review' ? 'active' : ''}`;
+
+    nav.innerHTML = `
+      <div class="steps-nav">
+        ${items}
+        <button class="${artCls}" onclick="App.goToScreen('art')">
+          <div class="step-dot step-dot--art">
+            <i data-lucide="palette" style="width:10px;height:10px"></i>
+          </div>
+          <span class="step-label">Direção de Arte</span>
+          ${this.state.artAnalyzed ? `<i data-lucide="check" style="width:11px;height:11px;color:var(--accent);margin-left:auto"></i>` : ''}
+        </button>
+        <button class="${reviewCls}" onclick="App.goToScreen('review')">
+          <div class="step-dot step-dot--review">
+            <i data-lucide="zap" style="width:10px;height:10px"></i>
+          </div>
+          <span class="step-label">Revisão e Geração</span>
+        </button>
+      </div>
+    `;
+
+    lucide.createIcons({ nodes: [nav] });
+  },
+
+  updateSidebar() {
+    // Nome do projeto
+    const nameEl = document.getElementById('project-name');
+    if (nameEl) nameEl.textContent = this.P?.name || 'Novo Projeto';
+
+    const segEl = document.getElementById('project-segment');
+    if (segEl) segEl.textContent = this.B.segmento || '—';
+
+    // Score
+    const score = this.calcGlobalScore();
+    const fill = document.getElementById('project-score-fill');
+    const pct  = document.getElementById('project-score-pct');
+    if (fill) fill.style.width = score + '%';
+    if (pct)  pct.textContent = score + '%';
+
+    // API status
+    const providers = ['gemini','claude','grok','mistral'];
+    const configuredCount = providers.filter(p => this.state.apiKeys[p]?.trim()).length;
+    const dot   = document.getElementById('sidebar-api-dot');
+    const label = document.getElementById('sidebar-api-label');
+    if (dot && label) {
+      if (configuredCount === 0) {
+        dot.className = 'status-dot';
+        label.textContent = 'Sem API';
+      } else if (configuredCount === providers.length) {
+        dot.className = 'status-dot ok';
+        label.textContent = 'API OK';
+      } else {
+        dot.className = 'status-dot partial';
+        label.textContent = `${configuredCount}/${providers.length} APIs`;
+      }
+    }
+  },
+
+  updateTopbar() {
+    const { screen, currentStep } = this.state;
+    const titles = {
+      intake: 'Intake — Material do Cliente',
+      art:    'Direção de Arte',
+      review: 'Revisão Final e Geração',
+    };
+
+    const subs = {
+      intake: 'Cole o briefing bruto — a IA analisa e preenche os steps',
+      art:    'Referências visuais e ativos da marca',
+      review: 'Confira o briefing e gere a Ficha de Implementação',
+    };
+
+    let title = titles[screen] || '';
+    let sub   = subs[screen] || '';
+
+    if (screen === 'step') {
+      const step = STEPS[currentStep - 1];
+      title = step ? `Step ${currentStep} — ${step.label}` : '';
+      sub   = `${currentStep} de ${STEPS.length}`;
+    }
+
+    const titleEl = document.getElementById('topbar-title');
+    const subEl   = document.getElementById('topbar-subtitle');
+    if (titleEl) titleEl.textContent = title;
+    if (subEl)   subEl.textContent   = sub;
+
+    // Progress
+    let pct = 0;
+    if (screen === 'step')   pct = Math.round((currentStep / (STEPS.length + 2)) * 100);
+    if (screen === 'art')    pct = Math.round(((STEPS.length + 1) / (STEPS.length + 2)) * 100);
+    if (screen === 'review') pct = 100;
+
+    const bar = document.getElementById('topbar-progress-fill');
+    if (bar) bar.style.width = pct + '%';
+  },
+
+bindFieldEvents(container) {
+    // Inputs e textareas
+    container.querySelectorAll('[data-field]').forEach(el => {
+      const field = el.dataset.field;
+      if (!field) return;
+
+      if (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA') {
+        el.addEventListener('input', () => {
+          this.setField(field, el.value);
+          this.updateTopbarScore();
+        });
+      }
+    });
+
+    // Chips
+    container.querySelectorAll('.chip[data-chip]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const field = chip.dataset.field;
+        const value = chip.dataset.chip;
+        const isMulti = chip.dataset.multi === 'true';
+
+        if (isMulti) {
+          this.toggleArray(field, value);
+          chip.classList.toggle('on');
+        } else {
+          // Single select — desmarcar outros do grupo
+          container.querySelectorAll(`.chip[data-field="${field}"]`).forEach(c => c.classList.remove('on'));
+          this.setField(field, value);
+          chip.classList.add('on');
+        }
+
+        this.updateTopbarScore();
+      });
+    });
+
+    // Sel-cards
+    container.querySelectorAll('.sel-card[data-selcard]').forEach(card => {
+      card.addEventListener('click', () => {
+        const field = card.dataset.field;
+        const value = card.dataset.selcard;
+        container.querySelectorAll(`.sel-card[data-field="${field}"]`).forEach(c => c.classList.remove('on'));
+        card.classList.add('on');
+        this.setField(field, value);
+
+        // Alguns campos precisam re-render (condicional)
+        if (['objetivo_conversao','modalidade','preco_exibir','depoimentos','google_business'].includes(field)) {
+          setTimeout(() => { this.renderScreen(); }, 50);
+        }
+      });
+    });
+  },
+
+  restoreFieldStates() {
+    const B = this.B;
+    const content = document.getElementById('screen-content');
+    if (!content) return;
+
+    // Restaurar chips de arrays
+    const arrayFields = ['integracoes','depoimentos_formato'];
+    arrayFields.forEach(field => {
+      const values = B[field] || [];
+      content.querySelectorAll(`.chip[data-field="${field}"]`).forEach(chip => {
+        if (values.includes(chip.dataset.chip)) chip.classList.add('on');
+      });
+    });
+
+    // Restaurar chips de valor único
+    content.querySelectorAll('.chip[data-chip]:not([data-multi])').forEach(chip => {
+      const field = chip.dataset.field;
+      if (!field || !B[field]) return;
+      if (B[field] === chip.dataset.chip) chip.classList.add('on');
+    });
+
+    // Restaurar sel-cards
+    content.querySelectorAll('.sel-card[data-selcard]').forEach(card => {
+      const field = card.dataset.field;
+      if (!field || !B[field]) return;
+      if (B[field] === card.dataset.selcard) card.classList.add('on');
+    });
+  },
+
+toggleArray(field, value) {
+    if (!this.P) return;
+    const arr = this.P.briefing[field] || [];
+    const idx = arr.indexOf(value);
+    if (idx === -1) arr.push(value);
+    else arr.splice(idx, 1);
+    this.P.briefing[field] = arr;
+    this.autosave();
+  },
+
+addArtRef(field) {
+    if (!this.P) return;
+    const arr = this.P.briefing[field] || [];
+    arr.push({ link: '', gostei: '', adaptar: '' });
+    this.P.briefing[field] = arr;
+    this.autosave();
+    this.renderScreen();
+  },
+
+  updateArtRef(field, index, key, value) {
+    if (!this.P) return;
+    const arr = this.P.briefing[field] || [];
+    if (arr[index]) arr[index][key] = value;
+    this.P.briefing[field] = arr;
+    this.autosave();
+  },
+
+  removeArtRef(field, index) {
+    if (!this.P) return;
+    const arr = this.P.briefing[field] || [];
+    arr.splice(index, 1);
+    this.P.briefing[field] = arr;
+    this.autosave();
+    this.renderScreen();
+  },
+
+  clearArtFicha() {
+    if (!this.P) return;
+    this.P.briefing.arte_ficha_aprovada = '';
+    this.state.artAnalyzed = false;
+    this.autosave();
+    this.renderScreen();
+  },
+
+handleIntakeFileSelect(event) {
+    const files = Array.from(event.target.files);
+    this.state.intakeFiles = [...(this.state.intakeFiles || []), ...files];
+    this.renderIntakeFilesList();
+  },
+
+  handleIntakeFileDrop(event) {
+    event.preventDefault();
+    const zone = document.getElementById('intake-upload-zone');
+    if (zone) zone.classList.remove('drag-over');
+    const files = Array.from(event.dataTransfer.files);
+    this.state.intakeFiles = [...(this.state.intakeFiles || []), ...files];
+    this.renderIntakeFilesList();
+  },
+
+  renderIntakeFilesList() {
+    const list = document.getElementById('intake-files-list');
+    if (!list) return;
+    list.innerHTML = (this.state.intakeFiles || []).map((f, i) => `
+      <div class="upload-preview-item">
+        <i data-lucide="file" style="width:14px;height:14px"></i>
+        <span>${f.name}</span>
+        <button onclick="App.removeIntakeFile(${i})">
+          <i data-lucide="x" style="width:12px;height:12px"></i>
+        </button>
+      </div>
+    `).join('');
+    lucide.createIcons({ nodes: [list] });
+    const zone = document.getElementById('intake-upload-zone');
+    if (zone && this.state.intakeFiles?.length > 0) zone.classList.add('has-file');
+  },
+
+  removeIntakeFile(index) {
+    this.state.intakeFiles.splice(index, 1);
+    this.renderIntakeFilesList();
+  },
+
+openModal(id) {
+    const overlay = document.getElementById(id);
+    if (!overlay) return;
+    overlay.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  },
+
+  closeModal(id) {
+    const overlay = document.getElementById(id);
+    if (!overlay) return;
+    overlay.classList.remove('open');
+    // Só restaurar scroll se não houver mais modais abertos
+    const anyOpen = document.querySelector('.modal-overlay.open');
+    if (!anyOpen) document.body.style.overflow = '';
+  },
+
+  showToast(msg, type = 'default', duration = 3500) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.className = `toast ${type} visible`;
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.remove('visible'), duration);
+  },
+
+  requestNotificationPermission() {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().then(p => {
+        this.state.notifPermission = p;
+      });
     }
   },
 
   showNotification(title, body) {
     if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(title, { body });
+      try {
+        new Notification(title, { body, icon: 'assets/icon.png' });
+      } catch (e) { /* silencioso em contextos restritos */ }
     }
   },
 
-  setupEvents() {
-    // any global events here
-  }
+  downloadText(content, filename, mime = 'text/plain') {
+    const blob = new Blob([content], { type: `${mime};charset=utf-8` });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  },
+
+renderApiModal() {
+    const body = document.getElementById('api-modal-body');
+    if (!body) return;
+
+    const providers = [
+      { key: 'gemini',  name: 'Google Gemini',   link: 'https://aistudio.google.com/app/apikey', models: ['gemini-2.5-pro','gemini-2.5-flash'] },
+      { key: 'claude',  name: 'Anthropic Claude', link: 'https://console.anthropic.com',          models: ['claude-sonnet-4-20250514','claude-haiku-4-5-20251001'] },
+      { key: 'grok',    name: 'xAI Grok',         link: 'https://console.x.ai',                   models: ['grok-3'] },
+      { key: 'mistral', name: 'Mistral AI',        link: 'https://console.mistral.ai',             models: ['mistral-large-latest'] },
+    ];
+
+    body.innerHTML = providers.map(p => {
+      const hasKey = !!this.state.apiKeys[p.key]?.trim();
+      return `
+        <div class="api-provider-card">
+          <div class="api-provider-header">
+            <div class="api-provider-name">
+              ${p.name}
+              <span class="api-key-status ${hasKey ? 'ok' : 'empty'}">
+                <i data-lucide="${hasKey ? 'check' : 'minus'}" style="width:11px;height:11px"></i>
+                ${hasKey ? 'Configurada' : 'Não configurada'}
+              </span>
+            </div>
+            <a href="${p.link}" target="_blank" class="api-provider-link">Obter chave →</a>
+          </div>
+          <div class="api-key-row">
+            <input type="password" class="field-input" id="key-${p.key}"
+              placeholder="Cole sua API Key aqui"
+              value="${this.state.apiKeys[p.key] || ''}">
+            <button class="btn-ghost btn-sm" onclick="App.toggleKeyVisibility('key-${p.key}')">
+              <i data-lucide="eye" style="width:14px;height:14px"></i>
+            </button>
+            <button class="btn-primary btn-sm" onclick="App.saveApiKey('${p.key}', document.getElementById('key-${p.key}').value)">
+              Salvar
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-tertiary)">
+            Modelos: ${p.models.join(', ')}
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    lucide.createIcons({ nodes: [body] });
+  },
+
+  saveApiKey(provider, value) {
+    this.state.apiKeys[provider] = value.trim();
+    this.saveStorage();
+    this.updateSidebar();
+    this.renderApiModal();
+    this.showToast(`Chave ${provider} salva!`, 'success');
+  },
+
+  toggleKeyVisibility(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+  },
+
+  renderModelDropdown() {
+    const wrap = document.getElementById('model-dropdown');
+    if (!wrap) return;
+
+    const groups = {};
+    Object.entries(AI_MODELS).forEach(([key, model]) => {
+      if (!groups[model.group]) groups[model.group] = [];
+      groups[model.group].push({ key, ...model });
+    });
+
+    wrap.innerHTML = Object.entries(groups).map(([group, models]) => `
+      <div class="model-group-label">${group}</div>
+      ${models.map(m => `
+        <button class="model-option ${this.state.selectedModel === m.key ? 'active' : ''}"
+          onclick="App.selectModel('${m.key}')">
+          <span class="model-option-name">${m.label}</span>
+          <span class="model-tier model-tier--${m.tier}">${m.tier === 'free' ? 'Grátis' : 'Pago'}</span>
+        </button>
+      `).join('')}
+      <div class="model-divider"></div>
+    `).join('');
+  },
+
+  selectModel(key) {
+    this.state.selectedModel = key;
+    this.saveStorage();
+    // Atualizar label do botão
+    const btn = document.getElementById('btn-model-label');
+    if (btn) btn.textContent = AI_MODELS[key]?.label || key;
+    // Fechar dropdown
+    const dd = document.getElementById('model-dropdown');
+    if (dd) dd.style.display = 'none';
+    this.showToast(`Modelo: ${AI_MODELS[key]?.label}`, 'success');
+  },
+
+  renderProjectsList() {
+    const list = document.getElementById('projects-list');
+    if (!list) return;
+
+    const projects = Object.values(this.state.projects).sort((a, b) =>
+      new Date(b.updatedAt) - new Date(a.updatedAt)
+    );
+
+    if (projects.length === 0) {
+      list.innerHTML = `<p style="font-size:13px;color:var(--text-tertiary);text-align:center;padding:20px">Nenhum projeto ainda</p>`;
+      return;
+    }
+
+    list.innerHTML = projects.map(p => {
+      const date = new Date(p.updatedAt).toLocaleDateString('pt-BR');
+      const isActive = p.id === this.state.activeId;
+      return `
+        <div class="project-list-item ${isActive ? 'active-project' : ''}"
+          onclick="App.loadProject('${p.id}')">
+          <div class="project-list-info">
+            <div class="project-list-name">${p.name || 'Sem nome'}</div>
+            <div class="project-list-meta">${p.briefing?.segmento || '—'} · ${date}</div>
+          </div>
+          <div class="project-list-actions" onclick="event.stopPropagation()">
+            <button class="project-list-action" onclick="App.cloneProject('${p.id}')" title="Duplicar">
+              <i data-lucide="copy" style="width:13px;height:13px"></i>
+            </button>
+            <button class="project-list-action danger" onclick="App.deleteProject('${p.id}')" title="Excluir">
+              <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    lucide.createIcons({ nodes: [list] });
+  },
+
+setupGlobalEvents() {
+    // ESC fecha modal
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.open').forEach(m => {
+          this.closeModal(m.id);
+        });
+      }
+    });
+
+    // Click fora do modal fecha
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', e => {
+        if (e.target === overlay) this.closeModal(overlay.id);
+      });
+    });
+
+    // Model dropdown toggle
+    const btnModel = document.getElementById('btn-model-selector');
+    const dropdown = document.getElementById('model-dropdown');
+    if (btnModel && dropdown) {
+      btnModel.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = dropdown.style.display === 'block';
+        dropdown.style.display = isOpen ? 'none' : 'block';
+        if (!isOpen) this.renderModelDropdown();
+      });
+      document.addEventListener('click', () => {
+        if (dropdown) dropdown.style.display = 'none';
+      });
+      dropdown.addEventListener('click', e => e.stopPropagation());
+    }
+
+    // Botão de projetos
+    const btnProjects = document.getElementById('btn-open-projects');
+    if (btnProjects) {
+      btnProjects.addEventListener('click', () => {
+        this.renderProjectsList();
+        this.openModal('modal-projects');
+      });
+    }
+
+    // Botão de configurar API
+    const btnApi = document.getElementById('btn-open-api');
+    if (btnApi) {
+      btnApi.addEventListener('click', () => {
+        this.renderApiModal();
+        this.openModal('modal-api');
+      });
+    }
+
+    // Novo projeto no modal
+    const btnNew = document.getElementById('btn-new-project');
+    if (btnNew) btnNew.addEventListener('click', () => this.createProject());
+
+    // Importar projeto
+    const btnImport = document.getElementById('btn-import-project');
+    const importInput = document.getElementById('import-file-input');
+    if (btnImport && importInput) {
+      btnImport.addEventListener('click', () => importInput.click());
+      importInput.addEventListener('change', e => {
+        if (e.target.files[0]) this.importProject(e.target.files[0]);
+      });
+    }
+
+    // Intake text — salvar no briefing
+    document.addEventListener('input', e => {
+      const field = e.target.dataset?.field;
+      if (field && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) {
+        this.setField(field, e.target.value);
+      }
+    });
+  },
 };
 
-window.App = App;
+// Start app
+document.addEventListener('DOMContentLoaded', () => App.init());

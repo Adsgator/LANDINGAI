@@ -6,7 +6,17 @@ Object.assign(window.App, {
   buildReviewScreen() {
     const B = this.B;
     const isReady = this.checkReady();
-    const fichaArte = B.ficha_direcao_arte ? JSON.parse(B.ficha_direcao_arte) : null;
+    let fichaArte = null;
+    if (B.ficha_direcao_arte) {
+      try {
+        fichaArte = typeof B.ficha_direcao_arte === 'object'
+          ? B.ficha_direcao_arte
+          : JSON.parse(B.ficha_direcao_arte);
+      } catch (e) {
+        console.warn('ficha_direcao_arte não é JSON válido:', e.message);
+        fichaArte = null;
+      }
+    }
 
     const score = this.calcGlobalScore();
 
@@ -155,7 +165,17 @@ Object.assign(window.App, {
 
   buildDoc1() {
     const B = this.B;
-    const fichaArte = B.ficha_direcao_arte ? JSON.parse(B.ficha_direcao_arte) : null;
+    let fichaArte = null;
+    if (B.ficha_direcao_arte) {
+      try {
+        fichaArte = typeof B.ficha_direcao_arte === 'object'
+          ? B.ficha_direcao_arte
+          : JSON.parse(B.ficha_direcao_arte);
+      } catch (e) {
+        console.warn('ficha_direcao_arte não é JSON válido:', e.message);
+        fichaArte = null;
+      }
+    }
     
     let paleta = '';
     if (fichaArte?.paleta) {

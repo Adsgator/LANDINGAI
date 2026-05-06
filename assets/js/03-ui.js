@@ -105,9 +105,10 @@ Object.assign(window.App, {
     if (scorePct) scorePct.textContent = `${score}%`;
 
     // API status
-    const hasKey = this.state.apiKeys['gemini'] || this.state.apiKeys['openrouter'];
+    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
+    const keyCount = Object.values(this.state.apiKeys).filter(k => k?.trim()).length;
     if (apiDot) apiDot.className = `status-dot ${hasKey ? 'ok' : ''}`;
-    if (apiLabel) apiLabel.textContent = hasKey ? 'API Conectada' : 'Sem API';
+    if (apiLabel) apiLabel.textContent = hasKey ? `${keyCount} API${keyCount > 1 ? 's' : ''} ativa${keyCount > 1 ? 's' : ''}` : 'Sem API';
   },
 
   calcGlobalScore() {
@@ -242,8 +243,8 @@ Object.assign(window.App, {
     const t = document.getElementById('toast');
     if (!t) return;
     t.textContent = msg;
-    t.className = `toast show ${type}`;
-    setTimeout(() => t.classList.remove('show'), 3000);
+    t.className = `toast visible ${type}`;
+    setTimeout(() => t.classList.remove('visible'), 3000);
   },
 
   renderApiModal() {

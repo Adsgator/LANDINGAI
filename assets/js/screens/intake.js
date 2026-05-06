@@ -45,10 +45,12 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
           <div class="intake-or">ou anexe arquivos</div>
 
           <div id="intake-upload-zone" class="upload-zone">
-            <input type="file" id="intake-upload-input" multiple accept=".pdf,.png,.jpg,.jpeg,.webp,.md,.txt">
+            <input type="file" id="intake-upload-input" multiple
+              accept=".txt,.pdf,.doc,.docx,.md"
+              style="display:none">
             <i data-lucide="upload-cloud" class="upload-zone-icon"></i>
-            <p class="upload-zone-label">Arraste ou clique para enviar</p>
-            <p class="upload-zone-hint">PDF, imagens, .md, .txt — até 10MB por arquivo</p>
+            <p class="upload-zone-label">Arraste arquivos ou clique para selecionar</p>
+            <p class="upload-zone-hint">PDF, Word, TXT, MD — o texto será extraído e somado ao briefing</p>
           </div>
           <div id="intake-files-list" class="upload-preview-list"></div>
 
@@ -60,8 +62,8 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
                 <span id="intake-model-name">${AI_MODELS[this.state.selectedModel]?.label || 'Selecionar Modelo'}</span>
               </div>
             </div>
-            <button id="btn-analyze" class="btn-primary" style="align-self:flex-end">
-              <i data-lucide="zap" style="width:16px;height:16px"></i>
+            <button class="btn-primary" id="btn-analyze">
+              <i data-lucide="sparkles" style="width:15px;height:15px"></i>
               Analisar e Preencher Steps
             </button>
           </div>

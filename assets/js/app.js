@@ -13,24 +13,51 @@ Object.assign(window.App, {
     // 1. Carregar dados do localStorage
     this.loadStorage();
 
-    // 2. Se não houver projeto ativo válido, criar um novo
-    if (!this.state.activeId || !this.state.projects[this.state.activeId]) {
+    // 2. Registrar eventos globais ANTES de qualquer renderização
+    this.setupGlobalEvents();
+
+    // 3. Garantir projeto ativo válido
+    const hasValidActive = this.state.activeId && this.state.projects[this.state.activeId];
+
+    if (!hasValidActive) {
       const ids = Object.keys(this.state.projects);
       if (ids.length > 0) {
-        this.state.activeId = ids[ids.length - 1]; // pegar o mais recente
+        // Selecionar o projeto mais recente
+        const sorted = ids.sort((a, b) =>
+          new Date(this.state.projects[b].updatedAt || 0) -
+          new Date(this.state.projects[a].updatedAt || 0)
+        );
+        this.state.activeId = sorted[0];
+        console.log('[AIGator] Recuperando projeto existente:', this.state.activeId);
       } else {
-        this.createProject('Novo Projeto'); // cria e já salva
-        return; // createProject chama renderAll internamente
+        // Criar o primeiro projeto
+        const id = 'p_' + Date.now();
+        this.state.projects[id] = {
+          id,
+          name: 'Novo Projeto',
+          slug: '',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          visitedSteps: [],
+          briefing: {
+            integracoes: ['whatsapp'],
+            depoimentos_formato: [],
+            arte_referencias_pessoais: [],
+            arte_referencias_nicho: [],
+          },
+        };
+        this.state.activeId = id;
+        console.log('[AIGator] Primeiro acesso — projeto criado:', id);
       }
+      this.saveStorage();
+    } else {
+      console.log('[AIGator] Projeto ativo carregado:', this.state.activeId, this.P?.name);
     }
-
-    // 3. Registrar eventos globais
-    this.setupGlobalEvents();
 
     // 4. Renderizar tudo
     this.renderAll();
 
-    // 5. Solicitar permissão de notificação (silencioso)
+    // 5. Permissão de notificação (silencioso)
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }

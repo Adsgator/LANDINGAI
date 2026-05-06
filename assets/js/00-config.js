@@ -2,7 +2,8 @@
    LandingAI v2 — Configurações e Constantes
    ============================================================ */
 
-window.App = {};
+// window.App é declarado no index.html inline script (antes dos módulos)
+// Não redeclarar aqui para evitar sobrescrever propriedades já atribuídas
 
 const VERSION = '2.0.0';
 
@@ -17,21 +18,12 @@ const STORAGE_LIMIT_BYTES = 4 * 1024 * 1024; // 4MB
 
 const AI_MODELS = {
   // ── Google Gemini ──────────────────────────────────────────
-  'gemini-2.0-flash-lite': {
-    label: 'Gemini 2.0 Flash Lite',
-    provider: 'gemini',
-    group: 'Google Gemini',
-    tier: 'free',
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-lite:generateContent',
-    maxTokens: 8192,
-    temp: 0.7,
-  },
   'gemini-2.5-flash-lite': {
     label: 'Gemini 2.5 Flash Lite',
     provider: 'gemini',
     group: 'Google Gemini',
     tier: 'free',
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-06-17:generateContent',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent',
     maxTokens: 16384,
     temp: 0.7,
   },
@@ -54,7 +46,7 @@ const AI_MODELS = {
     temp: 0.6,
   },
   'gemini-2.5-flash-image': {
-    label: 'Gemini 2.5 Flash Image',
+    label: 'Gemini 2.5 Flash (Imagem)',
     provider: 'gemini',
     group: 'Google Gemini',
     tier: 'paid',
@@ -63,17 +55,17 @@ const AI_MODELS = {
     temp: 0.7,
     supportsImages: true,
   },
-  'gemini-3-flash-preview': {
-    label: 'Gemini 3 Flash Preview',
+  'gemini-3.1-flash-lite': {
+    label: 'Gemini 3.1 Flash Lite',
     provider: 'gemini',
     group: 'Google Gemini',
-    tier: 'paid',
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent',
-    maxTokens: 32768,
+    tier: 'free',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent',
+    maxTokens: 16384,
     temp: 0.7,
   },
-  'gemini-3.1-pro-preview': {
-    label: 'Gemini 3.1 Pro Preview',
+  'gemini-3.1-pro': {
+    label: 'Gemini 3.1 Pro',
     provider: 'gemini',
     group: 'Google Gemini',
     tier: 'paid',
@@ -156,13 +148,13 @@ const STEPS = [
 
 const REQUIRED_FIELDS = {
   1: ['nome_cliente', 'segmento', 'tipo'],
-  2: ['whatsapp'],
-  3: [],
+  2: ['whatsapp', 'objetivo_conversao'],
+  3: ['google_business'],
   4: ['modalidade'],
   5: ['servico_principal'],
   6: ['publico_primario', 'publico_dor'],
-  7: ['diferencial', 'frase_impacto'],
-  8: ['estilo_desejado', 'sensacao_visitante'],
+  7: ['diferencial'],
+  8: ['estilo_desejado'],
 };
 
 const FIELD_WARNINGS = {

@@ -75,6 +75,18 @@ Object.assign(window.App, {
         }
       });
     });
+
+    // ── Importar projeto (input file no modal de projetos) ────
+    const importInput = document.getElementById('import-file-input');
+    if (importInput) {
+      importInput.addEventListener('change', () => this.importProject(importInput));
+    }
+
+    // ── Sidebar API button ────────────────────────────────────
+    document.getElementById('btn-open-api')?.addEventListener('click', () => {
+      this.renderApiModal();
+      this.openModal('modal-api');
+    });
   },
 
   bindScreenEvents(container) {
@@ -295,127 +307,378 @@ Object.assign(window.App, {
   },
 
   async runIntakeAnalysis() {
-    const text = this.B.briefing_bruto;
+    const text = this.B?.briefing_bruto;
     if (!text || text.length < 50) {
-      this.showToast('Cole um material mais longo para análise.', 'warning');
+      this.showToast('Cole um material mais longo para análise (mínimo 50 caracteres).', 'warning');
+      return;
+    }
+
+    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
+    if (!hasKey) {
+      this.showToast('Configure uma API Key primeiro.', 'warning');
       return;
     }
 
     this.openAILog('Analisando Material Bruto', [
-      { id: 1, label: 'Lendo material e arquivos...' },
-      { id: 2, label: 'Identificando dados do projeto...' },
-      { id: 3, label: 'Extraindo serviços e público...' },
-      { id: 4, label: 'Definindo tom e estilo...' },
-      { id: 5, label: 'Preenchendo steps...' }
+      { id: 1, label: 'Lendo material...' },
+      { id: 2, label: 'Extraindo dados do projeto...' },
+      { id: 3, label: 'Preenchendo informações...' },
+      { id: 4, label: 'Salvando no briefing...' },
     ]);
 
     try {
-      this.aiLogStep(1, 'Lendo texto fornecido...');
-      const prompt = `Analise este material bruto de briefing e extraia o máximo de informações para preencher um formulário estruturado.
-      Material: ${text}
-      Responda APENAS com um JSON seguindo os campos: ${Object.values(REQUIRED_FIELDS).flat().join(', ')}.`;
-      
-      this.aiLogStep(2, 'Chamando IA para extração...');
+      this.aiLogStep(1, 'Processando texto...');
+      await this.aiLogDelay(200);
+
+      this.aiLogStep(2, 'Enviando para a IA...');
+
+      const prompt = `Você é um specialist em briefing de landing pages da agência Adsgator.
+Analise o material bruto abaixo e extraia o máximo de informações.
+
+MATERIAL DO CLIENTE:
+${text}
+
+Responda APENAS com um objeto JSON válido (sem markdown, sem explicações, sem \`\`\`json), com os seguintes campos (use string vazia "" para campos desconhecidos):
+
+{
+  "nome_cliente": "nome do profissional/responsável",
+  "nome_marca": "nome comercial/marca se diferente",
+  "segmento": "segmento específico do negócio (não genérico)",
+  "tipo": "servico|mentoria|consultoria|produto|saas",
+  "whatsapp": "apenas dígitos com DDI ex: 5511999999999",
+  "email": "email de contato",
+  "horarios": "dias e horários de atendimento",
+  "objetivo_conversao": "whatsapp|formulario|ligacao|email",
+  "instagram": "@usuario",
+  "youtube": "link do canal",
+  "google_business": "sim|nao",
+  "google_nota": "nota ex: 4.8",
+  "google_qtd": "número de avaliações",
+  "modalidade": "presencial|online|hibrido",
+  "endereco": "endereço completo se presencial",
+  "cidades_atendimento": "cidades ou regiões",
+  "servico_principal": "serviço principal foco da campanha",
+  "servicos_lista": "lista de serviços um por linha",
+  "servicos_descricao": "como funciona o serviço",
+  "preco_exibir": "sim|nao",
+  "preco_valor": "valor e forma de cobrança",
+  "publico_primario": "perfil detalhado do cliente ideal",
+  "publico_dor": "dor principal na voz do cliente",
+  "publico_resultado": "resultado desejado após contratar",
+  "diferencial": "o que diferencia concretamente",
+  "frase_impacto": "frase que captura o que faz",
+  "historia": "por que faz o que faz",
+  "casos_resultados": "números e resultados concretos",
+  "depoimentos": "sim|nao",
+  "estilo_desejado": "como o site deve ser percebido",
+  "sensacao_visitante": "emoção desejada ao navegar",
+  "restricoes": "o que NÃO quer de forma alguma",
+  "dominio": "domínio do site",
+  "gtm_id": "ID do GTM ex: GTM-XXXXXXX"
+}`;
+
       const res = await this.callAI(prompt);
-      
-      this.aiLogStep(3, 'Processando JSON da IA...');
-      const data = JSON.parse(res.replace(/```json|```/g, '').trim());
-      
-      this.aiLogStep(4, 'Salvando dados no projeto...');
-      Object.assign(this.P.briefing, data);
-      
-      this.aiLogStep(5, 'Atualizando interface...');
+
+      this.aiLogStep(3, 'Processando resposta...');
+
+      // Parse robusto: tenta JSON direto, depois com limpeza, depois extração via regex
+      let data = null;
+      const cleanRes = res.replace(/```json|```/g, '').trim();
+
+      try {
+        data = JSON.parse(cleanRes);
+      } catch (e1) {
+        // Tentar encontrar o JSON dentro da resposta
+        const match = cleanRes.match(/\{[\s\S]*\}/);
+        if (match) {
+          try {
+            data = JSON.parse(match[0]);
+          } catch (e2) {
+            throw new Error('A IA não retornou um JSON válido. Tente novamente ou use um modelo diferente.');
+          }
+        } else {
+          throw new Error('Não foi possível extrair dados da resposta da IA.');
+        }
+      }
+
+      this.aiLogStep(4, 'Salvando...');
+
+      // Filtrar campos vazios antes de mesclar
+      const filtered = Object.fromEntries(
+        Object.entries(data).filter(([, v]) => v && v !== '' && v !== '""')
+      );
+
+      Object.assign(this.P.briefing, filtered);
       this.autosave();
+      await this.aiLogDelay(300);
+
       this.aiLogDone();
-      
+
       setTimeout(() => {
         this.closeModal('modal-gen');
         this.goToStep(1);
-        this.showToast('Análise concluída com sucesso!', 'success');
+        this.showToast(`Análise concluída! ${Object.keys(filtered).length} campos preenchidos.`, 'success');
       }, 800);
 
     } catch (e) {
-      console.error(e);
+      console.error('runIntakeAnalysis error:', e);
       this.aiLogError(this.state.aiLog.active, e.message);
-      this.showToast('Erro na análise. Verifique o console.', 'danger');
+      setTimeout(() => {
+        this.closeModal('modal-gen');
+        this.showToast('Erro na análise: ' + e.message, 'error');
+      }, 1500);
     }
   },
 
   async runArtAnalysis() {
     const B = this.B;
+    if (!B) return;
+
+    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
+    if (!hasKey) {
+      this.showToast('Configure uma API Key primeiro.', 'warning');
+      return;
+    }
+
     this.openAILog('Gerando Direção de Arte', [
-      { id: 1, label: 'Compilando referências...' },
-      { id: 2, label: 'Definindo paleta e tipos...' },
-      { id: 3, label: 'Criando tom visual...' },
-      { id: 4, label: 'Finalizando ficha...' }
+      { id: 1, label: 'Compilando referências e dados...' },
+      { id: 2, label: 'Definindo paleta de cores...' },
+      { id: 3, label: 'Criando ficha de tipografia...' },
+      { id: 4, label: 'Definindo tom visual...' },
+      { id: 5, label: 'Finalizando ficha...' },
     ]);
 
     try {
-      this.aiLogStep(1, 'Agrupando links e notas...');
-      const prompt = `Crie uma ficha de direção de arte baseada nestas referências: 
-      Cores: ${B.arte_cor_principal}, ${B.arte_cor_secundaria}
-      Referências: ${JSON.stringify(B.arte_referencias_pessoais)}
-      Responda em JSON com: paleta (array), tipografia (obj), tom_visual (string), decisoes (array).`;
-      
-      this.aiLogStep(2, 'IA criando design system...');
+      this.aiLogStep(1, 'Lendo briefing e referências...');
+
+      const refs = [
+        ...(B.arte_referencias_pessoais || []).map(r => r.url).filter(Boolean),
+        ...(B.arte_referencias_nicho || []).map(r => r.url).filter(Boolean),
+      ];
+
+      await this.aiLogDelay(200);
+      this.aiLogStep(2, 'IA analisando identidade visual...');
+
+      const prompt = `Você é um Art Director especialista em landing pages de alta conversão da agência Adsgator.
+
+Com base nas informações abaixo, crie uma Ficha de Direção de Arte completa para a landing page.
+
+DADOS DO PROJETO:
+- Cliente: ${B.nome_cliente || '—'}
+- Segmento: ${B.segmento || '—'}
+- Tipo: ${B.tipo || '—'}
+- Público-alvo: ${B.publico_primario || '—'}
+- Tom desejado: ${B.estilo_desejado || '—'}
+- Sensação desejada: ${B.sensacao_visitante || '—'}
+- Restrições: ${B.restricoes || 'Nenhuma'}
+- Cor principal da marca: ${B.arte_cor_principal || 'Não definida'}
+- Cor secundária: ${B.arte_cor_secundaria || 'Não definida'}
+- Status da logo: ${B.arte_logo || 'Desconhecido'}
+- Fotos disponíveis: ${B.arte_fotos || 'Desconhecido'}
+- Tema preferido: ${B.arte_tema || 'IA decide'}
+- Intensidade visual: ${B.arte_intensidade || 'moderado'}
+- URLs de referência: ${refs.length > 0 ? refs.join(', ') : 'Nenhuma fornecida'}
+
+Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
+
+{
+  "tema": "escuro|claro",
+  "paleta": [
+    {"nome": "Nome da cor", "hex": "#HEXCODE", "uso": "Para que serve esta cor"},
+    {"nome": "Nome da cor", "hex": "#HEXCODE", "uso": "Para que serve esta cor"},
+    {"nome": "Nome da cor", "hex": "#HEXCODE", "uso": "Para que serve esta cor"}
+  ],
+  "tipografia": {
+    "display": "Nome da fonte para títulos (Google Fonts)",
+    "body": "Nome da fonte para corpo (Google Fonts)",
+    "mono": "Nome da fonte mono se necessário ou null",
+    "escala": "Descrição da escala tipográfica"
+  },
+  "tom_visual": "Descrição detalhada do tom visual (2-3 frases)",
+  "referencias_inspiracao": "O que extrair das referências fornecidas",
+  "decisoes": [
+    "Decisão criativa específica 1",
+    "Decisão criativa específica 2",
+    "Decisão criativa específica 3",
+    "Decisão criativa específica 4"
+  ],
+  "elementos_visuais": "Descrição de elementos gráficos, padrões, texturas recomendados",
+  "fotografia": "Orientações para escolha e edição de fotos"
+}`;
+
+      this.aiLogStep(3, 'Aguardando resposta da IA...');
       const res = await this.callAI(prompt);
-      
-      this.aiLogStep(3, 'Formatando ficha técnica...');
-      const ficha = res.replace(/```json|```/g, '').trim();
-      
-      this.aiLogStep(4, 'Salvando ficha no briefing...');
-      this.P.briefing.ficha_direcao_arte = ficha;
+
+      this.aiLogStep(4, 'Processando ficha...');
+
+      // Parse robusto
+      let ficha = null;
+      const cleanRes = res.replace(/```json|```/g, '').trim();
+      try {
+        ficha = JSON.parse(cleanRes);
+      } catch (e1) {
+        const match = cleanRes.match(/\{[\s\S]*\}/);
+        if (match) {
+          try { ficha = JSON.parse(match[0]); }
+          catch (e2) { throw new Error('Resposta da IA inválida. Tente novamente.'); }
+        } else {
+          throw new Error('Não foi possível extrair a ficha de arte da resposta.');
+        }
+      }
+
+      this.aiLogStep(5, 'Salvando ficha...');
+      this.setField('ficha_direcao_arte', JSON.stringify(ficha));
       this.state.artAnalyzed = true;
-      
-      this.autosave();
+      await this.aiLogDelay(300);
+
       this.aiLogDone();
-      
+
       setTimeout(() => {
         this.closeModal('modal-gen');
-        this.showToast('Direção de Arte gerada!', 'success');
-        this.renderScreen();
+
+        // Exibir no modal de resultado
+        const body = document.getElementById('art-result-body');
+        if (body) {
+          const swatches = (ficha.paleta || []).map(c => `
+            <div class="palette-swatch">
+              <div class="palette-swatch-color" style="background:${c.hex}"></div>
+              <span class="palette-swatch-label">${c.hex}</span>
+              <span style="font-size:10px;color:var(--text-tertiary)">${c.nome}</span>
+            </div>
+          `).join('');
+
+          const decisoes = (ficha.decisoes || []).map(d => `
+            <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px">
+              <i data-lucide="check" style="width:14px;height:14px;color:var(--accent);flex-shrink:0;margin-top:2px"></i>
+              <span style="font-size:13px;color:var(--text-primary);line-height:1.5">${d}</span>
+            </div>
+          `).join('');
+
+          body.innerHTML = `
+            <div class="art-result-card">
+              <div class="art-result-section">
+                <div class="art-result-section-title">Paleta de Cores</div>
+                <div class="palette-swatches">${swatches}</div>
+              </div>
+              <div class="art-result-section">
+                <div class="art-result-section-title">Tipografia</div>
+                <div class="art-result-text">
+                  <strong>Display:</strong> ${ficha.tipografia?.display || '—'}<br>
+                  <strong>Corpo:</strong> ${ficha.tipografia?.body || '—'}<br>
+                  ${ficha.tipografia?.mono ? `<strong>Mono:</strong> ${ficha.tipografia.mono}<br>` : ''}
+                  <em style="color:var(--text-secondary)">${ficha.tipografia?.escala || ''}</em>
+                </div>
+              </div>
+              <div class="art-result-section">
+                <div class="art-result-section-title">Tom Visual</div>
+                <div class="art-result-text">${ficha.tom_visual || '—'}</div>
+              </div>
+              ${ficha.elementos_visuais ? `
+              <div class="art-result-section">
+                <div class="art-result-section-title">Elementos Visuais</div>
+                <div class="art-result-text">${ficha.elementos_visuais}</div>
+              </div>` : ''}
+              ${ficha.fotografia ? `
+              <div class="art-result-section">
+                <div class="art-result-section-title">Direção de Fotografia</div>
+                <div class="art-result-text">${ficha.fotografia}</div>
+              </div>` : ''}
+              <div class="art-result-section">
+                <div class="art-result-section-title">Decisões Criativas</div>
+                ${decisoes}
+              </div>
+            </div>
+          `;
+          lucide.createIcons({ nodes: [body] });
+        }
+
+        this.openModal('modal-art-result');
+        this.showToast('Direção de Arte gerada! Revise e aprove.', 'success');
       }, 800);
 
     } catch (e) {
-      console.error(e);
+      console.error('runArtAnalysis error:', e);
       this.aiLogError(this.state.aiLog.active, e.message);
+      setTimeout(() => {
+        this.closeModal('modal-gen');
+        this.showToast('Erro ao gerar arte: ' + e.message, 'error');
+      }, 1500);
     }
   },
 
   async generateDocImpl() {
-    this.openAILog('Gerando Documentação Técnica', [
-      { id: 1, label: 'Consolidando briefing (DOC-1)...' },
-      { id: 2, label: 'IA escrevendo código e copy...' },
-      { id: 3, label: 'Validando especificações...' },
-      { id: 4, label: 'Gerando arquivo MD...' }
+    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
+    if (!hasKey) {
+      this.showToast('Configure uma API Key primeiro.', 'warning');
+      return;
+    }
+
+    if (!this.P) {
+      this.showToast('Nenhum projeto ativo.', 'warning');
+      return;
+    }
+
+    this.state.isGenerating = true;
+
+    this.openAILog('Gerando Ficha de Implementação', [
+      { id: 1, label: 'Consolidando briefing completo...' },
+      { id: 2, label: 'Preparando prompt de implementação...' },
+      { id: 3, label: 'IA gerando ficha técnica...' },
+      { id: 4, label: 'Validando e baixando...' },
     ]);
 
     try {
-      this.aiLogStep(1);
+      this.aiLogStep(1, 'Montando DOC-1...');
       const doc1 = this.buildDoc1();
-      
-      this.aiLogStep(2, 'Isso pode levar até 60 segundos...');
-      const prompt = `Baseado neste briefing: ${doc1}, gere a Ficha de Implementação Completa para o Roo Code.`;
+      await this.aiLogDelay(300);
+
+      this.aiLogStep(2, 'Preparando prompt...');
+      const prompt = `${REGRAS_FIXAS_ADSGATOR}
+
+---
+
+Com base no briefing abaixo, gere a Ficha de Implementação Técnica completa para o Roo Code implementar a landing page.
+
+A ficha deve incluir:
+1. Estrutura de arquivos do projeto Astro
+2. Design System completo (tokens Tailwind, cores, tipografia)
+3. Componentes necessários com props
+4. Copy de cada seção (H1, subtítulo, CTAs, textos dos blocos)
+5. Configurações do .env
+6. Integrações ativas e como configurar
+7. Instruções de deploy na Vercel
+8. ${PROMPT_AUDITORIA}
+
+BRIEFING COMPLETO (DOC-1):
+${doc1}`;
+
+      this.aiLogStep(3, 'Isso pode levar 60–120 segundos...');
       const res = await this.callAI(prompt);
-      
-      this.aiLogStep(3, 'Verificando integridade...');
+
+      this.aiLogStep(4, 'Salvando e baixando...');
       this.state.lastDocImpl = res;
-      
-      this.aiLogStep(4, 'Preparando download...');
-      const slug = this.B.slug || 'projeto';
+      const slug = this.B.slug || this.B.nome_cliente?.toLowerCase().replace(/\s+/g, '-') || 'projeto';
       this.downloadText(res, `doc-impl-${slug}.md`, 'text/markdown');
-      
+
+      await this.aiLogDelay(400);
       this.aiLogDone();
-      this.showNotification('LandingAI', 'Documentação gerada com sucesso!');
-      
+      this.state.isGenerating = false;
+      this.showNotification('AIGator', 'Ficha de Implementação gerada!');
+
       setTimeout(() => {
         this.closeModal('modal-gen');
-        this.showToast('Documento gerado e baixado!', 'success');
+        this.showToast('DOC-IMPL gerado e baixado com sucesso!', 'success');
+        this.renderScreen();
       }, 800);
 
     } catch (e) {
-      console.error(e);
+      console.error('generateDocImpl error:', e);
+      this.state.isGenerating = false;
       this.aiLogError(this.state.aiLog.active, e.message);
+      setTimeout(() => {
+        this.closeModal('modal-gen');
+        this.showToast('Erro ao gerar: ' + e.message, 'error');
+      }, 1500);
     }
   },
 

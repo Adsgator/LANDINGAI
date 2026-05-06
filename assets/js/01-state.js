@@ -34,7 +34,7 @@ Object.assign(window.App, {
       const a = localStorage.getItem(STORAGE_KEYS.ACTIVE);
       const k = localStorage.getItem(STORAGE_KEYS.API_KEYS);
       if (p) this.state.projects = JSON.parse(p);
-      if (a) this.state.activeId = a;
+      if (a && a.trim()) this.state.activeId = a.trim();
       if (k) this.state.apiKeys = JSON.parse(k);
     } catch (e) { console.error('Erro ao carregar localStorage:', e); }
   },

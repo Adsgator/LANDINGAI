@@ -726,3 +726,49 @@
 .toast.warning i {
   color: var(--warning);
 }
+
+/* ── Upload Zone: drag state ───────────────────────────────── */
+.upload-zone {
+  cursor: pointer;
+  transition: all var(--t-base);
+}
+
+.upload-zone.drag-over {
+  border-color: var(--accent);
+  background: var(--accent-dim);
+  transform: scale(1.01);
+}
+
+/* ── Color Picker ──────────────────────────────────────────── */
+.color-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.color-picker-swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-sm);
+  overflow: hidden;
+  border: 1px solid var(--border-default);
+  flex-shrink: 0;
+}
+
+.color-picker-swatch input[type="color"] {
+  width: 150%;
+  height: 150%;
+  border: none;
+  cursor: pointer;
+  transform: translate(-15%, -15%);
+}
+
+.color-picker-input {
+  flex: 1;
+}
+
+/* ── Art Result Modal ──────────────────────────────────────── */
+.modal--lg {
+  max-width: 720px;
+  width: 100%;
+}

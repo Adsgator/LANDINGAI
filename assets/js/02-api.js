@@ -1,0 +1,126 @@
+/* ============================================================
+   LandingAI v2 — Integração com APIs de IA
+   ============================================================ */
+
+Object.assign(window.App, {
+  async callAI(prompt) {
+    const model = AI_MODELS[this.state.selectedModel];
+    if (!model) throw new Error(`Modelo ${this.state.selectedModel} não encontrado.`);
+
+    const apiKey = this.state.apiKeys[model.provider];
+    if (!apiKey?.trim()) throw new Error(`Chave de API para ${model.provider} não configurada.`);
+
+    switch (model.provider) {
+      case 'gemini': return this._callGemini(prompt, model, apiKey);
+      case 'claude': return this._callClaude(prompt, model, apiKey);
+      case 'grok':
+      case 'mistral':
+      case 'openrouter':
+        return this._callOpenAICompat(prompt, model, apiKey);
+      default: throw new Error(`Provider ${model.provider} não suportado.`);
+    }
+  },
+
+  async _callGemini(prompt, model, apiKey) {
+    const response = await fetch(`${model.endpoint}?key=${apiKey}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          maxOutputTokens: model.maxTokens,
+          temperature: model.temp,
+          topP: 0.95,
+        },
+        safetySettings: [
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const msg = err.error?.message || `HTTP ${response.status}`;
+      throw new Error(msg);
+    }
+
+    const data = await response.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (!text) throw new Error('Resposta vazia do Gemini.');
+    return text;
+  },
+
+  async _callClaude(prompt, model, apiKey) {
+    const response = await fetch(model.endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: model.id,
+        max_tokens: model.maxTokens,
+        temperature: model.temp,
+        system: 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro.',
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const msg = err.error?.message || `HTTP ${response.status}`;
+      throw new Error(msg);
+    }
+
+    const data = await response.json();
+    const text = data.content?.[0]?.text;
+    if (!text) throw new Error('Resposta vazia do Claude.');
+    return text;
+  },
+
+  async _callOpenAICompat(prompt, model, apiKey) {
+    const isOpenRouter = model.provider === 'openrouter';
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    };
+
+    if (isOpenRouter) {
+      headers['HTTP-Referer'] = window.location.origin;
+      headers['X-Title'] = 'LandingAI v2';
+    }
+
+    const response = await fetch(model.endpoint, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify({
+        model: model.model || model.id,
+        max_tokens: model.maxTokens,
+        temperature: model.temp,
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro.',
+          },
+          { role: 'user', content: prompt },
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      const msg = err.error?.message || `HTTP ${response.status}`;
+      throw new Error(msg);
+    }
+
+    const data = await response.json();
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) throw new Error(`Resposta vazia de ${model.label}.`);
+    return text;
+  }
+});

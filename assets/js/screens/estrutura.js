@@ -158,9 +158,6 @@ Object.assign(window.App, {
 
           </div>
         `}
-      </div>
-    `;
-
         ${!hasKey ? `<span class="no-key-warn">
           <i data-lucide="alert-triangle" style="width:13px;height:13px"></i>
           Configure uma API Key para usar a geração automática
@@ -288,7 +285,7 @@ Gere apenas a imagem do mockup, sem texto explicativo.
                 nome: 'Gemini AI Studio',
                 url: 'https://aistudio.google.com',
                 gratuito: true,
-                descricao: 'Use gemini-2.0-flash-exp para geração de imagens. Cole o prompt do wireframe.',
+                descricao: 'Use gemini-2.5-flash-image para geração de imagens. Cole o prompt do wireframe.',
             },
             {
                 nome: 'v0.dev (Vercel)',
@@ -530,5 +527,4 @@ function renderBlocoWireframe(bloco, index, tipo) {
           ${innerHTML}
         </div>
       </div>`;
-    }
-});
+}

@@ -272,15 +272,37 @@ Responda APENAS com o JSON, sem markdown, sem explicação.
 
 {
   "step1": {
+    "nome_profissional": "",
     "nome_cliente": "",
     "nome_marca": "",
+    "nicho": "",
     "segmento": "",
+    "cidade": "",
+    "estado": "",
+    "proposta_valor": "",
+    "missao": "",
+    "anos_experiencia": "",
+    "formacao": "",
+    "certificacoes": "",
     "tipo": "",
     "dominio": "",
     "cnpj": "",
     "aviso_legal": ""
   },
   "step2": {
+    "avatar_nome": "",
+    "avatar_idade": "",
+    "avatar_genero": "",
+    "avatar_profissao": "",
+    "avatar_renda": "",
+    "dor_principal": "",
+    "dores_secundarias": "",
+    "desejo_principal": "",
+    "objecao_preco": "",
+    "objecao_tempo": "",
+    "objecao_confianca": "",
+    "objecao_resultado": "",
+    "gatilhos_mentais": "",
     "whatsapp": "",
     "email": "",
     "horarios": "",
@@ -288,6 +310,20 @@ Responda APENAS com o JSON, sem markdown, sem explicação.
     "objetivo_conversao": ""
   },
   "step3": {
+    "servico_principal": "",
+    "servico_descricao": "",
+    "servicos_descricao": "",
+    "como_funciona_passo1": "",
+    "como_funciona_passo2": "",
+    "como_funciona_passo3": "",
+    "como_funciona_passo4": "",
+    "modalidade": "",
+    "duracao_sessao": "",
+    "frequencia": "",
+    "formato": "",
+    "resultado_esperado": "",
+    "prazo_resultado": "",
+    "servicos_adicionais": "",
     "instagram": "",
     "tiktok": "",
     "youtube": "",
@@ -296,7 +332,22 @@ Responda APENAS com o JSON, sem markdown, sem explicação.
     "google_qtd": ""
   },
   "step4": {
-    "modalidade": "",
+    "depoimento1_nome": "",
+    "depoimento1_texto": "",
+    "depoimento1_resultado": "",
+    "depoimento2_nome": "",
+    "depoimento2_texto": "",
+    "depoimento2_resultado": "",
+    "depoimento3_nome": "",
+    "depoimento3_texto": "",
+    "depoimento3_resultado": "",
+    "casos_de_sucesso": "",
+    "perfil_google": "",
+    "nota_google": "",
+    "quantidade_avaliacoes": "",
+    "instagram": "",
+    "seguidores": "",
+    "midia_aparicoes": "",
     "endereco": "",
     "exibir_localizacao": "",
     "maps_link": "",
@@ -306,18 +357,17 @@ Responda APENAS com o JSON, sem markdown, sem explicação.
     "plataforma_online": ""
   },
   "step5": {
-    "servico_principal": "",
-    "servicos_descricao": "",
-    "preco_exibir": "",
-    "preco_valor": "",
-    "preco_condicao": ""
-  },
-  "step6": {
-    "publico_primario": "",
-    "publico_dor": "",
-    "publico_resultado": ""
-  },
-  "step7": {
+    "diferencial1_titulo": "",
+    "diferencial1_descricao": "",
+    "diferencial2_titulo": "",
+    "diferencial2_descricao": "",
+    "diferencial3_titulo": "",
+    "diferencial3_descricao": "",
+    "diferencial4_titulo": "",
+    "diferencial4_descricao": "",
+    "metodologia_propria": "",
+    "garantia": "",
+    "atendimento_diferenciado": "",
     "diferencial": "",
     "frase_impacto": "",
     "historia": "",
@@ -326,10 +376,54 @@ Responda APENAS com o JSON, sem markdown, sem explicação.
     "depoimentos_qtd": "",
     "depoimentos_formato": []
   },
-  "step8": {
+  "step6": {
+    "whatsapp": "",
+    "whatsapp_mensagem_padrao": "",
+    "email": "",
+    "preco_plano1_nome": "",
+    "preco_plano1_valor": "",
+    "preco_plano1_descricao": "",
+    "preco_plano2_nome": "",
+    "preco_plano2_valor": "",
+    "preco_plano2_descricao": "",
+    "preco_plano3_nome": "",
+    "preco_plano3_valor": "",
+    "preco_plano3_descricao": "",
+    "forma_pagamento": "",
+    "desconto_pix": "",
+    "parcelas": "",
+    "trial_gratuito": "",
+    "horario_atendimento": "",
+    "publico_primario": "",
+    "publico_dor": "",
+    "publico_resultado": ""
+  },
+  "step7": {
+    "cor_primaria": "",
+    "cor_secundaria": "",
+    "cor_acento": "",
+    "cor_fundo": "",
+    "estilo_visual": "",
+    "fonte_titulo": "",
+    "fonte_corpo": "",
+    "tom_comunicacao": "",
+    "referencias_visuais": "",
+    "logo_descricao": "",
+    "imagens_disponiveis": "",
+    "video_disponivel": "",
     "estilo_desejado": "",
     "sensacao_visitante": "",
     "restricoes": ""
+  },
+  "step8": {
+    "titulo_seo": "",
+    "descricao_seo": "",
+    "palavra_chave_principal": "",
+    "palavras_chave_secundarias": "",
+    "dominio_sugerido": "",
+    "schema_tipo": "",
+    "og_titulo": "",
+    "og_descricao": ""
   }
 }
 
@@ -674,24 +768,7 @@ ${doc1.substring(0, 12000)}
       await this.aiLogDelay(300);
 
       this.aiLogStep(2);
-      const prompt = `${REGRAS_FIXAS_ADSGATOR}
-
----
-
-Com base no briefing abaixo, gere a Ficha de Implementação Técnica completa para o Roo Code implementar a landing page.
-
-A ficha deve incluir:
-1. Estrutura de arquivos do projeto Astro
-2. Design System completo (tokens Tailwind, cores via CSS vars em rem, tipografia)
-3. Componentes necessários com props
-4. Copy de cada seção (H1, subtítulo, CTAs, textos dos blocos)
-5. Configurações do .env
-6. Integrações ativas e como configurar
-7. Instruções de deploy na Vercel
-8. ${PROMPT_AUDITORIA}
-
-BRIEFING COMPLETO (DOC-1):
-${doc1}`;
+      const prompt = this.buildImplPrompt();
 
       this.aiLogStep(3, 'Isso pode levar 60–120 segundos...');
       const res = await this.callAI(prompt);

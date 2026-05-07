@@ -169,12 +169,16 @@ Object.assign(window.App, {
 
     // ── Calcula campos preenchidos por step ──────────────────────
     const steps = STEPS || [];
-    const stepsInfo = steps.map((s, i) => ({
-      num: i + 1,
-      titulo: s.title || s.titulo || `Step ${i + 1}`,
-      campos: (s.fields || []).filter(f => B[f.key] && String(B[f.key]).trim()).length,
-      total: (s.fields || []).length,
-    }));
+    const required = REQUIRED_FIELDS || {};
+    const stepsInfo = steps.map((s) => {
+      const fieldKeys = required[s.id] || [];
+      return {
+        num: s.id,
+        titulo: s.title,
+        campos: fieldKeys.filter(key => B[key] && String(B[key]).trim()).length,
+        total: fieldKeys.length,
+      };
+    });
 
     const stepsResumo = stepsInfo
       .map(s => `Step ${s.num} (${s.titulo}): ${s.campos}/${s.total} campos`)
@@ -497,4 +501,90 @@ ${B.estrutura_aprovada || B.estrutura_rascunho || '> Estrutura ainda não defini
 *DOC-1 gerado pelo LandingAI v2 · Adsgator · ${new Date().toLocaleString('pt-BR')}*
 `.trim();
   },
+
+  async handleGenerateDocImpl() {
+      this.aiLogStep(2);
+      const prompt = this.buildImplPrompt();
+
+      this.aiLogStep(3, 'Isso pode levar 60–120 segundos...');
+      const res = await this.callAI(prompt);
+
+      this.aiLogStep(4);
+      this.state.lastDocImpl = res;
+      this.render();
+  },
+
+  buildImplPrompt() {
+      const doc1 = this.buildDoc1();
+      // Remove o bloco de instruções manuais do DOC-1 para o prompt da API ser mais limpo
+      const briefingOnly = doc1.replace(/=== INICIO DO PROMPT ===([\s\S]*?)=== FIM DO PROMPT ===/, '').trim();
+
+      return `
+Você é um desenvolvedor Astro especializado em landing pages de alta conversão.
+
+## SUA TAREFA
+Gerar um Blueprint de Implementação completo e 100% funcional para o projeto abaixo.
+
+## FORMATO DE SAÍDA OBRIGATÓRIO
+O documento que você vai gerar deve seguir EXATAMENTE esta estrutura:
+
+# Blueprint de Implementação — [Nome do Projeto]
+> **Documento para o Roo Code.**
+> Contém todos os arquivos do projeto na ordem correta de criação.
+> Não invente nada além do que está aqui.
+> Campos que exigem ação humana antes do go-live: \`[DOMINIO]\`, \`[GTM_ID]\`, \`[WEB3FORMS_KEY]\`.
+
+---
+
+## ORDEM DE CRIAÇÃO
+### FASE 1 — Fundação
+1. \`package.json\`
+2. \`astro.config.mjs\`
+3. \`tailwind.config.js\`
+4. \`.env.example\`
+
+### FASE 2 — Arquivos Estáticos
+5. \`public/robots.txt\`, \`public/manifest.json\`, \`public/favicon.svg\`, \`src/assets/logo.svg\`
+
+### FASE 3 — Pré-requisito de Assets de Imagem
+[lista de imagens necessárias com dimensões]
+
+### FASE 4 — Componentes Globais
+### FASE 5 — Layout
+### FASE 6 — Seções (uma por bloco da estrutura aprovada)
+### FASE 7 — Páginas
+
+---
+
+## INSTALAÇÃO DE DEPENDÊNCIAS
+[bloco bash com npm install]
+
+---
+
+## BUILD E DEPLOY
+[comandos]
+
+---
+
+[A partir daqui: um título ### por arquivo, seguido do código completo em bloco de código]
+
+## STACK OBRIGATÓRIA
+- Framework: Astro 4.x (output: hybrid)
+- CSS: Tailwind CSS 3.x
+- Animações: GSAP 3.x + ScrollTrigger
+- Smooth scroll: Lenis
+- Ícones: Lucide React
+- Deploy: Vercel
+
+## REGRAS ABSOLUTAS
+1. Todo arquivo deve ter o código COMPLETO.
+2. Nunca use placeholders como "[TEXTO]" — use os dados reais do briefing.
+3. H1 do Hero = a dor de busca.
+4. Copy em 1ª pessoa do singular.
+
+---
+
+${briefingOnly}
+`.trim();
+  }
 });

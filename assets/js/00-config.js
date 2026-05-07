@@ -1,4 +1,3 @@
-
 /* ============================================================
    LandingAI v2 — Configurações e Constantes
    ============================================================ */
@@ -146,14 +145,116 @@ const AI_MODELS = {
 };
 
 const STEPS = [
-  { id: 1, label: 'Identificação', sub: 'Nome, nicho e tipo de projeto', icon: 'user' },
-  { id: 2, label: 'Contato e CTA', sub: 'WhatsApp, e-mail e conversão', icon: 'phone' },
-  { id: 3, label: 'Presença Digital', sub: 'Redes sociais e plataformas', icon: 'globe' },
-  { id: 4, label: 'Atendimento', sub: 'Modalidade, endereço, cidades', icon: 'map-pin' },
-  { id: 5, label: 'Serviço / Produto', sub: 'O que é vendido e como funciona', icon: 'briefcase' },
-  { id: 6, label: 'Público-Alvo', sub: 'Perfil, dores e resultado', icon: 'target' },
-  { id: 7, label: 'Autoridade', sub: 'Diferenciais e prova social', icon: 'star' },
-  { id: 8, label: 'Tom e Identidade', sub: 'Estilo, vocabulário e restrições', icon: 'palette' },
+  {
+    id: 'step1',
+    title: 'Identificação',
+    sub: 'Nome, nicho e tipo de projeto',
+    icon: 'user',
+    fields: [
+      { key: 'nome_cliente', label: 'Nome do cliente', type: 'text' },
+      { key: 'nome_marca', label: 'Nome da marca', type: 'text' },
+      { key: 'segmento', label: 'Segmento / profissão', type: 'text' },
+      { key: 'tipo', label: 'Tipo de negócio', type: 'text' },
+      { key: 'dominio', label: 'Domínio desejado', type: 'text' },
+      { key: 'cnpj', label: 'CNPJ', type: 'text' },
+      { key: 'aviso_legal', label: 'Aviso legal / registro profissional', type: 'text' },
+    ]
+  },
+  {
+    id: 'step2',
+    title: 'Contato e CTA',
+    sub: 'WhatsApp, e-mail e conversão',
+    icon: 'phone',
+    fields: [
+      { key: 'whatsapp', label: 'WhatsApp', type: 'text' },
+      { key: 'email', label: 'E-mail de contato', type: 'email' },
+      { key: 'horarios', label: 'Dias e horários de atendimento', type: 'text' },
+      { key: 'gtm_id', label: 'ID do Google Tag Manager', type: 'text' },
+      { key: 'objetivo_conversao', label: 'Como o lead entra em contato?', type: 'text' },
+    ]
+  },
+  {
+    id: 'step3',
+    title: 'Presença Digital',
+    sub: 'Redes sociais e plataformas',
+    icon: 'globe',
+    fields: [
+      { key: 'instagram', label: 'Instagram', type: 'text' },
+      { key: 'tiktok', label: 'TikTok', type: 'text' },
+      { key: 'youtube', label: 'YouTube', type: 'text' },
+      { key: 'outras_redes', label: 'Outras redes', type: 'text' },
+      { key: 'integracoes', label: 'Integrações no Site', type: 'text' },
+    ]
+  },
+  {
+    id: 'step4',
+    title: 'Atendimento',
+    sub: 'Modalidade, endereço, cidades',
+    icon: 'map-pin',
+    fields: [
+      { key: 'modalidade', label: 'Como o cliente atende?', type: 'text' },
+      { key: 'endereco', label: 'Endereço completo', type: 'textarea' },
+      { key: 'maps_link', label: 'Link do Google Maps', type: 'text' },
+      { key: 'exibir_localizacao', label: 'Exibição no site', type: 'text' },
+      { key: 'cidades_atendimento', label: 'Raio / Cidades de atendimento', type: 'text' },
+      { key: 'plataforma_online', label: 'Plataforma de atendimento', type: 'text' },
+      { key: 'faq', label: 'Perguntas Frequentes (FAQ)', type: 'textarea' },
+      { key: 'objecoes_atendimento', label: 'Principais objeções / medos', type: 'textarea' },
+    ]
+  },
+  {
+    id: 'step5',
+    title: 'Serviço / Produto',
+    sub: 'O que é vendido e como funciona',
+    icon: 'briefcase',
+    fields: [
+      { key: 'servico_principal', label: 'Serviço principal — foco da campanha', type: 'text' },
+      { key: 'servicos_descricao', label: 'Descrição detalhada', type: 'textarea' },
+      { key: 'preco_exibir', label: 'Exibir preço?', type: 'text' },
+      { key: 'preco_valor', label: 'Valor', type: 'text' },
+      { key: 'preco_condicao', label: 'Condição', type: 'text' },
+    ]
+  },
+  {
+    id: 'step6',
+    title: 'Público-Alvo',
+    sub: 'Perfil, dores e resultado',
+    icon: 'target',
+    fields: [
+      { key: 'publico_primario', label: 'Perfil do cliente ideal', type: 'textarea' },
+      { key: 'publico_dor', label: 'Principal dor / problema', type: 'textarea' },
+      { key: 'publico_resultado', label: 'Resultado esperado', type: 'textarea' },
+    ]
+  },
+  {
+    id: 'step7',
+    title: 'Autoridade',
+    sub: 'Diferenciais e prova social',
+    icon: 'star',
+    fields: [
+      { key: 'diferencial', label: 'O que diferencia o profissional?', type: 'textarea' },
+      { key: 'frase_impacto', label: 'Frase de impacto — possível H1 da página', type: 'text' },
+      { key: 'historia', label: 'História ou origem do negócio', type: 'textarea' },
+      { key: 'casos_resultados', label: 'Cases e resultados concretos', type: 'textarea' },
+      { key: 'depoimentos', label: 'Tem depoimentos reais?', type: 'text' },
+      { key: 'depoimentos_qtd', label: 'Quantidade disponível', type: 'number' },
+      { key: 'depoimentos_formato', label: 'Formato', type: 'text' },
+      { key: 'google_business', label: 'Tem perfil no Google Meu Negócio?', type: 'text' },
+      { key: 'google_nota', label: 'Nota média', type: 'number' },
+      { key: 'google_qtd', label: 'Número de avaliações', type: 'number' },
+    ]
+  },
+  {
+    id: 'step8',
+    title: 'Tom e Identidade',
+    sub: 'Estilo, vocabulário e restrições',
+    icon: 'palette',
+    fields: [
+      { key: 'estilo_desejado', label: 'Estilo visual desejado', type: 'textarea' },
+      { key: 'sensacao_visitante', label: 'O que o visitante deve sentir?', type: 'textarea' },
+      { key: 'restricoes', label: 'Restrições (o que evitar)', type: 'textarea' },
+    ]
+  },
 ];
 
 const REQUIRED_FIELDS = {
@@ -207,24 +308,19 @@ const FIELD_TOOLTIPS = {
   cidades_atendimento: 'Cidades ou bairros onde o cliente atua. Ajuda no SEO local e na autoridade da região.',
   faq: 'Perguntas frequentes. Economizam tempo do suporte e aumentam a taxa de conversão.',
   objecoes_atendimento: 'Dores de cabeça comuns do cliente antes de fechar. A IA usará isso para criar argumentos de venda.',
-  cidades_atendimento: 'Regiões atendidas — importante para SEO local. Ex: São Paulo e Grande ABC.',
   plataforma_online: 'Plataforma usada para atendimento online. Ex: Google Meet, Zoom, WhatsApp Vídeo.',
 
   // Step 5
   servico_principal: 'O serviço ou produto mais importante — foco da campanha. Vai definir a H1 e o Hero da página.',
-  servicos_lista: 'Lista de todos os serviços ou planos, um por linha. A IA decide se cria grade de serviços ou tabela de planos.',
   servicos_descricao: 'Como funciona o processo, o que está incluso, quanto tempo dura, qual resultado esperado. Quanto mais detalhe, mais rica a copy do bloco "Como Funciona".',
   preco_exibir: 'Exibir preço reduz volume de leads mas aumenta qualidade. Bom para serviços premium ou com preço fixo.',
   preco_valor: 'Valor e forma de cobrança. Ex: R$ 350/sessão, A partir de R$ 1.200/mês.',
   preco_condicao: 'Condição especial ou parcelamento. Ex: 3x sem juros no cartão.',
-  oferta_especial: 'Promoção ativa com prazo real. A IA cria um bloco de urgência com base nisso. Deixar vazio se não houver.',
 
   // Step 6
   publico_primario: 'Perfil do cliente ideal: gênero, faixa etária, situação de vida, localização. Fale sobre uma pessoa real, não uma demografia genérica.',
   publico_dor: 'O problema real que faz o cliente buscar esse serviço. Use a linguagem do cliente — como ele pesquisa no Google, não o termo técnico.',
   publico_resultado: 'O que o cliente imagina conquistar após contratar. Deve aparecer no Hero e no CTA Final da página.',
-  publico_secundario: 'Se houver um segundo perfil de cliente relevante. A IA pode criar variações de copy.',
-  faq: 'Perguntas frequentes reais que os clientes fazem. A IA inclui o bloco FAQ se houver objeções documentadas aqui.',
 
   // Step 7
   diferencial: 'O que concretamente diferencia esse profissional. Não "atendimento humanizado" — mas o que ele faz diferente: método, certificação, resultado concreto, garantia.',
@@ -238,185 +334,5 @@ const FIELD_TOOLTIPS = {
   // Step 8
   estilo_desejado: 'Descreva como o site deve ser percebido. Não "moderno" ou "clean" isolados — diga o quê. Ex: Sóbrio e técnico como Linear.app, mas mais quente por ser nicho de saúde.',
   sensacao_visitante: 'Emoção desejada ao navegar. É diferente do estilo visual — é o sentimento. Ex: Segurança imediata. Que essa é a pessoa certa.',
-  frase_tom: 'Uma frase curta que captura a personalidade da marca. Guia o tom de voz da IA. Ex: Especialista que já viu tudo e fala sem rodeios.',
-  vocabulario_usa: 'Termos técnicos ou expressões do cliente que devem aparecer na copy. Vêm da conversa — não do formulário.',
-  vocabulario_nunca: 'Expressões que quebram a autenticidade. Tão importante quanto o vocabulário correto. Ex: "pet", "fofo", "jornada", "transformação".',
   restricoes: 'Tudo que NÃO quer de forma alguma — cores, estilos, elementos, referências negativas. Ex: Sem rosa. Sem visual de infoproduto. Sem fontes cursivas.',
-};
-
-const REGRAS_FIXAS_ADSGATOR = `
-## STACK TÉCNICA IMUTÁVEL
-
-- Framework: Astro (output: 'hybrid' para suportar endpoint /api/contato)
-- CSS: Tailwind CSS — todos os tokens em tailwind.config.js. Zero HEX hardcoded. Zero style="" onde Tailwind resolve.
-- Animações de scroll: GSAP + ScrollTrigger em <script> dentro dos .astro — NUNCA em bundle React
-- Animações de UI: Framer Motion apenas em islands React (MobileMenu, ContactForm, CookieBanner)
-- Scroll suave: Lenis (@studio-freight/lenis) integrado ao GSAP ticker
-- Formulários: Web3Forms (FORMS_ACCESS_KEY no .env)
-- Analytics: Vercel Analytics (@vercel/analytics) + Vercel Speed Insights (@vercel/speed-insights)
-- Deploy: Vercel
-
-## GIT — OBRIGATÓRIO ANTES DE QUALQUER CÓDIGO
-
-git init → git add . → git commit -m "init: projeto Astro base"
-.gitignore: node_modules/, dist/, .env
-Conectar ao repositório remoto antes do primeiro deploy.
-
-## ARQUIVOS OBRIGATÓRIOS
-
-- public/robots.txt → Allow: / | Disallow: /links, /politica-de-privacidade, /404
-- public/manifest.json → name, start_url, display: "standalone", theme_color via token
-- .env.example → GTM_ID= | WHATSAPP_NUMBER= | FORMS_ACCESS_KEY= | INSTAGRAM_TOKEN= (se ativo)
-- src/pages/404.astro → personalizada com botão voltar + botão WhatsApp
-- src/pages/politica-de-privacidade.astro → LGPD completa
-- src/pages/links.astro → página de links (excluída do sitemap)
-
-## COMPONENTES GLOBAIS OBRIGATÓRIOS
-
-Layout.astro → SEO, GTM (is:inline), Consent Mode v2, Lenis, GSAP, Analytics, SpeedInsights
-Button.astro → props: label, href, variant, trackingId, section | nunca botão inline
-SectionHeader.astro → props: label, title, subtitle, align
-FeatureCard.astro → props: icon, title, description
-TestimonialCard.astro → props: name, role, text, avatar (se depoimentos existirem)
-
-## COMPONENTES REACT (ISLANDS)
-
-MobileMenu.tsx → fullscreen overlay AnimatePresence | focus trap | Escape fecha | overflow:hidden no body
-ContactForm.tsx → honeypot | validação inline | ErrorBoundary com fallback WhatsApp | client:visible
-CookieBanner.tsx → LGPD + Consent Mode v2 | client:idle | localStorage 'adsgator-consent'
-
-## UX OBRIGATÓRIO
-
-Header → sticky z-50 | esconde ao scroll down (GSAP) | reaparece ao scroll up | backdrop-blur após 80px
-WhatsApp flutuante → IntersectionObserver | aparece após Hero sair | some quando footer entra | SVG nativo #25D366 | 56×56px | aria-label="Falar no WhatsApp"
-Mobile First → começa em 375px | Hero usa 100svh | texto mínimo 16px | touch targets 44px
-Footer → fundo diferente da última seção | logo da marca | logo Adsgator com link adsgator.com.br | ano dinâmico {new Date().getFullYear()}
-
-## COPY — DNA ADSGATOR INEGOCIÁVEL
-
-- H1 espelha a dor real de busca — nunca o nome técnico do serviço
-- Copy em primeira pessoa: "Eu atendo...", "Meu método..." — NUNCA "Maria atende..."
-- Zero institucional: proibido "inovador", "excelência", "missão", "visão", "comprometidos com", "resultados extraordinários"
-- CTAs específicos: nunca "Saiba mais", "Clique aqui", "Entre em contato", "Solicite um orçamento"
-- Nunca inventar depoimentos, avaliações ou notas Google
-
-## BLOCOS CONDICIONAIS — REGRAS RÍGIDAS
-
-- Mapa: APENAS se modalidade presencial/híbrida com endereço explicitamente autorizado
-- Avaliações Google: APENAS se google_business=sim E nota≥4.5 E avaliações≥10
-- Feed Instagram: APENAS se perfil ativo e relevante para o serviço
-- Depoimentos: APENAS se depoimentos=sim. Nunca inventar.
-- Preços: APENAS se preco_exibir=sim e valores fornecidos
-
-## PERFORMANCE E SEO
-
-- <link rel="preload"> na imagem hero com fetchpriority="high"
-- font-display: swap em toda @font-face
-- Canonical URL em cada página via prop canonicalUrl
-- Schema.org JSON-LD no Layout.astro (LocalBusiness ou Person conforme o nicho)
-- Lighthouse Performance ≥ 90 mobile | Accessibility ≥ 90
-- og-image 1200×630 presente
-
-## ACESSIBILIDADE MÍNIMA
-
-- WCAG AA em todo texto sobre fundo
-- focus-visible em todos os elementos interativos
-- Links externos com rel="noopener noreferrer"
-- Todas as imagens com alt descritivo, width e height definidos
-- prefers-reduced-motion check em todas as animações GSAP
-- <h1> único por página
-`;
-
-const PROMPT_AUDITORIA = `
-## AUDITORIA PÓS-IMPLEMENTAÇÃO
-
-Faça uma auditoria completa do projeto que você acabou de construir.
-Para cada item responda: ✅ implementado | ⚠ parcial (explique) | ❌ não implementado.
-
-### HEADER INTELIGENTE
-[ ] Header some suavemente ao scrollar para baixo e reaparece ao scrollar para cima
-[ ] Fundo com backdrop-blur ou opacidade após 80px de scroll
-[ ] Logo linkada para / (raiz)
-[ ] CTA visível no header em desktop
-[ ] Versão mobile testada em 375px
-
-### BOTÃO WHATSAPP FLUTUANTE
-[ ] Presente em todas as páginas
-[ ] Oculto no carregamento — aparece após o Hero sair do viewport (IntersectionObserver)
-[ ] Some quando o footer entra no viewport
-[ ] Tem aria-label="Falar no WhatsApp"
-[ ] Rastreado com data-tracking="click-whatsapp" data-section="floating-button"
-
-### BANNER DE CONSENTIMENTO (LGPD)
-[ ] CookieBanner presente e funcional
-[ ] Aparece apenas se não houver consentimento registrado
-[ ] Botões "Aceitar" e "Recusar" funcionando e registrando escolha
-[ ] Google Consent Mode v2 configurado — GTM em modo restrito antes do consentimento
-[ ] Não bloqueia o carregamento da página
-
-### ANALYTICS E PERFORMANCE
-[ ] Vercel Analytics instalado e ativo
-[ ] Vercel Speed Insights instalado e ativo
-[ ] Google Tag Manager snippet no <head> E no <body> (via is:inline)
-[ ] GTM ID via variável de ambiente — não hardcoded
-
-### GIT E DEPLOY
-[ ] Repositório Git inicializado e com pelo menos um commit
-[ ] .gitignore cobrindo node_modules, dist, .env
-[ ] Variáveis sensíveis em .env — nunca no código
-[ ] .env.example entregue com todas as variáveis documentadas
-[ ] Deploy configurado na Vercel com CI/CD automático
-
-### DESIGN RESPONSIVO
-[ ] Mobile testado em 375px sem overflow horizontal
-[ ] Hero ocupa 100svh em mobile
-[ ] Touch targets mínimo 44px em todos os elementos clicáveis
-[ ] Fonte mínima 16px em mobile
-[ ] Backgrounds distintos por seção criam ritmo visual
-
-### FOOTER
-[ ] Footer tem identidade visual coerente com a landing page
-[ ] Logo da marca presente
-[ ] Logo da agência Adsgator com link para adsgator.com.br
-[ ] Links: Política de Privacidade + redes sociais confirmadas
-[ ] Ano dinâmico: {new Date().getFullYear()}
-
-### ACESSIBILIDADE
-[ ] Contraste WCAG AA em todo texto sobre fundo
-[ ] focus-visible em todos os elementos interativos
-[ ] Links externos com rel="noopener noreferrer"
-[ ] Todas as imagens com alt descritivo, width e height
-[ ] prefers-reduced-motion check em todas as animações GSAP
-
-### PÁGINAS SECUNDÁRIAS
-[ ] /links funcionando
-[ ] /politica-de-privacidade acessível via footer
-[ ] /404 personalizada com botão voltar e botão WhatsApp
-[ ] Sitemap excluindo /links, /politica-de-privacidade, /404
-[ ] robots.txt criado
-
-### QUALIDADE TÉCNICA
-[ ] Build sem erros (npm run build)
-[ ] Zero console.log em produção
-[ ] Zero HEX hardcoded — todos via token Tailwind
-[ ] Lighthouse Performance ≥ 90 mobile
-[ ] Lighthouse Accessibility ≥ 90
-[ ] Link do WhatsApp testado com mensagem pré-preenchida
-[ ] Schema.org JSON-LD válido
-[ ] og-image 1200×630 presente
-
-Para cada ❌ ou ⚠, descreva exatamente o que precisa ser corrigido.
-`;
-
-const ERROR_MAP = {
-  'api key': { cause: 'API Key inválida ou sem permissão.', tip: 'Verifique se a key está correta e sem espaços extras.' },
-  'quota': { cause: 'Cota da API atingida.', tip: 'Aguarde algumas horas ou troque para outro modelo.' },
-  'rate limit': { cause: 'Muitas requisições em pouco tempo.', tip: 'Aguarde 30 segundos e tente novamente.' },
-  'too short': { cause: 'Resposta muito curta — provavelmente contexto cortado.', tip: 'Tente Gemini 2.5 Pro ou Claude Opus que têm janela maior.' },
-  'context length': { cause: 'Briefing muito longo para este modelo.', tip: 'Reduza o briefing bruto ou troque para um modelo com janela maior.' },
-  'unauthorized': { cause: 'API Key sem autorização para este modelo.', tip: 'Verifique os planos ativos na conta do provider.' },
-  'network': { cause: 'Falha de conexão com a API.', tip: 'Verifique sua internet e tente novamente.' },
-  'timeout': { cause: 'A requisição demorou demais e foi cancelada.', tip: 'Tente um modelo mais rápido (Gemini Flash) ou reduza o briefing.' },
-  'overloaded': { cause: 'O servidor do modelo está sobrecarregado.', tip: 'Aguarde 1–2 minutos e tente novamente.' },
-  'openrouter': { cause: 'Erro no gateway OpenRouter.', tip: 'Verifique os créditos em openrouter.ai/credits.' },
 };

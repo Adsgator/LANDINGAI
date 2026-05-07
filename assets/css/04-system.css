@@ -1311,7 +1311,27 @@
   border-color: var(--border);
 }
 
-/* Em 04-system.css */
+/* ── AI Log Modal Animation ────────────────────────────────── */
+.ai-log-overlay {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ai-log-overlay.is-visible {
+  opacity: 1;
+}
+
+.ai-log-modal {
+  transform: scale(0.95) translateY(8px);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  opacity: 0;
+}
+
+.ai-log-overlay.is-visible .ai-log-modal {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+
 .ai-log-overlay {
   opacity: 0;
   transition: opacity 0.2s ease;

@@ -350,6 +350,181 @@ Object.assign(window.App, {
     }
   },
 
+  buildIntakePrompt(briefing) {
+    return `
+Você é um estrategista sênior de marketing digital especializado em landing pages de conversão.
+
+Leia o briefing abaixo e extraia TODAS as informações disponíveis.
+Retorne um JSON válido com EXATAMENTE esta estrutura.
+Para campos sem informação no briefing: retorne string vazia "".
+NUNCA invente informações que não estejam no briefing.
+Responda APENAS com o JSON, sem markdown, sem explicação.
+
+{
+  "step1": {
+    "nome_profissional": "",
+    "nome_marca": "",
+    "nicho": "",
+    "segmento": "",
+    "cidade": "",
+    "estado": "",
+    "proposta_valor": "",
+    "missao": "",
+    "anos_experiencia": "",
+    "formacao": "",
+    "certificacoes": ""
+  },
+  "step2": {
+    "avatar_nome": "",
+    "avatar_idade": "",
+    "avatar_genero": "",
+    "avatar_profissao": "",
+    "avatar_renda": "",
+    "dor_principal": "",
+    "dores_secundarias": "",
+    "desejo_principal": "",
+    "objecao_preco": "",
+    "objecao_tempo": "",
+    "objecao_confianca": "",
+    "objecao_resultado": "",
+    "gatilhos_mentais": ""
+  },
+  "step3": {
+    "servico_principal": "",
+    "servico_descricao": "",
+    "como_funciona_passo1": "",
+    "como_funciona_passo2": "",
+    "como_funciona_passo3": "",
+    "como_funciona_passo4": "",
+    "modalidade": "",
+    "duracao_sessao": "",
+    "frequencia": "",
+    "formato": "",
+    "resultado_esperado": "",
+    "prazo_resultado": "",
+    "servicos_adicionais": ""
+  },
+  "step4": {
+    "depoimento1_nome": "",
+    "depoimento1_texto": "",
+    "depoimento1_resultado": "",
+    "depoimento2_nome": "",
+    "depoimento2_texto": "",
+    "depoimento2_resultado": "",
+    "depoimento3_nome": "",
+    "depoimento3_texto": "",
+    "depoimento3_resultado": "",
+    "casos_de_sucesso": "",
+    "perfil_google": "",
+    "nota_google": "",
+    "quantidade_avaliacoes": "",
+    "instagram": "",
+    "seguidores": "",
+    "midia_aparicoes": ""
+  },
+  "step5": {
+    "diferencial1_titulo": "",
+    "diferencial1_descricao": "",
+    "diferencial2_titulo": "",
+    "diferencial2_descricao": "",
+    "diferencial3_titulo": "",
+    "diferencial3_descricao": "",
+    "diferencial4_titulo": "",
+    "diferencial4_descricao": "",
+    "metodologia_propria": "",
+    "garantia": "",
+    "atendimento_diferenciado": ""
+  },
+  "step6": {
+    "whatsapp": "",
+    "whatsapp_mensagem_padrao": "",
+    "email": "",
+    "preco_plano1_nome": "",
+    "preco_plano1_valor": "",
+    "preco_plano1_descricao": "",
+    "preco_plano2_nome": "",
+    "preco_plano2_valor": "",
+    "preco_plano2_descricao": "",
+    "preco_plano3_nome": "",
+    "preco_plano3_valor": "",
+    "preco_plano3_descricao": "",
+    "forma_pagamento": "",
+    "desconto_pix": "",
+    "parcelas": "",
+    "trial_gratuito": "",
+    "horario_atendimento": ""
+  },
+  "step7": {
+    "cor_primaria": "",
+    "cor_secundaria": "",
+    "cor_acento": "",
+    "cor_fundo": "",
+    "estilo_visual": "",
+    "fonte_titulo": "",
+    "fonte_corpo": "",
+    "tom_comunicacao": "",
+    "referencias_visuais": "",
+    "logo_descricao": "",
+    "imagens_disponiveis": "",
+    "video_disponivel": ""
+  },
+  "step8": {
+    "titulo_seo": "",
+    "descricao_seo": "",
+    "palavra_chave_principal": "",
+    "palavras_chave_secundarias": "",
+    "dominio_sugerido": "",
+    "schema_tipo": "",
+    "og_titulo": "",
+    "og_descricao": ""
+  }
+}
+
+BRIEFING DO CLIENTE:
+${briefing}
+`;
+  },
+
+  async applyIntakeJSON(jsonString) {
+    let data;
+    try {
+      const clean = jsonString.replace(/```json|```/g, '').trim();
+      data = JSON.parse(clean);
+    } catch (e) {
+      this.showToast('Erro ao interpretar resposta da IA. Tente novamente.', 'error');
+      return;
+    }
+
+    // Mapeia cada campo do JSON para o state
+    const B = this.state.briefing;
+    const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8'];
+
+    steps.forEach(step => {
+      if (!data[step]) return;
+      Object.entries(data[step]).forEach(([campo, valor]) => {
+        if (valor !== '' && valor !== null && valor !== undefined) {
+          B[campo] = valor;
+        }
+      });
+    });
+
+    // Atualiza segmento do projeto na sidebar
+    if (data.step1?.nicho) {
+      this.state.projeto_segmento = data.step1.nicho;
+      document.getElementById('project-segment').textContent = data.step1.nicho;
+    }
+
+    this.saveState();
+    this.updateProgressBar();
+    this.renderStepsNav();
+    this.showToast('IA preencheu todos os campos disponíveis!', 'success');
+  },
+
+  countFilledFields() {
+    const B = this.state.briefing || {};
+    return Object.values(B).filter(v => v && String(v).trim()).length;
+  },
+
   async runArtAnalysis() {
     const B = this.B;
     if (!B) return;
@@ -563,7 +738,7 @@ A ficha deve incluir:
 1. Estrutura de arquivos do projeto Astro
 2. Design System completo (tokens Tailwind, cores, tipografia)
 3. Componentes necessários com props
-4. Copy de cada seção (H1, subtítulo, CTAs, textos dos blocos)
+4. Copy de cada seção (H1, subtítulo, CTAs, textos dos bloccos)
 5. Configurações do .env
 6. Integrações ativas e como configurar
 7. Instruções de deploy na Vercel
@@ -612,7 +787,7 @@ ${doc1}`;
 
     try {
       const doc1 = this.buildDoc1();
-      const slug = (this.state.projeto_nome || 'projeto').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const slug = (this.B.slug || 'projeto').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
       const blob = new Blob([doc1], { type: 'text/markdown;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -733,180 +908,5 @@ ${doc1}`;
     arr.splice(index, 1);
     this.setField(field, arr);
     this.renderScreen();
-  },
-
-  buildIntakePrompt(briefing) {
-    return `
-Você é um estrategista sênior de marketing digital especializado em landing pages de conversão.
-
-Leia o briefing abaixo e extraia TODAS as informações disponíveis.
-Retorne um JSON válido com EXATAMENTE esta estrutura.
-Para campos sem informação no briefing: retorne string vazia "".
-NUNCA invente informações que não estejam no briefing.
-Responda APENAS com o JSON, sem markdown, sem explicação.
-
-{
-  "step1": {
-    "nome_profissional": "",
-    "nome_marca": "",
-    "nicho": "",
-    "segmento": "",
-    "cidade": "",
-    "estado": "",
-    "proposta_valor": "",
-    "missao": "",
-    "anos_experiencia": "",
-    "formacao": "",
-    "certificacoes": ""
-  },
-  "step2": {
-    "avatar_nome": "",
-    "avatar_idade": "",
-    "avatar_genero": "",
-    "avatar_profissao": "",
-    "avatar_renda": "",
-    "dor_principal": "",
-    "dores_secundarias": "",
-    "desejo_principal": "",
-    "objecao_preco": "",
-    "objecao_tempo": "",
-    "objecao_confianca": "",
-    "objecao_resultado": "",
-    "gatilhos_mentais": ""
-  },
-  "step3": {
-    "servico_principal": "",
-    "servico_descricao": "",
-    "como_funciona_passo1": "",
-    "como_funciona_passo2": "",
-    "como_funciona_passo3": "",
-    "como_funciona_passo4": "",
-    "modalidade": "",
-    "duracao_sessao": "",
-    "frequencia": "",
-    "formato": "",
-    "resultado_esperado": "",
-    "prazo_resultado": "",
-    "servicos_adicionais": ""
-  },
-  "step4": {
-    "depoimento1_nome": "",
-    "depoimento1_texto": "",
-    "depoimento1_resultado": "",
-    "depoimento2_nome": "",
-    "depoimento2_texto": "",
-    "depoimento2_resultado": "",
-    "depoimento3_nome": "",
-    "depoimento3_texto": "",
-    "depoimento3_resultado": "",
-    "casos_de_sucesso": "",
-    "perfil_google": "",
-    "nota_google": "",
-    "quantidade_avaliacoes": "",
-    "instagram": "",
-    "seguidores": "",
-    "midia_aparicoes": ""
-  },
-  "step5": {
-    "diferencial1_titulo": "",
-    "diferencial1_descricao": "",
-    "diferencial2_titulo": "",
-    "diferencial2_descricao": "",
-    "diferencial3_titulo": "",
-    "diferencial3_descricao": "",
-    "diferencial4_titulo": "",
-    "diferencial4_descricao": "",
-    "metodologia_propria": "",
-    "garantia": "",
-    "atendimento_diferenciado": ""
-  },
-  "step6": {
-    "whatsapp": "",
-    "whatsapp_mensagem_padrao": "",
-    "email": "",
-    "preco_plano1_nome": "",
-    "preco_plano1_valor": "",
-    "preco_plano1_descricao": "",
-    "preco_plano2_nome": "",
-    "preco_plano2_valor": "",
-    "preco_plano2_descricao": "",
-    "preco_plano3_nome": "",
-    "preco_plano3_valor": "",
-    "preco_plano3_descricao": "",
-    "forma_pagamento": "",
-    "desconto_pix": "",
-    "parcelas": "",
-    "trial_gratuito": "",
-    "horario_atendimento": ""
-  },
-  "step7": {
-    "cor_primaria": "",
-    "cor_secundaria": "",
-    "cor_acento": "",
-    "cor_fundo": "",
-    "estilo_visual": "",
-    "fonte_titulo": "",
-    "fonte_corpo": "",
-    "tom_comunicacao": "",
-    "referencias_visuais": "",
-    "logo_descricao": "",
-    "imagens_disponiveis": "",
-    "video_disponivel": ""
-  },
-  "step8": {
-    "titulo_seo": "",
-    "descricao_seo": "",
-    "palavra_chave_principal": "",
-    "palavras_chave_secundarias": "",
-    "dominio_sugerido": "",
-    "schema_tipo": "",
-    "og_titulo": "",
-    "og_descricao": ""
-  }
-}
-
-BRIEFING DO CLIENTE:
-${briefing}
-`;
-  },
-
-  async applyIntakeJSON(jsonString) {
-    let data;
-    try {
-      const clean = jsonString.replace(/```json|```/g, '').trim();
-      data = JSON.parse(clean);
-    } catch (e) {
-      this.showToast('Erro ao interpretar resposta da IA. Tente novamente.', 'error');
-      return;
-    }
-
-    // Mapeia cada campo do JSON para o state
-    const B = this.state.briefing;
-    const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8'];
-
-    steps.forEach(step => {
-      if (!data[step]) return;
-      Object.entries(data[step]).forEach(([campo, valor]) => {
-        if (valor !== '' && valor !== null && valor !== undefined) {
-          B[campo] = valor;
-        }
-      });
-    });
-
-    // Atualiza segmento do projeto na sidebar
-    if (data.step1?.nicho) {
-      this.state.projeto_segmento = data.step1.nicho;
-      document.getElementById('project-segment').textContent = data.step1.nicho;
-    }
-
-    this.saveState();
-    this.updateProgressBar();
-    this.renderStepsNav();
-    this.showToast('IA preencheu todos os campos disponíveis!', 'success');
-  },
-
-  countFilledFields() {
-    const B = this.state.briefing || {};
-    return Object.values(B).filter(v => v && String(v).trim()).length;
   }
 });

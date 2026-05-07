@@ -182,8 +182,8 @@ Object.assign(window.App, {
     if (!this.state.briefing) this.state.briefing = {};
     this.state.briefing[key] = value;
     this.saveState();
-    this.updateProgressBar();    // ← adicionar
-    this.updateStepsNavBadges(); // ← adicionar (ver abaixo)
+    this.updateProgressBar();
+    this.updateStepsNavBadges();
   },
 
   toggleArray(field, value) {

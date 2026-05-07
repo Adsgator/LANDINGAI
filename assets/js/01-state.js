@@ -181,7 +181,7 @@ Object.assign(window.App, {
   setField(key, value) {
     if (!this.state.briefing) this.state.briefing = {};
     this.state.briefing[key] = value;
-    this.saveState();
+    App.state.saveState();
     this.updateProgressBar();
     this.updateStepsNavBadges();
   },

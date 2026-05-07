@@ -37,7 +37,7 @@ const AI_MODELS = {
   },
   'gemini-2.5-pro': {
     label: 'Gemini 2.5 Pro',
-    provider: 'gemini', group: 'Google Gemini', tier: 'paid',
+    provider: 'gemini', group: 'Google Gemini', tier: 'free',
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
     maxTokens: 65536, temp: 0.6,
   },
@@ -52,7 +52,7 @@ const AI_MODELS = {
   },
   'gemini-3.1-pro': {
     label: 'Gemini 3.1 Pro',
-    provider: 'gemini', group: 'Google Gemini', tier: 'paid',
+    provider: 'gemini', group: 'Google Gemini', tier: 'free',
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro:generateContent',
     maxTokens: 65536, temp: 0.6,
   },

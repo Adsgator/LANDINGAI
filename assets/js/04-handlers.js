@@ -670,8 +670,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       { id: 1, icon: 'file-text', label: 'Lendo briefing completo...' },
       { id: 2, icon: 'layout', label: 'Definindo blocos e ordem narrativa...' },
       { id: 3, icon: 'sparkles', label: 'Gerando copy de cada bloco...' },
-      { id: 4, icon: 'monitor', label: 'Gerando wireframe visual...' },
-      { id: 5, icon: 'check-circle', label: 'Finalizando estrutura...' },
+      { id: 4, icon: 'check-circle', label: 'Finalizando estrutura...' },
     ]);
 
     try {
@@ -687,18 +686,14 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       const resultado = await this.callAI(prompt);
 
       this.aiLogStep(4);
-      const wireframeHTML = this.gerarWireframeHTML(resultado);
-      await this.aiLogDelay(200);
-
-      this.aiLogStep(5);
       this.setField('estrutura_rascunho', resultado);
-      this.setField('estrutura_wireframe', wireframeHTML);
+      this.setField('estrutura_wireframe', ''); // Limpar wireframe antigo se existir
       await this.aiLogDelay(400);
 
       this.aiLogDone();
       this.closeAILog();
       this.renderScreen();
-      this.showToast('Estrutura gerada! Revise e aprove.', 'success');
+      this.showToast('Estrutura gerada! Revise os blocos e refine se necessário.', 'success');
     } catch (err) {
       this.aiLogError(this.state.aiLog.active, err.message);
       setTimeout(() => {
@@ -710,41 +705,76 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
 
   buildEstruturaPrompt(doc1) {
     return `
-Você é um Copywriter Sênior e Arquiteto de Conversão especializado em landing pages para prestadores de serviço.
+Você é um Copywriter Sênior e Arquiteto de Conversão especializado em landing pages de alta conversão para prestadores de serviço.
 
-Leia o briefing abaixo e defina a estrutura narrativa completa da landing page.
+## DADOS DO CLIENTE — USE EXATAMENTE ESTES, NÃO INVENTE NADA
 
-REGRAS:
-- Só inclua blocos com dados reais disponíveis no briefing.
-- Nunca inclua depoimentos sem depoimentos reais, avaliações Google sem perfil confirmado, mapa sem endereço autorizado.
-- A estrutura deve seguir uma narrativa: cada bloco prepara o próximo.
-- A H1 do Hero deve espelhar a dor de busca — não o nome do serviço.
-- Copy sempre em primeira pessoa ("Eu atendo...", nunca "Maria atende...").
-- CTAs específicos — nunca "Saiba mais" ou "Entre em contato".
-
-BLOCOS DISPONÍVEIS (use apenas os que fazem sentido):
-Hero | Serviço Principal | Como Funciona | Diferenciais | Planos e Preços | Prova Social — Depoimentos | Avaliações Google | Feed Instagram | FAQ | Localização + Mapa | CTA Final | Rodapé | Cabeçalho
-
-Para cada bloco selecionado, entregue EXATAMENTE neste formato:
+${doc1.substring(0, 10000)}
 
 ---
-### BLOCO N: [Nome do Bloco]
-**Objetivo narrativo:** [O que este bloco faz psicologicamente e como se conecta com o anterior]
+
+## SUA TAREFA
+
+Leia os dados acima e gere a estrutura narrativa completa da landing page.
+
+---
+
+## REGRAS OBRIGATÓRIAS
+
+1. **PRIMEIRA PESSOA DO SINGULAR EM TODA A COPY** — "Eu ajudo...", "Meu método...", "Atendo...", nunca "Ela atende...", "O profissional oferece..."
+2. **H1 DO HERO = DOR DE BUSCA** — Não use o nome do serviço como H1. Use a dor ou o desejo do cliente.
+3. **CTAs ESPECÍFICOS** — Nunca "Saiba mais" ou "Entre em contato". Use "Agendar minha consulta", "Quero começar agora", etc.
+4. **APENAS BLOCOS COM DADOS REAIS** — Se não há depoimentos no briefing, não inclua bloco de depoimentos. Se não há endereço, não inclua mapa.
+5. **NARRATIVA CONECTADA** — Cada bloco prepara psicologicamente o próximo.
+6. **MÁXIMO 9 BLOCOS** incluindo cabeçalho e rodapé.
+
+---
+
+## BLOCOS DISPONÍVEIS
+
+Use apenas os que fazem sentido com os dados disponíveis:
+
+- Cabeçalho (sempre inclua)
+- Hero
+- Serviço Principal
+- Como Funciona
+- Diferenciais
+- Planos e Preços
+- Prova Social — Depoimentos (só se há depoimentos reais)
+- Avaliações Google (só se há perfil Google confirmado)
+- Feed Instagram (só se há @ confirmado)
+- FAQ
+- Localização + Mapa (só se há endereço autorizado)
+- CTA Final (sempre inclua antes do rodapé)
+- Rodapé (sempre inclua)
+
+---
+
+## FORMATO DE SAÍDA — SIGA EXATAMENTE
+
+Responda APENAS com os blocos no formato abaixo. Nenhum texto antes ou depois.
+
+---
+### BLOCO 1: [Nome do Bloco]
+**Objetivo narrativo:** [O que este bloco faz psicologicamente e como prepara o próximo]
 **Copy sugerida:**
-- Título: "[texto]"
-- Subtítulo: "[texto]"
-- CTA (se aplicável): "[texto do botão]"
-**Wireframe:**
-[Descreva o layout: o que fica à esquerda, à direita, o que ocupa full-width, onde vai a foto]
-**Condicional:** [Por que este bloco foi incluído — qual dado do briefing justifica]
+- Título: "[texto exato em 1ª pessoa ou focado na dor]"
+- Subtítulo: "[texto de apoio, máx 2 linhas]"
+- CTA: "[texto do botão — específico e com verbo de ação]"
+- Body (se houver): "[copy adicional, sempre 1ª pessoa]"
+**Layout sugerido:** [o que fica à esquerda, à direita, full-width, onde vai imagem]
+**Condicional:** [qual dado do briefing justifica este bloco]
+
 ---
+### BLOCO 2: [Nome do Bloco]
+...
 
-Termine com:
+---
 ### SEQUÊNCIA FINAL
-[Lista numerada dos blocos na ordem]
+1. [Bloco 1]
+2. [Bloco 2]
+...
 
-BRIEFING:
-${doc1.substring(0, 12000)}
     `.trim();
   },
 
@@ -757,6 +787,88 @@ ${doc1.substring(0, 12000)}
     this.renderStepsNav();
   },
 
+  async refinarEstrutura() {
+    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
+    if (!hasKey) { this.showToast('Configure uma API Key primeiro.', 'warning'); return; }
+
+    const feedbackInput = document.getElementById('estrutura-feedback-input');
+    const feedback = feedbackInput?.value?.trim();
+
+    if (!feedback) {
+      this.showToast('Descreva o que deseja ajustar antes de refinar.', 'warning');
+      return;
+    }
+
+    const rascunhoAtual = this.B?.estrutura_rascunho;
+    if (!rascunhoAtual?.trim()) {
+      this.showToast('Gere a estrutura antes de refinar.', 'warning');
+      return;
+    }
+
+    this.openAILog('Refinando Estrutura com IA', [
+      { id: 1, icon: 'message-square', label: 'Analisando seu feedback...' },
+      { id: 2, icon: 'refresh-cw', label: 'Aplicando ajustes na copy...' },
+      { id: 3, icon: 'check-circle', label: 'Estrutura refinada!' },
+    ]);
+
+    try {
+      this.aiLogStep(1);
+      await this.aiLogDelay(300);
+
+      const prompt = `
+Você é um Copywriter Sênior especializado em landing pages de alta conversão.
+
+## ESTRUTURA ATUAL DA LANDING PAGE
+
+${rascunhoAtual}
+
+---
+
+## FEEDBACK DO CLIENTE
+
+"${feedback}"
+
+---
+
+## SUA TAREFA
+
+Analise o feedback acima e refine a estrutura.
+
+REGRAS:
+1. Aplique APENAS as mudanças que o feedback pede
+2. Mantenha os blocos não mencionados EXATAMENTE como estão
+3. SEMPRE use 1ª pessoa do singular em toda a copy
+4. Mantenha o mesmo formato de saída (### BLOCO N: Nome)
+5. Não adicione nem remova blocos a menos que o feedback peça explicitamente
+6. CTAs sempre específicos, nunca genéricos
+
+Retorne a estrutura COMPLETA com os ajustes aplicados, no mesmo formato.
+      `.trim();
+
+      this.aiLogStep(2);
+      const resultado = await this.callAI(prompt);
+
+      this.setField('estrutura_rascunho', resultado);
+      this.setField('estrutura_wireframe', ''); // Limpar wireframe legado
+
+      if (feedbackInput) feedbackInput.value = '';
+
+      this.aiLogStep(3);
+      await this.aiLogDelay(400);
+
+      this.aiLogDone();
+      this.closeAILog();
+      this.renderScreen();
+      this.showToast('Estrutura refinada! Revise novamente.', 'success');
+    } catch (err) {
+      this.aiLogError(this.state.aiLog.active, err.message);
+      setTimeout(() => {
+        this.closeAILog();
+        this.showToast('Erro ao refinar: ' + err.message, 'error');
+      }, 1200);
+    }
+  },
+
   /* ----------------------------------------------------------
      Geração do DOC-IMPL
   ---------------------------------------------------------- */
@@ -767,38 +879,58 @@ ${doc1.substring(0, 12000)}
 
     this.state.isGenerating = true;
 
-    this.openAILog('Gerando Ficha de Implementação', [
-      { id: 1, icon: 'file-text', label: 'Consolidando briefing completo...' },
-      { id: 2, icon: 'code', label: 'Preparando prompt de implementação...' },
-      { id: 3, icon: 'sparkles', label: 'IA gerando ficha técnica (60–120s)...' },
-      { id: 4, icon: 'download', label: 'Validando e baixando...' },
+    const slug = (this.B.slug || this.B.nome_cliente?.toLowerCase().replace(/\s+/g, '-') || 'projeto')
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-z0-9-]/g, '');
+
+    this.openAILog('Gerando Ficha de Implementação em 4 Partes', [
+      { id: 1, icon: 'package',    label: 'PARTE 1 — Fundação & Design System (30–60s)...' },
+      { id: 2, icon: 'image',      label: 'PARTE 2 — Assets & Componentes Globais (30–60s)...' },
+      { id: 3, icon: 'layers',     label: 'PARTE 3 — Seções da Landing Page (30–60s)...' },
+      { id: 4, icon: 'file-code',  label: 'PARTE 4 — Página Final & Deploy (30–60s)...' },
+      { id: 5, icon: 'download',   label: 'Baixando os 4 arquivos...' },
     ]);
 
     try {
-      this.aiLogStep(1);
-      const doc1 = this.buildDoc1();
+      // ── PARTE 1: Fundação ─────────────────────────────────────
+      this.aiLogStep(1, 'Gerando configuração base e design system...');
+      const parte1 = await this.callAI(this.buildImplPromptParte1());
       await this.aiLogDelay(300);
 
-      this.aiLogStep(2);
-      const prompt = this.buildImplPrompt();
+      // ── PARTE 2: Assets & Componentes Globais ────────────────
+      this.aiLogStep(2, 'Gerando componentes de layout...');
+      const parte2 = await this.callAI(this.buildImplPromptParte2());
+      await this.aiLogDelay(300);
 
-      this.aiLogStep(3, 'Isso pode levar 60–120 segundos...');
-      const res = await this.callAI(prompt);
+      // ── PARTE 3: Seções ───────────────────────────────────────
+      this.aiLogStep(3, 'Gerando seções específicas do projeto...');
+      const parte3 = await this.callAI(this.buildImplPromptParte3());
+      await this.aiLogDelay(300);
 
-      this.aiLogStep(4);
-      this.state.lastDocImpl = res;
-      const slug = (this.B.slug || this.B.nome_cliente?.toLowerCase().replace(/\s+/g, '-') || 'projeto')
-        .replace(/[^a-z0-9-]/g, '');
-      this.downloadText(res, `doc-impl-${slug}.md`, 'text/markdown');
+      // ── PARTE 4: Página Final ─────────────────────────────────
+      this.aiLogStep(4, 'Gerando página final e configurações de deploy...');
+      const parte4 = await this.callAI(this.buildImplPromptParte4());
+      await this.aiLogDelay(300);
+
+      // ── Download dos 4 arquivos ───────────────────────────────
+      this.aiLogStep(5);
       await this.aiLogDelay(400);
+
+      this.downloadText(parte1, `doc-impl-${slug}-parte1-fundacao.md`,   'text/markdown');
+      await this.aiLogDelay(600);
+      this.downloadText(parte2, `doc-impl-${slug}-parte2-componentes.md`, 'text/markdown');
+      await this.aiLogDelay(600);
+      this.downloadText(parte3, `doc-impl-${slug}-parte3-secoes.md`,      'text/markdown');
+      await this.aiLogDelay(600);
+      this.downloadText(parte4, `doc-impl-${slug}-parte4-pagina.md`,      'text/markdown');
 
       this.aiLogDone();
       this.state.isGenerating = false;
-      this.showNotification('AIGator', 'Ficha de Implementação gerada!');
+      this.showNotification('AIGator', '4 arquivos de implementação gerados!');
 
       setTimeout(() => {
         this.closeAILog();
-        this.showToast('DOC-IMPL gerado e baixado com sucesso!', 'success');
+        this.showToast('4 arquivos baixados! Implemente na ordem: Parte 1 → 2 → 3 → 4', 'success', 6000);
         this.renderScreen();
       }, 600);
 
@@ -811,6 +943,330 @@ ${doc1.substring(0, 12000)}
         this.showToast('Erro ao gerar: ' + e.message, 'error');
       }, 1200);
     }
+  },
+
+  /* ----------------------------------------------------------
+     Prompts de Implementação — 4 Partes Separadas
+     Cada parte gera 1 arquivo .md independente para download.
+     O Roo implementa na ordem: Parte 1 → 2 → 3 → 4.
+  ---------------------------------------------------------- */
+
+  buildImplPromptParte1() {
+    const B = this.B || {};
+    const fichaArte = (() => {
+      try { return typeof B.ficha_direcao_arte === 'object' ? B.ficha_direcao_arte : JSON.parse(B.ficha_direcao_arte || '{}'); }
+      catch { return {}; }
+    })();
+
+    const corPrimaria   = B.arte_cor_principal || fichaArte?.paleta?.primaria   || '#6366f1';
+    const corSecundaria = B.arte_cor_secundaria || fichaArte?.paleta?.secundaria || '#8b5cf6';
+    const corTexto      = fichaArte?.paleta?.texto     || '#1e293b';
+    const corFundo      = fichaArte?.paleta?.fundo     || '#ffffff';
+    const fonteDisplay  = fichaArte?.tipografia?.display || 'Inter';
+    const fonteBody     = fichaArte?.tipografia?.body    || 'Inter';
+    const nomeSlug      = (B.nome_cliente || 'projeto').toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+
+    return `
+Você é um engenheiro front-end sênior especializado em Astro 4.x e Tailwind CSS 3.x.
+
+## SUA TAREFA — PARTE 1 DE 4: FUNDAÇÃO & DESIGN SYSTEM
+
+Gere APENAS os arquivos de fundação do projeto. Código COMPLETO, sem placeholders, sem comentários do tipo "adicione aqui".
+
+## DADOS DO PROJETO
+
+- **Nome do projeto (slug):** ${nomeSlug}
+- **Nome do cliente:** ${B.nome_cliente || 'Projeto'}
+- **Domínio:** ${B.dominio || '[DOMINIO]'}
+- **Segmento:** ${B.segmento || ''}
+- **Cor primária:** ${corPrimaria}
+- **Cor secundária:** ${corSecundaria}
+- **Cor do texto:** ${corTexto}
+- **Cor do fundo:** ${corFundo}
+- **Fonte display (títulos):** ${fonteDisplay}
+- **Fonte body (corpo):** ${fonteBody}
+- **Tom visual:** ${fichaArte?.tom_visual || 'moderno e profissional'}
+
+## STACK OBRIGATÓRIA
+
+- Astro 4.x (output: hybrid)
+- Tailwind CSS 3.x
+- GSAP 3.x + ScrollTrigger
+- Lenis (smooth scroll)
+- Lucide React
+- Deploy: Vercel
+
+## REGRAS DE CÓDIGO — DESIGN SYSTEM
+
+1. **PROIBIDO usar px** para tipografia, espaçamento ou layout — use APENAS rem
+2. Tailwind theme estende variáveis CSS — nunca hardcode valores de cor
+3. globals.css define TODAS as variáveis CSS com os valores reais acima
+4. Button.astro já usa as variáveis — nenhuma cor hardcoded
+5. Layout.astro includes preconnect para as Google Fonts definidas
+6. Todo código deve passar em \`astro check\` sem erros
+
+## ARQUIVOS A GERAR (nesta ordem)
+
+### \`package.json\`
+### \`astro.config.mjs\`
+### \`tailwind.config.js\`
+### \`.env.example\`
+### \`src/styles/globals.css\`
+(Variáveis CSS com valores reais acima + reset + utilitários base)
+### \`src/layouts/Layout.astro\`
+(Head completo: meta charset, viewport, title, favicon, Google Fonts preconnect, globals.css import, slot)
+### \`src/components/ui/Button.astro\`
+(Props: href, variant: 'primary'|'secondary'|'ghost'|'outline', size: 'sm'|'md'|'lg', ariaLabel — usa variáveis CSS)
+
+---
+
+Gere APENAS estes 7 arquivos, com código 100% completo e funcional.
+Formato de resposta: título \`### \\\`caminho/arquivo\\\`\` seguido do bloco de código.
+    `.trim();
+  },
+
+  buildImplPromptParte2() {
+    const B = this.B || {};
+    const fichaArte = (() => {
+      try { return typeof B.ficha_direcao_arte === 'object' ? B.ficha_direcao_arte : JSON.parse(B.ficha_direcao_arte || '{}'); }
+      catch { return {}; }
+    })();
+
+    // Extrair imagens necessárias da estrutura aprovada
+    const estrutura = B.estrutura_aprovada || B.estrutura_rascunho || '';
+    const temHero      = /hero/i.test(estrutura);
+    const temServico   = /servi[cç]/i.test(estrutura);
+    const temResultado = /resultado|transforma/i.test(estrutura);
+
+    const imagensNecessarias = [
+      temHero      && `- \`src/assets/images/hero-principal.webp\` — Foto principal do profissional ou imagem de impacto do Hero. Dimensões ideais: 1200×900px.`,
+      temServico   && `- \`src/assets/images/servico-principal.webp\` — Imagem do serviço ou ambiente profissional. Dimensões ideais: 800×600px.`,
+      temResultado && `- \`src/assets/images/resultado-transformacao.webp\` — Imagem inspiradora de resultado/transformação. Dimensões ideais: 1200×800px.`,
+      `- \`public/og-image.jpg\` — Imagem Open Graph para redes sociais. Dimensões: 1200×630px.`,
+      `- \`public/favicon.svg\` — Ícone do site. Pode ser uma versão simplificada do logo.`,
+    ].filter(Boolean).join('\n');
+
+    return `
+Você é um engenheiro front-end sênior especializado em Astro 4.x.
+
+## SUA TAREFA — PARTE 2 DE 4: ASSETS & COMPONENTES GLOBAIS
+
+Esta parte assume que a PARTE 1 já foi implementada.
+Os arquivos \`globals.css\`, \`Layout.astro\` e \`Button.astro\` já existem.
+
+## DADOS DO CLIENTE
+
+- **Nome:** ${B.nome_cliente || 'Profissional'}
+- **Segmento:** ${B.segmento || ''}
+- **WhatsApp:** ${B.whatsapp || ''}
+- **E-mail:** ${B.email || ''}
+- **Instagram:** ${B.instagram || ''}
+- **Domínio:** ${B.dominio || '[DOMINIO]'}
+- **Cor primária:** ${B.arte_cor_principal || fichaArte?.paleta?.primaria || '#6366f1'}
+- **Tom visual:** ${fichaArte?.tom_visual || 'moderno e profissional'}
+- **Logo disponível:** ${B.arte_logo === 'svg' ? 'SVG' : B.arte_logo === 'png' ? 'PNG' : 'Sem logo — usar texto'}
+
+## PRÉ-REQUISITO: ESTRUTURA DE PASTAS E IMAGENS PLACEHOLDER
+
+Antes de gerar qualquer componente, o Roo deve:
+1. Criar a pasta \`src/assets/images/\`
+2. Criar um arquivo SVG placeholder para cada imagem necessária (para o build não quebrar)
+
+### Imagens necessárias neste projeto:
+${imagensNecessarias}
+
+**Instrução para o Roo:** Para cada imagem .webp listada, criar um SVG placeholder temporário com o mesmo nome (ex: \`hero-principal.webp\` → criar \`hero-principal.svg\` na mesma pasta como placeholder). As imagens reais devem ser inseridas pelo cliente antes do go-live.
+
+## ARQUIVOS A GERAR (nesta ordem)
+
+### \`src/assets/images/.gitkeep\`
+(Arquivo vazio para manter a pasta no git)
+
+### \`src/components/SEO.astro\`
+(Props: title, description, image?, canonicalURL? — gera todas as meta tags OG, Twitter Card, canonical)
+
+### \`src/components/Header.astro\`
+(Logo ou nome em texto, navegação interna com smooth scroll para IDs das seções, CTA WhatsApp, menu mobile hamburger funcional com Tailwind)
+
+### \`src/components/Footer.astro\`
+(Nome da empresa, links de navegação, WhatsApp, e-mail, Instagram se disponível, copyright, texto de rodapé)
+
+### \`src/components/WhatsAppFloat.astro\`
+(Botão flutuante WhatsApp fixo no canto inferior direito — link \`wa.me/${B.whatsapp || '[WHATSAPP]'}\`)
+
+### \`src/scripts/animations.ts\`
+(Inicialização GSAP + ScrollTrigger + Lenis — exporta função \`initAnimations()\` que o index.astro chama)
+
+---
+
+REGRAS:
+1. Código 100% completo, sem placeholders de lógica
+2. PROIBIDO px — use rem
+3. Responsive (mobile-first)
+4. ARIA labels em todos os elementos interativos
+5. WhatsApp link com mensagem pré-preenchida: "${B.whatsapp_mensagem_padrao || 'Olá! Quero saber mais.'}"
+
+Formato: título \`### \\\`caminho/arquivo\\\`\` seguido do bloco de código.
+    `.trim();
+  },
+
+  buildImplPromptParte3() {
+    const B = this.B || {};
+    const fichaArte = (() => {
+      try { return typeof B.ficha_direcao_arte === 'object' ? B.ficha_direcao_arte : JSON.parse(B.ficha_direcao_arte || '{}'); }
+      catch { return {}; }
+    })();
+
+    const estrutura = B.estrutura_aprovada || B.estrutura_rascunho || '';
+
+    return `
+Você é um Copywriter Sênior e engenheiro front-end especializado em landing pages de alta conversão em Astro 4.x.
+
+## SUA TAREFA — PARTE 3 DE 4: SEÇÕES DA LANDING PAGE
+
+Esta parte assume que as PARTES 1 e 2 já foram implementadas.
+\`Button.astro\`, \`Header.astro\`, \`Footer.astro\`, \`globals.css\` já existem e funcionam.
+
+## DADOS DO CLIENTE
+
+- **Nome:** ${B.nome_cliente || 'Profissional'}
+- **Segmento:** ${B.segmento || ''}
+- **Nicho:** ${B.nicho || ''}
+- **WhatsApp:** ${B.whatsapp || ''}
+- **Mensagem WhatsApp:** ${B.whatsapp_mensagem_padrao || 'Olá! Quero saber mais.'}
+- **Cor primária:** ${B.arte_cor_principal || fichaArte?.paleta?.primaria || '#6366f1'}
+- **Tom visual:** ${fichaArte?.tom_visual || 'moderno e profissional'}
+- **Intensidade visual:** ${B.arte_intensidade || fichaArte?.intensidade || 'medio'}
+- **Elementos visuais:** ${fichaArte?.elementos_visuais || ''}
+- **Tipografia display:** ${fichaArte?.tipografia?.display || 'Inter'}
+
+## ESTRUTURA DA PÁGINA APROVADA (COPY REAL — USE EXATAMENTE ESTA)
+
+${estrutura.substring(0, 6000)}
+
+---
+
+## INSTRUÇÕES DE GERAÇÃO
+
+Para CADA bloco da estrutura acima, gere 1 componente .astro em \`src/components/sections/\`.
+
+REGRAS CRÍTICAS:
+1. **USE A COPY REAL DA ESTRUTURA** — não invente títulos, subtítulos ou CTAs diferentes
+2. **PRIMEIRA PESSOA DO SINGULAR** em toda a copy — "Eu ajudo...", nunca "Ela atende..."
+3. **CTAs com links reais** — WhatsApp \`wa.me/${B.whatsapp || '[WHATSAPP]'}\` com mensagem encodada
+4. **PROIBIDO px** — use rem para tudo
+5. **Animações GSAP** — cada seção tem entrada com ScrollTrigger
+6. **Imagens** — use \`<img src="../../assets/images/[nome].webp"\` com \`loading="lazy"\` e \`alt\` descritivo
+7. **Componente isolado** — cada seção é auto-contida, importa Button se precisar de CTA
+
+## FORMATO DE RESPOSTA
+
+Para cada bloco da estrutura aprovada, gere:
+
+### \`src/components/sections/[NomeDoBloco].astro\`
+\`\`\`astro
+---
+import Button from '../ui/Button.astro';
+---
+<section id="[id-da-secao]" class="...">
+  ...
+</section>
+<script>
+  // Animação GSAP
+</script>
+\`\`\`
+
+Gere TODOS os componentes de seção baseados na estrutura aprovada acima.
+    `.trim();
+  },
+
+  buildImplPromptParte4() {
+    const B = this.B || {};
+    const fichaArte = (() => {
+      try { return typeof B.ficha_direcao_arte === 'object' ? B.ficha_direcao_arte : JSON.parse(B.ficha_direcao_arte || '{}'); }
+      catch { return {}; }
+    })();
+
+    // Extrair nomes das seções da estrutura para montar o index
+    const estrutura = B.estrutura_aprovada || B.estrutura_rascunho || '';
+    const blocos = [];
+    const blocoRegex = /### BLOCO\s*\d+[:\-–]?\s*(.+?)(?:\n|$)/gi;
+    let m;
+    while ((m = blocoRegex.exec(estrutura)) !== null) {
+      const nome = m[1].trim();
+      // Ignorar cabeçalho e rodapé (já são Header/Footer)
+      if (!/cabeçalho|header|rodapé|footer/i.test(nome)) {
+        blocos.push(nome);
+      }
+    }
+
+    return `
+Você é um engenheiro front-end sênior especializado em Astro 4.x, SEO e performance web.
+
+## SUA TAREFA — PARTE 4 DE 4: PÁGINA FINAL, SEO & DEPLOY
+
+Esta parte assume que as PARTES 1, 2 e 3 já foram implementadas.
+Todos os componentes de seção já existem em \`src/components/sections/\`.
+
+## DADOS DO PROJETO
+
+- **Nome:** ${B.nome_cliente || 'Projeto'}
+- **Domínio:** ${B.dominio || '[DOMINIO]'}
+- **Título SEO:** ${B.titulo_seo || B.nome_cliente || 'Landing Page'}
+- **Descrição SEO:** ${B.descricao_seo || ''}
+- **Palavra-chave principal:** ${B.palavra_chave_principal || ''}
+- **Palavras-chave secundárias:** ${B.palavras_chave_secundarias || ''}
+- **Segmento:** ${B.segmento || ''}
+- **Cidade/Estado:** ${[B.cidade, B.estado].filter(Boolean).join(', ') || ''}
+- **Schema tipo:** ${B.schema_tipo || 'LocalBusiness'}
+- **GTM ID:** [GTM_ID] (o cliente deve preencher)
+- **Cor primária:** ${B.arte_cor_principal || fichaArte?.paleta?.primaria || '#6366f1'}
+
+## SEÇÕES DA LANDING PAGE (na ordem da estrutura aprovada)
+
+${blocos.length > 0 ? blocos.map((b, i) => `${i + 1}. ${b}`).join('\n') : estrutura.substring(0, 800)}
+
+## ARQUIVOS A GERAR
+
+### \`src/pages/index.astro\`
+(Importa e monta todos os componentes na ordem da estrutura aprovada — Header, seções, WhatsAppFloat, Footer)
+(Passa props de SEO via componente SEO.astro)
+(Chama initAnimations() no script client:load)
+
+### \`src/pages/obrigado.astro\`
+(Página de agradecimento simples — pós-conversão WhatsApp/formulário — com botão voltar para home)
+
+### \`public/robots.txt\`
+(Allow: / para todos os bots, Sitemap: https://${B.dominio || '[DOMINIO]'}/sitemap-index.xml)
+
+### \`public/manifest.json\`
+(PWA manifest básico com nome, cores e ícones)
+
+### \`vercel.json\`
+(Configuração de headers de cache e redirect de www para apex)
+
+## INSTRUÇÕES FINAIS PARA O ROO
+
+Após implementar todos os arquivos das 4 partes, execute:
+
+\`\`\`bash
+npm install
+npx astro check
+npm run build
+\`\`\`
+
+Se \`astro check\` retornar erros de tipo, corrija antes de continuar.
+Se \`npm run build\` falhar por imagem ausente, verifique se os placeholders da PARTE 2 foram criados.
+
+## CAMPOS QUE O CLIENTE DEVE PREENCHER ANTES DO GO-LIVE
+
+- \`[DOMINIO]\` → Domínio real (ex: anaesternutricionista.com.br)
+- \`[GTM_ID]\` → ID do Google Tag Manager (ex: GTM-XXXXXXX)
+- Imagens em \`src/assets/images/\` → Substituir placeholders pelas fotos reais
+
+Formato: título \`### \\\`caminho/arquivo\\\`\` seguido do bloco de código.
+    `.trim();
   },
 
   /* ----------------------------------------------------------

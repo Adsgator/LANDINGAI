@@ -120,7 +120,7 @@ Object.assign(window.App, {
               <span>Estrutura da Landing Page</span>
             </div>
 
-            ${B.estrutura_wireframe ? `
+            ${B.estrutura_rascunho ? `
             <div class="review-wireframe-wrap">
               <div class="estrutura-browser-bar">
                 <span class="preview-dot-r"></span>
@@ -129,7 +129,10 @@ Object.assign(window.App, {
                 <span class="estrutura-url-bar">${(B.dominio || 'seusite.com.br').replace(/^https?:\/\//, '')}</span>
               </div>
               <div class="review-wireframe-body">
-                ${B.estrutura_wireframe}
+                <div style="padding:20px; text-align:center; color:var(--text-secondary)">
+                   <i data-lucide="layout-template" style="width:32px;height:32px;margin-bottom:10px;opacity:0.5"></i>
+                   <p style="font-size:13px">Estrutura gerada. Veja os detalhes na aba "Estrutura".</p>
+                </div>
               </div>
             </div>
             <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
@@ -152,60 +155,7 @@ Object.assign(window.App, {
             `}
           </div>
 
-          <!-- ═══ SEÇÃO: Protótipo Visual ═══ -->
-          <div class="review-prototipo-section">
-            <div class="review-section-label">
-              <i data-lucide="image" style="width:14px;height:14px;color:var(--accent)"></i>
-              <span>Protótipo Visual</span>
-              <span class="review-badge-free">Gratuito</span>
-            </div>
-            <p class="review-prototipo-desc">
-              Gere uma prévia visual de como a landing page pode ficar, levando em conta a estrutura, copy e direção de arte definidas.
-              Não é o design final — serve para validar a direção antes de implementar.
-            </p>
-
-            ${B.prototipo_url ? `
-            <div class="prototipo-resultado">
-              <img
-                src="${B.prototipo_url}"
-                class="prototipo-img"
-                alt="Protótipo da Landing Page"
-                onerror="this.style.display='none';document.getElementById('prototipo-erro').style.display='flex';"
-              >
-              <div id="prototipo-erro" class="prototipo-erro" style="display:none;">
-                <i data-lucide="image-off" style="width:24px;height:24px;color:var(--text-disabled)"></i>
-                <span>Imagem não carregou. Tente gerar novamente.</span>
-              </div>
-              <div class="prototipo-actions">
-                <button class="btn-ghost btn-sm" id="btn-gerar-prototipo">
-                  <i data-lucide="refresh-cw" style="width:13px;height:13px"></i>
-                  Gerar Novo Protótipo
-                </button>
-                <a href="${B.prototipo_url}" target="_blank" class="btn-ghost btn-sm">
-                  <i data-lucide="external-link" style="width:13px;height:13px"></i>
-                  Ver em tamanho real
-                </a>
-                <button class="btn-ghost btn-sm danger-subtle" onclick="App.setField('prototipo_url','');App.renderScreen();">
-                  <i data-lucide="trash-2" style="width:13px;height:13px"></i>
-                  Remover
-                </button>
-              </div>
-            </div>
-            ` : `
-            <div class="prototipo-generate-area">
-              <button class="btn-secondary" id="btn-gerar-prototipo">
-                <i data-lucide="sparkles" style="width:15px;height:15px"></i>
-                Gerar Protótipo Visual
-              </button>
-              <p class="prototipo-hint">
-                Powered by Pollinations AI · Gratuito · Sem necessidade de API key
-              </p>
-            </div>
-            `}
-          </div>
-
           <div class="review-actions-hero">
-
             <button id="btn-generate-docimpl" class="btn-primary btn-xl" ${this.state.isGenerating ? 'disabled' : ''}>
               <i data-lucide="sparkles"></i>
               ${this.state.isGenerating ? 'Gerando Ficha de Implementação...' : 'Gerar Ficha de Implementação (DOC-IMPL)'}
@@ -242,95 +192,18 @@ Object.assign(window.App, {
     `;
   },
 
-    // ─── Geração de Protótipo Visual via Pollinations.ai (gratuito, sem API key) ─
-  async gerarPrototipoVisual() {
-    const B = this.B || {};
+  /* ----------------------------------------------------------
+     Seção de Protótipo Visual — REMOVIDA
+     (gerarPrototipoVisual e showModalPrototipoFallback
+      foram descontinuados nesta versão)
+  ---------------------------------------------------------- */
 
-    // Validar pré-requisitos
-    if (!B.estrutura_rascunho && !B.estrutura_aprovada) {
-      this.showToast('Defina a Estrutura da LP antes de gerar o protótipo.', 'warning');
-      return;
-    }
-
-    // Desabilitar botão durante geração
-    const btn = document.getElementById('btn-gerar-prototipo');
-    if (btn) {
-      btn.disabled = true;
-      btn.innerHTML = `<i data-lucide="loader-2" style="width:14px;height:14px;animation:spin 1s linear infinite"></i> Gerando protótipo...`;
-      lucide.createIcons();
-    }
-
-    try {
-      // ── Montar prompt descritivo a partir do briefing ────────────────────
-      const temaMap    = { escuro: 'dark background modern dark theme', claro: 'light clean white background', ia: 'modern professional design' };
-      const intMap     = { contido: 'minimal subtle clean design', medio: 'modern professional balanced design', alto: 'bold high-impact impressive visual design' };
-      const fichaArte  = (() => { try { return typeof B.ficha_direcao_arte === 'object' ? B.ficha_direcao_arte : JSON.parse(B.ficha_direcao_arte || '{}'); } catch { return {}; } })();
-
-      const tema        = temaMap[B.arte_tema] || temaMap[fichaArte?.tema] || 'modern professional design';
-      const intensidade = intMap[B.arte_intensidade] || intMap[fichaArte?.intensidade] || 'modern professional balanced design';
-      const segmento    = B.segmento || 'professional services';
-      const servico     = B.servico_principal || 'professional service';
-      const corPrimaria = B.arte_cor_principal || fichaArte?.paleta?.primaria || '#6366f1';
-      const nomeMarca   = B.nome_profissional || B.nome_cliente || 'Marca';
-
-      // Extrair título do Hero da estrutura para usar no protótipo
-      const estrutura   = B.estrutura_aprovada || B.estrutura_rascunho || '';
-      const heroTitulo  = (() => {
-        const m = estrutura.match(/(?:Título|título|H1|Heading|Headline)[:\s]+[""]?(.{10,120})[""]?(?:\n|$)/i);
-        return m?.[1]?.trim().replace(/[""\[\]]/g, '') || `${servico} profissional`;
-      })();
-
-      const prompt = [
-        `professional landing page website design mockup screenshot`,
-        `brand: ${nomeMarca}`,
-        `service: ${segmento} ${servico}`,
-        tema,
-        intensidade,
-        `hero headline: "${heroTitulo}"`,
-        `accent color: ${corPrimaria}`,
-        `hero section with bold headline and prominent CTA button`,
-        `modern typography hierarchy`,
-        `conversion optimized layout`,
-        `desktop view full width`,
-        `high quality UI design`,
-        `photorealistic web design screenshot`,
-        `no text watermarks`,
-      ].join(', ');
-
-      const seed = Math.floor(Math.random() * 99999);
-      const url  = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1280&height=800&seed=${seed}&nologo=true&enhance=true`;
-
-      // Pré-carregar a imagem para confirmar que gerou corretamente
-      await new Promise((resolve, reject) => {
-        const img  = new Image();
-        img.onload = resolve;
-        img.onerror = () => reject(new Error('Falha ao carregar imagem gerada.'));
-        img.src = url;
-        // Timeout de 90 segundos (geração pode demorar)
-        setTimeout(() => reject(new Error('Tempo limite atingido. Tente novamente.')), 90000);
-      });
-
-      // Salvar URL e re-renderizar
-      this.setField('prototipo_url', url);
-      this.renderScreen();
-      this.showToast('Protótipo gerado com sucesso!', 'success');
-
-    } catch (err) {
-      console.error('[gerarPrototipoVisual]', err);
-      this.showToast(`Erro ao gerar protótipo: ${err.message}`, 'error');
-
-      // Restaurar botão
-      const btnRestored = document.getElementById('btn-gerar-prototipo');
-      if (btnRestored) {
-        btnRestored.disabled = false;
-        btnRestored.innerHTML = `<i data-lucide="sparkles" style="width:15px;height:15px"></i> Gerar Protótipo Visual`;
-        lucide.createIcons();
-      }
-    }
+  // Mantido apenas para compatibilidade — não faz nada
+  gerarPrototipoVisual() {
+    this.showToast('Geração de protótipo visual não disponível nesta versão.', 'info');
   },
 
   checkReady() {
-
     const missing = [];
     Object.entries(REQUIRED_FIELDS).forEach(([step, fields]) => {
       fields.forEach(f => {
@@ -404,7 +277,7 @@ Liste todos os arquivos em ordem de criação, agrupados por fase:
 - FASE 7: Páginas
 
 ### SEÇÃO 2 — INSTALAÇÃO DE DEPENDÊNCIAS
-Bloco de código bash com todos os npm install necessários.
+Bloco de código bash with todos os npm install necessários.
 
 ### SEÇÃO 3 — BUILD E DEPLOY
 Comandos de desenvolvimento, build e deploy.
@@ -503,7 +376,7 @@ window.gtag('consent', 'update', {
 - Lenis smooth scroll inicializado
 - Vercel Analytics e Speed Insights
 - Meta tags Open Graph completas
-- Schema.org JSON-LD para LocalBusiness ou ProfessionalService
+- Schema.org JSON-LD para LocalBusiness or ProfessionalService
 - Fonte carregada via @fontsource (não Google Fonts CDN)
 
 ## CAMPOS QUE PRECISAM DE AÇÃO HUMANA
@@ -679,92 +552,6 @@ ${B.estrutura_aprovada || B.estrutura_rascunho || '> Estrutura ainda não defini
 ---
 
 *DOC-1 gerado pelo LandingAI v2 · Adsgator · ${new Date().toLocaleString('pt-BR')}*
-`.trim();
-  },
-
-  async handleGenerateDocImpl() {
-      this.aiLogStep(2);
-      const prompt = this.buildImplPrompt();
-
-      this.aiLogStep(3, 'Isso pode levar 60–120 segundos...');
-      const res = await this.callAI(prompt);
-
-      this.aiLogStep(4);
-      this.state.lastDocImpl = res;
-      this.render();
-  },
-
-  buildImplPrompt() {
-      const doc1 = this.buildDoc1();
-      // Remove o bloco de instruções manuais do DOC-1 para o prompt da API ser mais limpo
-      const briefingOnly = doc1.replace(/=== INICIO DO PROMPT ===([\s\S]*?)=== FIM DO PROMPT ===/, '').trim();
-
-      return `
-Você é um desenvolvedor Astro especializado em landing pages de alta conversão.
-
-## SUA TAREFA
-Gerar um Blueprint de Implementação completo e 100% funcional para o projeto abaixo.
-
-## FORMATO DE SAÍDA OBRIGATÓRIO
-O documento que você vai gerar deve seguir EXATAMENTE esta estrutura:
-
-# Blueprint de Implementação — [Nome do Projeto]
-> **Documento para o Roo Code.**
-> Contém todos os arquivos do projeto na ordem correta de criação.
-> Não invente nada além do que está aqui.
-> Campos que exigem ação humana antes do go-live: \`[DOMINIO]\`, \`[GTM_ID]\`, \`[WEB3FORMS_KEY]\`.
-
----
-
-## ORDEM DE CRIAÇÃO
-### FASE 1 — Fundação
-1. \`package.json\`
-2. \`astro.config.mjs\`
-3. \`tailwind.config.js\`
-4. \`.env.example\`
-
-### FASE 2 — Arquivos Estáticos
-5. \`public/robots.txt\`, \`public/manifest.json\`, \`public/favicon.svg\`, \`src/assets/logo.svg\`
-
-### FASE 3 — Pré-requisito de Assets de Imagem
-[lista de imagens necessárias com dimensões]
-
-### FASE 4 — Componentes Globais
-### FASE 5 — Layout
-### FASE 6 — Seções (uma por bloco da estrutura aprovada)
-### FASE 7 — Páginas
-
----
-
-## INSTALAÇÃO DE DEPENDÊNCIAS
-[bloco bash com npm install]
-
----
-
-## BUILD E DEPLOY
-[comandos]
-
----
-
-[A partir daqui: um título ### por arquivo, seguido do código completo em bloco de código]
-
-## STACK OBRIGATÓRIA
-- Framework: Astro 4.x (output: hybrid)
-- CSS: Tailwind CSS 3.x
-- Animações: GSAP 3.x + ScrollTrigger
-- Smooth scroll: Lenis
-- Ícones: Lucide React
-- Deploy: Vercel
-
-## REGRAS ABSOLUTAS
-1. Todo arquivo deve ter o código COMPLETO.
-2. Nunca use placeholders como "[TEXTO]" — use os dados reais do briefing.
-3. H1 do Hero = a dor de busca.
-4. Copy em 1ª pessoa do singular.
-
----
-
-${briefingOnly}
 `.trim();
   }
 });

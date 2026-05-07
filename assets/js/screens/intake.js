@@ -11,14 +11,10 @@ Object.assign(window.App, {
       <div class="intake-hero">
         <div class="intake-badge">
           <i data-lucide="zap" style="width:12px;height:12px"></i>
-          v3 — Assistente Inteligente
+          Assistente Inteligente
         </div>
         <h2 class="intake-title">Cole o briefing.<br>A IA faz o resto.</h2>
-        <p class="intake-subtitle">
-          Cole o briefing preenchido pelo cliente, textos de WhatsApp, PDFs ou qualquer material coletado.
-          A IA analisa, extrai e preenche todos os steps automaticamente.
-          Você só revisa e ajusta.
-        </p>
+
       </div>
 
       <!-- Box principal: Briefing -->

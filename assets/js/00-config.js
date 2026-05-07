@@ -41,11 +41,14 @@ const AI_MODELS = {
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent',
     maxTokens: 65536, temp: 0.6,
   },
-  'gemini-3-flash': {
-    label: 'Gemini 3 Flash',
-    provider: 'gemini', group: 'Google Gemini', tier: 'free',
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent',
-    maxTokens: 32768, temp: 0.7,
+  'gemini-3.1-flash-lite': {
+    label: 'Gemini 3.1 Flash Lite',
+    provider: 'gemini',
+    group: 'Google Gemini',
+    tier: 'free',
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite-preview:generateContent',
+    maxTokens: 16384,
+    temp: 0.7,
   },
   'gemini-3.1-pro': {
     label: 'Gemini 3.1 Pro',

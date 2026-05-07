@@ -113,11 +113,11 @@ Object.assign(window.App, {
     if (!hasKey) { this.showToast('Configure uma API Key primeiro.', 'warning'); return; }
 
     this.openAILog('Gerando Estrutura da Landing Page', [
-      { id: 1, icon: 'file-text',   label: 'Lendo briefing completo...' },
-      { id: 2, icon: 'layout',      label: 'Definindo blocos e ordem narrativa...' },
-      { id: 3, icon: 'sparkles',    label: 'Gerando copy de cada bloco...' },
-      { id: 4, icon: 'monitor',     label: 'Gerando wireframe visual...' },
-      { id: 5, icon: 'check-circle',label: 'Finalizando estrutura...' },
+      { id: 1, icon: 'file-text', label: 'Lendo briefing completo...' },
+      { id: 2, icon: 'layout', label: 'Definindo blocos e ordem narrativa...' },
+      { id: 3, icon: 'sparkles', label: 'Gerando copy de cada bloco...' },
+      { id: 4, icon: 'monitor', label: 'Gerando wireframe visual...' },
+      { id: 5, icon: 'check-circle', label: 'Finalizando estrutura...' },
     ]);
 
     try {
@@ -190,7 +190,7 @@ ${doc1.substring(0, 8000)}
   },
 
   aprovarEstrutura() {
-    const rascunho = this.B.estrutura_rascunho;
+    const rascunho = this.state.briefing.estrutura_rascunho;
     if (!rascunho?.trim()) {
       this.showToast('Gere a estrutura antes de aprovar.', 'warning');
       return;
@@ -247,7 +247,7 @@ ${doc1.substring(0, 8000)}
     const blocoHTMLs = blocos.map((nome, i) => {
       const h = Object.entries(alturas).find(([k]) => nome.includes(k))?.[1] || 120;
       const isHero = nome.includes('Hero');
-      const isCTA  = nome.includes('CTA');
+      const isCTA = nome.includes('CTA');
       return `
         <div class="wf-block ${isHero ? 'wf-block--hero' : ''} ${isCTA ? 'wf-block--cta' : ''}"
              style="height:${h}px">

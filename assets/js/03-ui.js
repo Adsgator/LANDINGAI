@@ -62,7 +62,7 @@ Object.assign(window.App, {
       subtitle.textContent = 'Análise de material bruto';
     } else if (this.state.screen === 'step') {
       const s = STEPS.find(s => s.id === this.state.currentStep);
-      title.textContent = s ? `Step ${s.id}: ${s.label}` : 'Briefing';
+      title.textContent = s ? `Step ${s.id}: ${s.title}` : 'Briefing';
       subtitle.textContent = s ? s.sub : '';
     } else if (this.state.screen === 'art') {
       title.textContent = 'Direção de Arte';
@@ -162,7 +162,7 @@ Object.assign(window.App, {
       btn.className = `steps-nav-item ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`;
       btn.innerHTML = `
         <i data-lucide="${isDone && !isActive ? 'check-circle' : s.icon}" class="steps-nav-icon ${isDone && !isActive ? 'done' : ''}"></i>
-        <span class="steps-nav-label">${s.label}</span>
+        <span class="steps-nav-label">${s.title}</span>
       `;
       btn.onclick = () => this.goToStep(s.id);
       nav.appendChild(btn);

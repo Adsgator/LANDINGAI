@@ -72,6 +72,14 @@ Object.assign(window.App, {
     const btnRunEstrutura = container.querySelector('#btn-run-estrutura');
     if (btnRunEstrutura) btnRunEstrutura.addEventListener('click', () => this.runEstruturaAnalysis());
 
+    // Refinar estrutura com IA (feedback loop)
+    const btnRefinar = container.querySelector('#btn-refinar-estrutura');
+    if (btnRefinar) btnRefinar.addEventListener('click', () => this.refinarEstrutura());
+
+    // Gerar protótipo visual na Review
+    const btnPrototipo = container.querySelector('#btn-gerar-prototipo');
+    if (btnPrototipo) btnPrototipo.addEventListener('click', () => this.gerarPrototipoVisual());
+
     // ── Botão de análise de Arte ────────────────────────────
     const artBtn = container.querySelector('#btn-analyze-art');
     if (artBtn) artBtn.addEventListener('click', () => this.runArtAnalysis());

@@ -67,6 +67,30 @@ Object.assign(window.App, {
           </div>
           ` : ''}
 
+          ${rascunho && !aprovada ? `
+          <!-- Card de Refinamento com IA -->
+          <div class="estrutura-section-card estrutura-feedback-card">
+            <div class="estrutura-section-header">
+              <i data-lucide="message-square" style="width:15px;height:15px;color:var(--accent)"></i>
+              <span class="estrutura-section-title">Refinar com IA</span>
+            </div>
+            <p class="estrutura-section-desc">
+              Não gostou de algum ponto? Descreva o ajuste e a IA refina mantendo o briefing original.
+              Funciona como uma conversa — você pode pedir várias vezes.
+            </p>
+            <textarea
+              class="field-textarea estrutura-textarea"
+              id="estrutura-feedback-input"
+              rows="4"
+              placeholder="Ex: O tom ficou muito formal, quero mais direto e urgente. Também muda o CTA do Hero para algo mais específico ao problema do cliente..."
+            ></textarea>
+            <button class="btn-primary" id="btn-refinar-estrutura" style="margin-top:10px;width:100%">
+              <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
+              Refinar Estrutura com IA
+            </button>
+          </div>
+          ` : ''}
+
         </div>
 
         <!-- Coluna: wireframe -->
@@ -108,8 +132,8 @@ Object.assign(window.App, {
   gerarWireframeHTML(rascunho) {
     if (!rascunho) return '';
 
-    // Parser de blocos: cada bloco começa com ### BLOCO N:
-    const blocoRegex = /###\s*BLOCO\s*\d+:\s*(.+?)(?:\n)([\s\S]*?)(?=###\s*BLOCO|\nSEQUÊNCIA|$)/gi;
+    // Parser de blocos — suporta ### BLOCO N: e ## BLOCO N:
+    const blocoRegex = /(?:###|##)\s*BLOCO\s*\d+[:\-–]?\s*(.+?)(?:\n)([\s\S]*?)(?=(?:###|##)\s*BLOCO|\nSEQUÊNCIA|$)/gi;
     const blocos = [];
     let match;
 
@@ -117,11 +141,23 @@ Object.assign(window.App, {
       const nome = match[1].trim();
       const corpo = match[2].trim();
 
-      // Extrair titulo, subtitulo e cta do corpo do bloco
-      const titulo = (corpo.match(/(?:Título|título|H1|heading):\s*"?(.+?)"?(?:\n|$)/i) || [])[1]?.trim() || nome;
-      const subtitulo = (corpo.match(/(?:Subtítulo|subtitulo|Sub):\s*"?(.+?)"?(?:\n|$)/i) || [])[1]?.trim() || '';
-      const cta = (corpo.match(/CTA:\s*"?(.+?)"?(?:\n|$)/i) || [])[1]?.trim() || '';
-      const objetivo = (corpo.match(/(?:Objetivo|objetivo).*?:\s*(.+?)(?:\n|$)/i) || [])[1]?.trim() || '';
+      // Extração flexível de campos — aceita com ou sem aspas, múltiplos rótulos
+      const extrairCampo = (texto, chaves, fallback = '') => {
+        for (const chave of chaves) {
+          const regex = new RegExp(`(?:${chave})[:\\s]+[""]?(.+?)[""]?(?:\\n|$)`, 'i');
+          const r = texto.match(regex);
+          if (r?.[1]?.trim()) return r[1].trim().replace(/[""\[\]]/g, '');
+        }
+        // Fallback: pegar primeira linha entre aspas se houver
+        const quoted = texto.match(/[""](.{10,100})[""]/);
+        if (quoted?.[1]) return quoted[1].trim();
+        return fallback;
+      };
+
+      const titulo    = extrairCampo(corpo, ['Título', 'título', 'H1', 'Heading', 'Manchete', 'Headline'], nome);
+      const subtitulo = extrairCampo(corpo, ['Subtítulo', 'subtitulo', 'Sub', 'Subtitulo', 'Descrição curta']);
+      const cta       = extrairCampo(corpo, ['CTA', 'Botão', 'Chamada para ação', 'Call to action']);
+      const objetivo  = extrairCampo(corpo, ['Objetivo', 'Objetivo narrativo', 'Propósito']);
 
       blocos.push({ nome, titulo, subtitulo, cta, objetivo, raw: corpo });
     }
@@ -212,139 +248,100 @@ Object.assign(window.App, {
     `;
   },
 
+  // ─── Refinamento de Estrutura com IA (loop de feedback) ──────────────────
+  async refinarEstrutura() {
+    const feedbackInput = document.getElementById('estrutura-feedback-input');
+    const feedback = feedbackInput?.value?.trim();
+
+    if (!feedback) {
+      this.showToast('Descreva o que deseja ajustar antes de refinar.', 'warning');
+      feedbackInput?.focus();
+      return;
+    }
+
+    const rascunhoAtual = this.B.estrutura_rascunho || '';
+    if (!rascunhoAtual) {
+      this.showToast('Gere a estrutura primeiro antes de refinar.', 'warning');
+      return;
+    }
+
+    this.openAILog('Refinando Estrutura', [
+      { id: 1, label: 'Analisando seu feedback...' },
+      { id: 2, label: 'Ajustando estrutura e copy...' },
+      { id: 3, label: 'Atualizando pré-visualização...' },
+    ]);
+
+    this.aiLogStep(1);
+    await this.aiLogDelay(500);
+
+    const resumoBriefing = this.buildResumoBriefing();
+
+    const prompt = `Você é especialista em copywriting e estrutura de landing pages de alta conversão.
+
+## CONTEXTO
+Você gerou anteriormente a seguinte estrutura de landing page para um cliente:
+
+${rascunhoAtual}
+
+## FEEDBACK DO CLIENTE (APLICAR OBRIGATORIAMENTE)
+${feedback}
+
+## SUA TAREFA
+1. Revise a estrutura acima aplicando EXATAMENTE o que foi pedido no feedback.
+2. Mantenha a mesma formatação: ### BLOCO N: NOME DO BLOCO
+3. Mantenha todos os blocos existentes — apenas ajuste o conteúdo pedido.
+4. Não invente dados que não estão no briefing abaixo.
+5. Retorne SOMENTE a estrutura revisada, sem explicações antes ou depois.
+6. Se o feedback pedir mudança de tom, ajuste TODA a copy de acordo.
+
+## BRIEFING DO CLIENTE (referência)
+${resumoBriefing}`;
+
+    this.aiLogStep(2, 'Isso pode levar alguns segundos...');
+
+    try {
+      const res = await this.callAI(prompt);
+
+      this.aiLogStep(3);
+      await this.aiLogDelay(400);
+
+      this.setField('estrutura_rascunho', res);
+      this.setField('estrutura_wireframe', this.gerarWireframeHTML(res));
+
+      this.aiLogDone();
+      await this.aiLogDelay(500);
+      this.closeAILog();
+      this.renderScreen();
+      this.showToast('Estrutura refinada! Confira o resultado.', 'success');
+    } catch (err) {
+      this.aiLogError(2, err.message || 'Erro ao refinar. Tente novamente.');
+    }
+  },
+
+  // ─── Resumo compacto do briefing para uso no prompt de refinamento ────────
+  buildResumoBriefing() {
+    const B = this.B || {};
+    return [
+      `Cliente: ${B.nome_cliente || '—'}`,
+      `Segmento: ${B.segmento || '—'}`,
+      `Serviço principal: ${B.servico_principal || '—'}`,
+      `Público-alvo: ${B.publico_alvo || '—'}`,
+      `Dor principal: ${B.dor_principal || '—'}`,
+      `Desejo principal: ${B.desejo_principal || '—'}`,
+      `Tom de comunicação: ${B.tom_comunicacao || '—'}`,
+      `Diferencial 1: ${B.diferencial1_titulo || '—'} — ${B.diferencial1_descricao || '—'}`,
+      `Diferencial 2: ${B.diferencial2_titulo || '—'} — ${B.diferencial2_descricao || '—'}`,
+      `Garantia: ${B.garantia || '—'}`,
+      `WhatsApp / CTA: ${B.whatsapp || '—'}`,
+    ].join('\n');
+  },
+
   reabrirEstrutura() {
     this.setField('estrutura_aprovada', '');
     this.renderScreen();
     this.showToast('Estrutura reaberta para edição.', 'info');
   },
 
-  async gerarPrototipoVisual() {
-    const B = this.B || {};
-    const rascunho = B.estrutura_rascunho || '';
-
-    if (!rascunho) {
-      this.showToast('Gere a estrutura antes do protótipo visual.', 'warning');
-      return;
-    }
-
-    const hasGemini = this.state.apiKeys?.gemini?.trim();
-    if (!hasGemini) {
-      this.showToast('Protótipo visual requer API Key Gemini (gratuita).', 'warning');
-      return;
-    }
-
-    this.openAILog('Gerando Protótipo Visual', [
-      { id: 1, icon: 'layout', label: 'Preparando estrutura...' },
-      { id: 2, icon: 'image', label: 'Enviando para Gemini Image...' },
-      { id: 3, icon: 'sparkles', label: 'Renderizando protótipo...' },
-      { id: 4, icon: 'check-circle', label: 'Concluído!' },
-    ]);
-
-    try {
-      this.aiLogStep(1);
-      const cores = B.cor_primaria || '#1e293b';
-      const nomeMarca = B.nome_cliente || B.nome_marca || 'Empresa';
-      const segmento = B.segmento || B.nicho || 'serviço';
-
-      const prompt = `
-Você é um designer UI especializado em landing pages.
-Crie um mockup visual de landing page mobile (320x900px) com fundo branco.
-
-MARCA: ${nomeMarca}
-SEGMENTO: ${segmento}
-COR PRIMÁRIA: ${cores}
-
-ESTRUTURA DA PÁGINA:
-${rascunho.substring(0, 3000)}
-
-INSTRUÇÕES DE DESIGN:
-- Estilo clean e moderno
-- Use a cor primária nos CTAs e destaques
-- Renderize cada seção claramente separada
-- Mostre os títulos e textos reais da estrutura
-- Inclua elementos visuais de placeholder (formas geométricas para imagens)
-- CTAs com botões bem visíveis
-- Typography hierárquica clara
-- Mobile-first (largura 320px)
-
-Gere apenas a imagem do mockup, sem texto explicativo.
-`;
-
-      await this.aiLogDelay(300);
-      this.aiLogStep(2);
-
-      const imagemBase64 = await this.callGeminiImage(prompt);
-
-      this.aiLogStep(3);
-      this.setField('estrutura_prototipo_img', imagemBase64);
-      await this.aiLogDelay(500);
-
-      this.aiLogStep(4);
-      await this.aiLogDelay(300);
-      this.closeAILog();
-      this.renderScreen();
-      this.showToast('Protótipo visual gerado!', 'success');
-    } catch (err) {
-      this.closeAILog();
-      // Fallback: mostrar mensagem informativa sobre opções
-      this.showModalPrototipoFallback(err.message);
-    }
-  },
-
-  showModalPrototipoFallback(erroMsg) {
-    const opcoes = [
-      {
-        nome: 'Gemini AI Studio',
-        url: 'https://aistudio.google.com',
-        gratuito: true,
-        descricao: 'Use gemini-2.5-flash-image para geração de imagens. Cole o prompt do wireframe.',
-      },
-      {
-        nome: 'v0.dev (Vercel)',
-        url: 'https://v0.dev',
-        gratuito: true,
-        descricao: 'Gera componentes React/HTML a partir de descrição. Excelente para protótipos.',
-      },
-      {
-        nome: 'Galileo AI',
-        url: 'https://www.usegalileo.ai',
-        gratuito: false,
-        descricao: 'Protótipos de UI de alta qualidade. Plano pago mas free trial disponível.',
-      },
-      {
-        nome: 'Uizard',
-        url: 'https://uizard.io',
-        gratuito: true,
-        descricao: 'Converte wireframe em design. Plano gratuito disponível.',
-      },
-    ];
-
-    const html = `
-      <div class="modal-body">
-        <p style="color:var(--text-secondary);font-size:13px;margin-bottom:var(--space-4);">
-          ${erroMsg ? `Erro: ${erroMsg}` : ''}
-          Use uma das ferramentas abaixo para gerar o protótipo visual:
-        </p>
-        ${opcoes.map(o => `
-          <div style="display:flex;align-items:center;gap:var(--space-3);padding:var(--space-3);border:1px solid var(--border);border-radius:var(--radius-md);margin-bottom:var(--space-2);">
-            <div style="flex:1;">
-              <div style="font-weight:700;font-size:13px;">${o.nome}
-                ${o.gratuito ? '<span style="background:var(--success-bg,#dcfce7);color:#16a34a;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:600;margin-left:4px;">FREE</span>' : ''}
-              </div>
-              <div style="font-size:12px;color:var(--text-secondary);">${o.descricao}</div>
-            </div>
-            <a href="${o.url}" target="_blank" class="btn-ghost btn-sm" style="white-space:nowrap;">
-              Abrir <i data-lucide="external-link" style="width:11px;height:11px"></i>
-            </a>
-          </div>
-        `).join('')}
-      </div>
-    `;
-
-    this.openModal('modal-prototipo-fallback');
-    document.getElementById('modal-prototipo-fallback-body').innerHTML = html;
-    lucide.createIcons();
-  },
 
   abrirEstruturaManual() {
     const template = `### BLOCO 1: Cabeçalho

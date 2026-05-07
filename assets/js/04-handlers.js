@@ -68,6 +68,10 @@ Object.assign(window.App, {
     const analyzeBtn = container.querySelector('#btn-analyze');
     if (analyzeBtn) analyzeBtn.addEventListener('click', () => this.runIntakeAnalysis());
 
+    // ── Botão de Gerar Estrutura ────────────────────────────
+    const btnRunEstrutura = container.querySelector('#btn-run-estrutura');
+    if (btnRunEstrutura) btnRunEstrutura.addEventListener('click', () => this.runEstruturaAnalysis());
+
     // ── Botão de análise de Arte ────────────────────────────
     const artBtn = container.querySelector('#btn-analyze-art');
     if (artBtn) artBtn.addEventListener('click', () => this.runArtAnalysis());

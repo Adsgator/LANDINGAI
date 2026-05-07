@@ -1,0 +1,308 @@
+'''# Arquitetura Completa do Projeto AIGator - LandingAI
+
+Este documento detalha a arquitetura, regras e padrões do projeto LandingAI, um módulo ativo do AIGator. Ele serve como uma referência fundamental para desenvolvedores, garantindo consistência, segurança e manutenibilidade.
+
+---
+
+## 1. Identidade do Projeto
+
+- **Nome:** AIGator
+- **Módulo Ativo:** LandingAI — Gerador de Fichas de Implementação para Landing Pages
+- **Módulo Planejado (NÃO IMPLEMENTADO):** google-ads
+- **Stack:** Vanilla JS Modular (Browser-only, sem Node.js runtime)
+- **Abre como:** arquivo local — index.html no Chrome/Edge. Sem servidor.
+- **Frameworks:** Nenhum. Bibliotecas: Lucide, Canvas-confetti.
+
+---
+
+## 2. Estrutura de Arquivos (MODULAR - NÃO ALTERAR)
+
+```
+index.html         → Estrutura HTML principal (Sidebar, Topbar, Modais).
+
+assets/js/
+  ├── app.js              → Entry point (Orquestrador do window.App).
+  ├── 00-config.js        → Constantes (STEPS, AI_MODELS, FIELD_TOOLTIPS, REQUIRED_FIELDS).
+  ├── 01-state.js         → Gerenciamento de estado (App.state, App.P, App.B).
+  ├── 02-api.js           → Handlers de API (Gemini, Claude, OpenRouter, Grok, Mistral).
+  ├── 03-ui.js            → Renderização dinâmica, modais, topbar, sidebar, AI Log.
+  ├── 04-handlers.js      → Event listeners, operações de IA (intake, arte, estrutura, docimpl).
+  └── screens/            → Lógica específica de cada tela:
+      ├── intake.js       → buildIntakeScreen()
+      ├── step.js         → buildStep1() a buildStep8()
+      ├── art.js          → buildArtScreen(), runArtAnalysis()
+      ├── estrutura.js    → renderEstrutura(), gerarWireframeHTML()
+      ├── review.js       → buildReviewScreen(), buildDoc1(), generateDocImpl()
+      ├── structure.js    → Delegador (SEM LÓGICA PRÓPRIA)
+      └── steps.js        → VAZIO (arquivo reservado, não usar)
+
+assets/css/        → Estilos modulares:
+  ├── 00-vars.css  → Design tokens, reset, variáveis CSS
+  ├── 01-layout.css → Sidebar, topbar, bottombar, app shell
+  ├── 02-components.css → Botões, inputs, chips, modais, tooltips
+  ├── 03-screens.css → Estilos por tela (intake, steps, arte, estrutura, review)
+  └── 04-system.css → AI Log, toasts, animações
+
+modules/           → Pasta de módulos futuros (Google Ads planejado)
+```
+
+---
+
+## 3. Regras de Ouro (ESTRITO)
+
+### [SEGURANÇA]
+
+1. **PROTEÇÃO DE ESTADO:** O projeto está em produção. NUNCA faça alterações que possam corromper o localStorage ou perder dados de projetos existentes.
+2. **PRESERVAÇÃO DE BACKUPS:** NUNCA edite ou apague arquivos com ".BACKUP." no nome.
+
+### [ARQUITETURA]
+
+3. **MODULARIDADE:** NUNCA unifique os módulos. Mantenha a separação de responsabilidades.
+4. **ORDEM DE DEPENDÊNCIA:** Scripts no index.html seguem ordem rígida:
+   ```
+   window.App = {} → 00-config → 01-state → 02-api → screens/ → 03-ui → 04-handlers → app.js
+   ```
+   Se alterar, tudo quebra.
+5. **SEM BUNDLERS:** Não utilize "require" ou "import". Use script tags e window.App.
+
+### [INTERFACE & UX]
+
+6. **DESIGN SYSTEM:** WOW factor é obrigatório. Glassmorphism, Dark Mode e Micro-animações.
+7. **ÍCONES (LUCIDE):** SEMPRE rode lucide.createIcons() após renderizar HTML dinâmico.
+
+---
+
+## 4. Níveis de Risco por Arquivo
+
+### 🚫 NUNCA ALTERAR (risco crítico)
+
+- app.js (entry point)
+- 01-state.js (estado do app)
+- 03-ui.js (renderização global)
+- structure.js (delegador vazio)
+- steps.js (reservado)
+
+### ⚠️ ALTERAR COM CUIDADO MÁXIMO (risco alto)
+
+- index.html (ordem de scripts, IDs críticos)
+- 00-config.js (constantes globais — só adicionar, nunca remover)
+- 02-api.js (chamadas de API — só adicionar providers novos)
+- 04-system.css (animações e lógica visual crítica)
+
+### ✅ PODE EDITAR COM SEGURANÇA (risco baixo)
+
+- 02-components.css (novos componentes)
+- 03-screens.css (estilos por tela)
+- screens/intake.js, screens/art.js (UI da tela)
+- screens/estrutura.js (lógica específica)
+- screens/step.js (adicionar campos)
+
+---
+
+## 5. IDs Críticos no HTML — NUNCA RENOMEAR
+
+### ESTRUTURA DA APLICAÇÃO
+
+`#app`, `#screen-content`, `#steps-nav`, `#sidebar`, `#topbar`, `#bottombar`
+
+### TOPBAR (navegação)
+
+`#topbar-title`, `#topbar-subtitle`, `#topbar-progress-fill`  
+`#btn-model-selector`, `#btn-model-label`, `#model-dropdown`
+
+### SIDEBAR (projeto ativo)
+
+`#project-name`, `#project-segment`, `#project-score-fill`, `#project-score-pct`  
+`#sidebar-api-dot`, `#sidebar-api-label`, `#sidebar-save-indicator`, `#btn-open-api`, `#btn-open-projects`
+
+### BOTTOMBAR (navegação)
+
+`#btn-prev`, `#btn-next`, `#bottombar-center`, `#bottombar-actions`, `#bottombar-actions-left`
+
+### MODAIS
+
+`#modal-projects`, `#modal-api`, `#modal-gen`, `#modal-error`, `#modal-rename`, `#modal-art-result`  
+`#modal-preview`, `#modal-prototipo-fallback`  
+`#projects-list`, `#projects-list-header`, `#import-file-input`  
+`#api-modal-body`, `#gen-steps-list`, `#gen-progress-fill`, `#gen-progress-pct`, `#modal-gen-title`  
+`#art-result-body`, `#rename-input`
+
+### TOAST E OUTROS
+
+`#toast`
+
+### SCREENS (dinâmicos, mas os handlers buscam por ID)
+
+`#intake-upload-zone`, `#intake-upload-input`, `#intake-files-list`, `#btn-analyze`  
+`#btn-analyze-art`, `#btn-approve-art`, `#btn-approve-estrutura`  
+`#btn-download-doc1`, `#btn-generate-docimpl`
+
+---
+
+## 6. Métodos Globais Críticos — NUNCA ALTERAR ASSINATURA
+
+### INICIALIZAÇÃO
+
+- `App.init()` — chamado no DOMContentLoaded
+
+### RENDERIZAÇÃO
+
+- `App.renderAll()` — re-renderiza tudo
+- `App.renderScreen()` — renderiza tela ativa
+- `App.goToStep(n)` — navega para step N
+- `App.goToScreen(screen)` — navega para tela
+- `App.goNext()`, `App.goPrev()` — navegação
+
+### ESTADO
+
+- `App.setField(key, value)` — salva campo no briefing
+- `App.autosave()` — salva localStorage + visual
+- `App.saveStorage()`, `App.loadStorage()`
+- `App.createProject(name?)`, `App.loadProject(id)`, `App.deleteProject(id)`
+- `App.P` (getter) → projeto ativo
+- `App.B` (getter) → briefing do projeto ativo
+
+### API
+
+- `App.callAI(prompt)` — dispatcher para IA
+- `App.openAILog(title, steps)` — abre modal de progresso
+- `App.aiLogStep(stepId, liveMsg?)` — marca step como ativo
+- `App.aiLogDone()` — marca todos como done
+- `App.aiLogError(stepId, msg)` — marca erro
+- `App.closeAILog()` → fecha modal
+- `App.aiLogDelay(ms)` → promise delay
+
+### UI
+
+- `App.showToast(msg, type?, duration?)` — notificação
+- `App.openModal(id)`, `App.closeModal(id)`
+- `App.renderStepsNav()`, `App.updateTopbar()`, `App.updateSidebar()`
+- `App.fieldLabel(field, text, required?, optional?)` → label + tooltip
+
+---
+
+## 7. Padrões Obrigatórios
+
+### ADICIONAR NOVA TELA:
+
+1. Criar `assets/js/screens/novatela.js` com `Object.assign(window.App, { buildNovaTela() { ... } })`
+2. Adicionar `<script src="assets/js/screens/novatela.js"></script>` ANTES de `03-ui.js`
+3. Adicionar `case 'novatela': content.innerHTML = this.buildNovaTela(); break;` em `renderScreen()`
+4. Adicionar navegação em `goNext()` e `goPrev()`
+5. Adicionar item na sidebar em `renderStepsNav()`
+
+### ADICIONAR NOVO PROVIDER DE IA:
+
+1. Adicionar entrada em `AI_MODELS` em `00-config.js`
+2. Se schema diferente: adicionar adapter em `02-api.js`
+3. Se OpenAI-compat (Grok, Mistral, OpenRouter): só adicionar a entrada, usar `_callOpenAICompat` existente
+4. Adicionar campo de API Key no `renderApiModal()` em `03-ui.js`
+
+### ADICIONAR CAMPO EM UM STEP:
+
+1. Editar `buildStepN()` em `screens/step.js`
+2. Usar `this.fieldLabel('nome_campo', 'Label', required, optional)`
+3. Usar `data-field="nome_campo"` no input — bindScreenEvents captura automaticamente
+4. Se campo for estrutural (muda UI): adicionar ao array 'structural' em bindScreenEvents
+5. Se campo deve aparecer no DOC-1: adicionar em `buildDoc1()` em `review.js`
+
+---
+
+## 8. Diretrizes de Edição
+
+- **CAUTELA:** Antes de editar, valide se a mudança não quebra o fluxo de AI (Intake → Estrutura → Arte).
+- **CONSISTÊNCIA:** Mantenha comentários em PT-BR.
+- **TESTE:** Após editar, verifique se `App.P` (projeto ativo) e `App.B` (briefing) estão resolvendo.
+- **DOM:** SEMPRE valide IDs no index.html antes de manipulá-los via JS.
+- **SALVAMENTO:** Sempre use `App.setField()` ou `App.autosave()` para persistir dados.
+- **INICIALIZAÇÃO:** Nunca deixe código que roda na inicialização ANTES do DOMContentLoaded.
+
+---
+
+## 9. Diretórios Protegidos
+
+- `docs/` → Especificações originais. NÃO EDITAR.
+- `.git/` → Controle de versão.
+- `output/` → Resultados de geração.
+- `modules/` → Pasta de futuros módulos. Regras especiais para google-ads (abaixo).
+
+---
+
+## 10. Módulo Google Ads — Quando Chegar a Hora
+
+O módulo google-ads está planejado mas **NÃO deve ser implementado ainda**.
+
+### QUANDO FOR HORA DE IMPLEMENTAR:
+
+1. Criar estrutura SEPARADA:
+   ```
+   modules/google-ads/
+   ├── index.html (página separada do LandingAI)
+   ├── assets/css/ (00-vars.css + google-ads.css)
+   └── assets/js/ (00-config, screens/, app.js)
+   ```
+
+2. NUNCA TOCAR no LandingAI durante implementação do Google Ads:
+   - ✅ Pode: adicionar campos em `google-ads/`
+   - ✅ Pode: usar mesmas APIs (`00-config.js` compartilhado)
+   - 🚫 Não pode: alterar `assets/js/` do LandingAI
+   - 🚫 Não pode: alterar `index.html` do LandingAI
+   - 🚫 Não pode: mover código entre módulos
+
+---
+
+## 11. Diagnóstico Rápido — Se Algo Quebrar
+
+### SINTOMA: "App is not defined"
+
+**CAUSA:** Ordem errada de scripts ou `window.App = {}` não declarado  
+**SOLUÇÃO:** Verificar index.html — `window.App = {}` ANTES de `00-config.js`
+
+### SINTOMA: Tela em branco
+
+**CAUSA:** `renderScreen()` sem case para a screen ativa  
+**SOLUÇÃO:** Verificar `03-ui.js` switch e se `buildXXX()` existe
+
+### SINTOMA: Botões não funcionam
+
+**CAUSA:** Event listener não registrado ou ID errado  
+**SOLUÇÃO:** Verificar `04-handlers.js` `bindScreenEvents()` ou `setupGlobalEvents()`
+
+### SINTOMA: Campo não salva
+
+**CAUSA:** `data-field` não detectado ou não está em container `bindScreenEvents()`  
+**SOLUÇÃO:** Verificar HTML e garantir `data-field="xxx"` + estar dentro de container
+
+### SINTOMA: IA não responde
+
+**CAUSA:** API key não configurada ou endpoint do modelo errado  
+**SOLUÇÃO:** Verificar `02-api.js` e se o modelo existe em `AI_MODELS`
+
+### SINTOMA: AI Log não avança
+
+**CAUSA:** stepId passado não bate com o id no array de steps  
+**SOLUÇÃO:** Verificar se `openAILog()` e `aiLogStep()` têm IDs consistentes
+
+### SINTOMA: Steps da sidebar mostram "undefined"
+
+**CAUSA:** STEPS usa field diferente (label vs title)  
+**SOLUÇÃO:** Verificar `00-config.js` e confirmar campo exato de cada step
+
+---
+
+## 12. O Que Nunca Fazer
+
+- ❌ Reescrever app.js, 01-state.js, 03-ui.js inteiros
+- ❌ Remover ou renomear IDs listados em "IDs Críticos"
+- ❌ Adicionar outro `window.App = {}` em JS (existe só no index.html)
+- ❌ Criar arquivos em `modules/` sem instrução explícita
+- ❌ Instalar npm packages — projeto é vanilla
+- ❌ Criar servidor local — projeto abre como arquivo
+- ❌ Usar localStorage diretamente — sempre via `App.saveStorage()`
+- ❌ Usar `document.getElementById` fora de App — sempre via `App.xxx()`
+- ❌ Alterar ordem de `<script>` no HTML sem documentação
+
+---
+
+**Status:** Pronto para produção  
+**Última atualização:** 2026-05-07'''

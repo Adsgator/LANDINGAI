@@ -1,14 +1,18 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>LandingAI — Adsgator</title>
-  <meta name="description" content="LandingAI v2 — Assistente de briefing inteligente. A IA lê o material do cliente e preenche tudo automaticamente.">
+  <meta name="description"
+    content="LandingAI v2 — Assistente de briefing inteligente. A IA lê o material do cliente e preenche tudo automaticamente.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@400..800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@400..800&display=swap"
+    rel="stylesheet">
 
   <link rel="stylesheet" href="assets/css/00-vars.css">
   <link rel="stylesheet" href="assets/css/01-layout.css">
@@ -16,331 +20,352 @@
   <link rel="stylesheet" href="assets/css/03-screens.css">
   <link rel="stylesheet" href="assets/css/04-system.css">
 </head>
+
 <body>
 
-<div id="app">
+  <div id="app">
 
-  <!-- ===== SIDEBAR ===== -->
-  <aside class="sidebar">
+    <!-- ===== SIDEBAR ===== -->
+    <aside class="sidebar">
 
-    <!-- Logo -->
-    <div class="sidebar-logo">
-      <div class="logo-mark">
-        <i data-lucide="zap" class="logo-icon"></i>
-      </div>
-      <div class="logo-text">
-        <span class="logo-name">AIGator</span>
-        <span class="logo-sub">by Adsgator</span>
-      </div>
-    </div>
-
-    <!-- Projeto ativo -->
-    <div class="sidebar-section">
-      <div class="sidebar-label">Projeto Ativo</div>
-      <div class="project-card" id="btn-open-projects" onclick="App.renderProjectsList(); App.openModal('modal-projects');" style="cursor:pointer;">
-        <i data-lucide="folder" class="project-card-icon"></i>
-        <div class="project-card-info">
-          <span class="project-card-name" id="project-name">Novo Projeto</span>
-          <span class="project-card-segment" id="project-segment">—</span>
+      <!-- Logo -->
+      <div class="sidebar-logo">
+        <div class="logo-mark">
+          <i data-lucide="zap" class="logo-icon"></i>
         </div>
-        <button class="project-rename-btn" title="Renomear" onclick="event.stopPropagation(); App.openRenameModal();">
-          <i data-lucide="edit-3" style="width:14px;height:14px"></i>
-        </button>
-      </div>
-      
-      <div class="project-score-row">
-        <div class="project-score-bar">
-          <div class="project-score-fill" id="project-score-fill" style="width:0%"></div>
-        </div>
-        <span class="project-score-pct" id="project-score-pct">0%</span>
-      </div>
-    </div>
-
-    <!-- Steps nav — todo o conteúdo é gerado por renderStepsNav() via JS -->
-    <div class="sidebar-steps">
-      <div class="sidebar-label">Briefing</div>
-      <nav id="steps-nav" role="list"></nav>
-    </div>
-
-    <!-- Footer -->
-    <div class="sidebar-footer">
-      <button class="sidebar-footer-btn" id="btn-open-api" onclick="App.renderApiModal(); App.openModal('modal-api');">
-        <div class="sidebar-status">
-          <span class="status-dot" id="sidebar-api-dot"></span>
-          <span class="status-label" id="sidebar-api-label">Sem API</span>
-        </div>
-      </button>
-      <div class="save-indicator saved" id="sidebar-save-indicator">
-        <i data-lucide="cloud" style="width:14px;height:14px;"></i>
-        <span>Salvo</span>
-      </div>
-    </div>
-
-  </aside>
-
-  <!-- ===== MAIN ===== -->
-  <div class="main">
-
-    <!-- Topbar -->
-    <header class="topbar">
-      <div class="topbar-left">
-        <h1 class="topbar-title" id="topbar-title">Bem-vindo</h1>
-        <p class="topbar-subtitle" id="topbar-subtitle">—</p>
-      </div>
-      <div class="topbar-right">
-        <div id="topbar-score" style="display:none;">
-          <span class="score-badge" id="topbar-score-label"></span>
-        </div>
-        <div class="model-selector">
-          <!-- ID: btn-model-selector (JS complemento) -->
-          <button class="btn-model-selector" id="btn-model-selector">
-            <i data-lucide="cpu" style="width:14px;height:14px;"></i>
-            <!-- ID: btn-model-label (JS complemento) / topbar-model-label (JS original) -->
-            <span id="btn-model-label">Gemini Flash</span>
-            <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
-          </button>
-          <div class="model-dropdown" id="model-dropdown" style="display:none;"></div>
+        <div class="logo-text">
+          <span class="logo-name">AIGator</span>
+          <span class="logo-sub">by Adsgator</span>
         </div>
       </div>
-    </header>
 
-    <!-- Progress bar -->
-    <!-- ID: topbar-progress-fill (JS complemento) / progress-fill (JS original) -->
-    <div class="progress-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-      <div class="progress-bar-fill" id="topbar-progress-fill" style="width:0%"></div>
-    </div>
-
-    <!-- Screen content (renderizado dinamicamente pelo JS) -->
-    <div class="screen-content" id="screen-content"></div>
-
-    <!-- Bottom bar -->
-    <footer class="bottombar" id="bottombar">
-      <div class="bottombar-inner">
-        <div class="bottombar-actions" id="bottombar-actions-left">
-          <button class="btn-ghost" id="btn-prev">
-            <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
-            Anterior
+      <!-- Projeto ativo -->
+      <div class="sidebar-section">
+        <div class="sidebar-label">Projeto Ativo</div>
+        <div class="project-card" id="btn-open-projects"
+          onclick="App.renderProjectsList(); App.openModal('modal-projects');" style="cursor:pointer;">
+          <i data-lucide="folder" class="project-card-icon"></i>
+          <div class="project-card-info">
+            <span class="project-card-name" id="project-name">Novo Projeto</span>
+            <span class="project-card-segment" id="project-segment">—</span>
+          </div>
+          <button class="project-rename-btn" title="Renomear" onclick="event.stopPropagation(); App.openRenameModal();">
+            <i data-lucide="edit-3" style="width:14px;height:14px"></i>
           </button>
         </div>
-        <div class="bottombar-center" id="bottombar-center"></div>
-        <div class="bottombar-actions" id="bottombar-actions">
-          <button class="btn-primary" id="btn-next">
-            Próximo
-            <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+
+        <div class="project-score-row">
+          <div class="project-score-bar">
+            <div class="project-score-fill" id="project-score-fill" style="width:0%"></div>
+          </div>
+          <span class="project-score-pct" id="project-score-pct">0%</span>
+        </div>
+      </div>
+
+      <!-- Steps nav — todo o conteúdo é gerado por renderStepsNav() via JS -->
+      <div class="sidebar-steps">
+        <div class="sidebar-label">Briefing</div>
+        <nav id="steps-nav" role="list"></nav>
+      </div>
+
+      <!-- Footer -->
+      <div class="sidebar-footer">
+        <button class="sidebar-footer-btn" id="btn-open-api"
+          onclick="App.renderApiModal(); App.openModal('modal-api');">
+          <div class="sidebar-status">
+            <span class="status-dot" id="sidebar-api-dot"></span>
+            <span class="status-label" id="sidebar-api-label">Sem API</span>
+          </div>
+        </button>
+        <div class="save-indicator saved" id="sidebar-save-indicator">
+          <i data-lucide="cloud" style="width:14px;height:14px;"></i>
+          <span>Salvo</span>
+        </div>
+      </div>
+
+    </aside>
+    <div class="sidebar-overlay" onclick="App.closeSidebar()"></div>
+
+    <!-- ===== MAIN ===== -->
+    <div class="main">
+
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <h1 class="topbar-title" id="topbar-title">Bem-vindo</h1>
+          <p class="topbar-subtitle" id="topbar-subtitle">—</p>
+        </div>
+        <div class="topbar-right">
+          <div id="topbar-score" style="display:none;">
+            <span class="score-badge" id="topbar-score-label"></span>
+          </div>
+          <div class="model-selector">
+            <!-- ID: btn-model-selector (JS complemento) -->
+            <button class="btn-model-selector" id="btn-model-selector">
+              <i data-lucide="cpu" style="width:14px;height:14px;"></i>
+              <!-- ID: btn-model-label (JS complemento) / topbar-model-label (JS original) -->
+              <span id="btn-model-label">Gemini Flash</span>
+              <i data-lucide="chevron-down" style="width:14px;height:14px;"></i>
+            </button>
+            <div class="model-dropdown" id="model-dropdown" style="display:none;"></div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Progress bar -->
+      <!-- ID: topbar-progress-fill (JS complemento) / progress-fill (JS original) -->
+      <div class="progress-bar-wrap" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+        <div class="progress-bar-fill" id="topbar-progress-fill" style="width:0%"></div>
+      </div>
+
+      <!-- Screen content (renderizado dinamicamente pelo JS) -->
+      <div class="screen-content" id="screen-content"></div>
+
+      <!-- Bottom bar -->
+      <footer class="bottombar" id="bottombar">
+        <div class="bottombar-inner">
+          <div class="bottombar-actions" id="bottombar-actions-left">
+            <button class="btn-ghost" id="btn-prev">
+              <i data-lucide="arrow-left" style="width:16px;height:16px;"></i>
+              Anterior
+            </button>
+          </div>
+          <div class="bottombar-center" id="bottombar-center"></div>
+          <div class="bottombar-actions" id="bottombar-actions">
+            <button class="btn-primary" id="btn-next">
+              Próximo
+              <i data-lucide="arrow-right" style="width:16px;height:16px;"></i>
+            </button>
+          </div>
+        </div>
+      </footer>
+
+    </div><!-- /.main -->
+  </div><!-- /#app -->
+
+
+  <!-- ===== MODAIS ===== -->
+  <!-- Estrutura: div.modal-overlay#id → div.modal.modal--SIZE -->
+  <!-- JS abre via: overlay.classList.add('open') -->
+
+  <!-- Modal Projetos -->
+  <div class="modal-overlay" id="modal-projects">
+    <div class="modal modal--md">
+      <div class="modal-header">
+        <span class="modal-title">Meus Projetos</span>
+        <div class="modal-header-actions">
+          <button class="modal-close" onclick="App.closeModal('modal-projects')">
+            <i data-lucide="x" style="width:18px;height:18px;"></i>
           </button>
         </div>
       </div>
-    </footer>
-
-  </div><!-- /.main -->
-</div><!-- /#app -->
-
-
-<!-- ===== MODAIS ===== -->
-<!-- Estrutura: div.modal-overlay#id → div.modal.modal--SIZE -->
-<!-- JS abre via: overlay.classList.add('open') -->
-
-<!-- Modal Projetos -->
-<div class="modal-overlay" id="modal-projects">
-  <div class="modal modal--md">
-    <div class="modal-header">
-      <span class="modal-title">Meus Projetos</span>
-      <div class="modal-header-actions">
-        <button class="modal-close" onclick="App.closeModal('modal-projects')">
-          <i data-lucide="x" style="width:18px;height:18px;"></i>
-        </button>
-      </div>
-    </div>
-    <div class="modal-body">
-      <div class="modal-actions-row" style="margin-bottom:4px;">
-        <button class="btn-primary btn-sm" id="btn-new-project">
-          <i data-lucide="plus" style="width:14px;height:14px;"></i> Novo Projeto
-        </button>
-        <label class="btn-ghost btn-sm" style="cursor:pointer;">
-          <i data-lucide="upload" style="width:14px;height:14px;"></i> Importar
-          <input type="file" id="import-file-input" style="display:none;" accept=".json">
-        </label>
-      </div>
-      <div id="projects-list-header"></div>
-      <div class="projects-list" id="projects-list"></div>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Config API -->
-<div class="modal-overlay" id="modal-api">
-  <div class="modal modal--md">
-    <div class="modal-header">
-      <i data-lucide="key" style="width:18px;height:18px;color:var(--accent2);"></i>
-      <span class="modal-title">Configurar APIs</span>
-      <div class="modal-header-actions">
-        <button class="modal-close" onclick="App.closeModal('modal-api')">
-          <i data-lucide="x" style="width:18px;height:18px;"></i>
-        </button>
-      </div>
-    </div>
-    <div class="modal-body" id="api-modal-body"></div>
-  </div>
-</div>
-
-<!-- Modal Geração (bloqueante — não fechar clicando fora) -->
-<div class="modal-overlay" id="modal-gen">
-  <div class="modal modal--sm" style="text-align:center;">
-    <div class="modal-header" style="justify-content:center;border-bottom:none;">
-      <span class="modal-title" id="modal-gen-title">Gerando Ficha de Implementação</span>
-    </div>
-    <div class="modal-body" style="align-items:center;">
-      <div class="gen-model-badge" id="gen-model-badge"></div>
-      <div class="gen-progress-wrap">
-        <div class="gen-progress-bar">
-          <div class="gen-progress-fill" id="gen-progress-fill" style="width:0%"></div>
+      <div class="modal-body">
+        <div class="modal-actions-row" style="margin-bottom:4px;">
+          <button class="btn-primary btn-sm" id="btn-new-project">
+            <i data-lucide="plus" style="width:14px;height:14px;"></i> Novo Projeto
+          </button>
+          <label class="btn-ghost btn-sm" style="cursor:pointer;">
+            <i data-lucide="upload" style="width:14px;height:14px;"></i> Importar
+            <input type="file" id="import-file-input" style="display:none;" accept=".json">
+          </label>
         </div>
-        <span class="gen-progress-pct" id="gen-progress-pct">0%</span>
-      </div>
-      <div class="gen-steps-list" id="gen-steps-list"></div>
-      <p class="gen-hint">O processo pode levar 30–90 segundos dependendo do modelo e do briefing.</p>
-    </div>
-  </div>
-</div>
-
-<!-- Modal Erro -->
-<div class="modal-overlay" id="modal-error">
-  <div class="modal modal--sm">
-    <div class="modal-header modal-header--danger">
-      <i data-lucide="alert-triangle" class="modal-header-icon" style="width:20px;height:20px;"></i>
-      <span class="modal-title">Erro na Geração</span>
-      <div class="modal-header-actions">
-        <button class="modal-close" onclick="App.closeModal('modal-error')">
-          <i data-lucide="x" style="width:18px;height:18px;"></i>
-        </button>
-      </div>
-    </div>
-    <div class="modal-body">
-      <p class="error-meta" id="error-meta"></p>
-      <div class="error-message" id="error-message"></div>
-      <p class="error-cause" id="error-cause"></p>
-      <div class="error-actions">
-        <button class="btn-primary btn-sm" id="btn-retry" onclick="App.generateDocImpl()">
-          <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Tentar Novamente
-        </button>
-        <button class="btn-ghost btn-sm" id="btn-change-model"
-          onclick="App.closeModal('modal-error'); document.getElementById('btn-model-selector').click();">
-          <i data-lucide="cpu" style="width:14px;height:14px;"></i> Trocar Modelo
-        </button>
-        <button class="btn-ghost btn-sm" id="btn-download-doc1-fallback" onclick="App.downloadDoc1()">
-          <i data-lucide="download" style="width:14px;height:14px;"></i> Baixar DOC-1
-        </button>
+        <div id="projects-list-header"></div>
+        <div class="projects-list" id="projects-list"></div>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Modal Preview DOC-IMPL -->
-<div class="modal-overlay" id="modal-preview">
-  <div class="modal modal--preview" style="height:85dvh;display:flex;flex-direction:column;">
-    <div class="modal-header">
-      <span class="modal-title">Preview — <span id="preview-project-name" style="color:var(--text-secondary);font-weight:400;"></span></span>
-      <div class="modal-header-actions">
-        <button class="btn-primary btn-sm" id="btn-download-preview">
-          <i data-lucide="download" style="width:14px;height:14px;"></i> Baixar Preview
-        </button>
-        <button class="modal-close" onclick="App.closeModal('modal-preview')">
-          <i data-lucide="x" style="width:18px;height:18px;"></i>
-        </button>
-      </div>
-    </div>
-    <div class="modal-body modal-body--preview" style="flex:1;">
-      <div class="preview-browser">
-        <div class="preview-browser-bar">
-          <span class="preview-dot-r"></span>
-          <span class="preview-dot-y"></span>
-          <span class="preview-dot-g"></span>
-          <span class="preview-url-bar" id="preview-url-bar">preview.html</span>
+  <!-- Modal Config API -->
+  <div class="modal-overlay" id="modal-api">
+    <div class="modal modal--md">
+      <div class="modal-header">
+        <i data-lucide="key" style="width:18px;height:18px;color:var(--accent2);"></i>
+        <span class="modal-title">Configurar APIs</span>
+        <div class="modal-header-actions">
+          <button class="modal-close" onclick="App.closeModal('modal-api')">
+            <i data-lucide="x" style="width:18px;height:18px;"></i>
+          </button>
         </div>
-        <div class="preview-iframe-wrap">
-          <iframe id="preview-iframe" class="preview-iframe"></iframe>
+      </div>
+      <div class="modal-body" id="api-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Modal Geração (bloqueante — não fechar clicando fora) -->
+  <div class="modal-overlay" id="modal-gen">
+    <div class="modal modal--sm" style="text-align:center;">
+      <div class="modal-header" style="justify-content:center;border-bottom:none;">
+        <span class="modal-title" id="modal-gen-title">Gerando Ficha de Implementação</span>
+      </div>
+      <div class="modal-body" style="align-items:center;">
+        <div class="gen-model-badge" id="gen-model-badge"></div>
+        <div class="gen-progress-wrap">
+          <div class="gen-progress-bar">
+            <div class="gen-progress-fill" id="gen-progress-fill" style="width:0%"></div>
+          </div>
+          <span class="gen-progress-pct" id="gen-progress-pct">0%</span>
+        </div>
+        <div class="gen-steps-list" id="gen-steps-list"></div>
+        <p class="gen-hint">O processo pode levar 30–90 segundos dependendo do modelo e do briefing.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Erro -->
+  <div class="modal-overlay" id="modal-error">
+    <div class="modal modal--sm">
+      <div class="modal-header modal-header--danger">
+        <i data-lucide="alert-triangle" class="modal-header-icon" style="width:20px;height:20px;"></i>
+        <span class="modal-title">Erro na Geração</span>
+        <div class="modal-header-actions">
+          <button class="modal-close" onclick="App.closeModal('modal-error')">
+            <i data-lucide="x" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <p class="error-meta" id="error-meta"></p>
+        <div class="error-message" id="error-message"></div>
+        <p class="error-cause" id="error-cause"></p>
+        <div class="error-actions">
+          <button class="btn-primary btn-sm" id="btn-retry" onclick="App.generateDocImpl()">
+            <i data-lucide="refresh-cw" style="width:14px;height:14px;"></i> Tentar Novamente
+          </button>
+          <button class="btn-ghost btn-sm" id="btn-change-model"
+            onclick="App.closeModal('modal-error'); document.getElementById('btn-model-selector').click();">
+            <i data-lucide="cpu" style="width:14px;height:14px;"></i> Trocar Modelo
+          </button>
+          <button class="btn-ghost btn-sm" id="btn-download-doc1-fallback" onclick="App.downloadDoc1()">
+            <i data-lucide="download" style="width:14px;height:14px;"></i> Baixar DOC-1
+          </button>
         </div>
       </div>
     </div>
-    <div class="preview-disclaimer">
-      <i data-lucide="info" style="width:14px;height:14px;"></i>
-      Preview simplificado — representa Hero + 3 seções + Footer. A implementação final será mais rica.
-    </div>
-    <div class="preview-actions">
-      <button class="btn-primary" id="btn-download-docimpl">
-        <i data-lucide="download" style="width:16px;height:16px;"></i> Baixar DOC-IMPL
-      </button>
-      <button class="btn-ghost" onclick="App.closeModal('modal-preview')">Fechar</button>
+  </div>
+
+  <!-- Modal Preview DOC-IMPL -->
+  <div class="modal-overlay" id="modal-preview">
+    <div class="modal modal--preview" style="height:85dvh;display:flex;flex-direction:column;">
+      <div class="modal-header">
+        <span class="modal-title">Preview — <span id="preview-project-name"
+            style="color:var(--text-secondary);font-weight:400;"></span></span>
+        <div class="modal-header-actions">
+          <button class="btn-primary btn-sm" id="btn-download-preview">
+            <i data-lucide="download" style="width:14px;height:14px;"></i> Baixar Preview
+          </button>
+          <button class="modal-close" onclick="App.closeModal('modal-preview')">
+            <i data-lucide="x" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body modal-body--preview" style="flex:1;">
+        <div class="preview-browser">
+          <div class="preview-browser-bar">
+            <span class="preview-dot-r"></span>
+            <span class="preview-dot-y"></span>
+            <span class="preview-dot-g"></span>
+            <span class="preview-url-bar" id="preview-url-bar">preview.html</span>
+          </div>
+          <div class="preview-iframe-wrap">
+            <iframe id="preview-iframe" class="preview-iframe"></iframe>
+          </div>
+        </div>
+      </div>
+      <div class="preview-disclaimer">
+        <i data-lucide="info" style="width:14px;height:14px;"></i>
+        Preview simplificado — representa Hero + 3 seções + Footer. A implementação final será mais rica.
+      </div>
+      <div class="preview-actions">
+        <button class="btn-primary" id="btn-download-docimpl">
+          <i data-lucide="download" style="width:16px;height:16px;"></i> Baixar DOC-IMPL
+        </button>
+        <button class="btn-ghost" onclick="App.closeModal('modal-preview')">Fechar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Modal Resultado Direção de Arte -->
-<div class="modal-overlay" id="modal-art-result">
-  <div class="modal modal--lg" style="height: 85vh;">
-    <div class="modal-header">
-      <i data-lucide="palette" style="width:18px;height:18px;color:var(--warning);"></i>
-      <span class="modal-title">Ficha de Direção de Arte</span>
-      <div class="modal-header-actions">
-        <button class="modal-close" onclick="App.closeModal('modal-art-result')">
-          <i data-lucide="x" style="width:18px;height:18px;"></i>
+  <!-- Modal Resultado Direção de Arte -->
+  <div class="modal-overlay" id="modal-art-result">
+    <div class="modal modal--lg" style="height: 85vh;">
+      <div class="modal-header">
+        <i data-lucide="palette" style="width:18px;height:18px;color:var(--warning);"></i>
+        <span class="modal-title">Ficha de Direção de Arte</span>
+        <div class="modal-header-actions">
+          <button class="modal-close" onclick="App.closeModal('modal-art-result')">
+            <i data-lucide="x" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body" id="art-result-body" style="flex:1;overflow-y:auto;"></div>
+      <div class="modal-footer" style="justify-content:flex-end;">
+        <button class="btn-ghost" onclick="App.closeModal('modal-art-result')">Revisar</button>
+        <button class="btn-primary" id="btn-approve-art">
+          <i data-lucide="check" style="width:16px;height:16px"></i> Aprovar Direção
         </button>
       </div>
     </div>
-    <div class="modal-body" id="art-result-body" style="flex:1;overflow-y:auto;"></div>
-    <div class="modal-footer" style="justify-content:flex-end;">
-      <button class="btn-ghost" onclick="App.closeModal('modal-art-result')">Revisar</button>
-      <button class="btn-primary" id="btn-approve-art">
-        <i data-lucide="check" style="width:16px;height:16px"></i> Aprovar Direção
-      </button>
-    </div>
   </div>
-</div>
 
-<!-- Modal Renomear Projeto -->
-<div class="modal-overlay" id="modal-rename">
-  <div class="modal modal--sm">
-    <div class="modal-header">
-      <i data-lucide="edit-3" style="width:18px;height:18px;color:var(--accent2);"></i>
-      <span class="modal-title">Nome do Projeto</span>
-    </div>
-    <div class="modal-body" style="padding-top:8px">
-      <div class="field-group">
-        <label class="field-label">Nome do cliente ou projeto</label>
-        <input type="text" class="field-input" id="rename-input"
-          placeholder="Ex: Beatriz Mattos — Adestramento"
-          onkeydown="if(event.key==='Enter') App.saveProjectName()">
-        <span class="field-hint">Aparece no card da sidebar e no nome dos arquivos gerados.</span>
+  <!-- Modal Renomear Projeto -->
+  <div class="modal-overlay" id="modal-rename">
+    <div class="modal modal--sm">
+      <div class="modal-header">
+        <i data-lucide="edit-3" style="width:18px;height:18px;color:var(--accent2);"></i>
+        <span class="modal-title">Nome do Projeto</span>
+      </div>
+      <div class="modal-body" style="padding-top:8px">
+        <div class="field-group">
+          <label class="field-label">Nome do cliente ou projeto</label>
+          <input type="text" class="field-input" id="rename-input" placeholder="Ex: Beatriz Mattos — Adestramento"
+            onkeydown="if(event.key==='Enter') App.saveProjectName()">
+          <span class="field-hint">Aparece no card da sidebar e no nome dos arquivos gerados.</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="App.closeModal('modal-rename')">Cancelar</button>
+        <button class="btn-primary" onclick="App.saveProjectName()">
+          <i data-lucide="check" style="width:15px;height:15px"></i> Salvar
+        </button>
       </div>
     </div>
-    <div class="modal-footer">
-      <button class="btn-ghost" onclick="App.closeModal('modal-rename')">Cancelar</button>
-      <button class="btn-primary" onclick="App.saveProjectName()">
-        <i data-lucide="check" style="width:15px;height:15px"></i> Salvar
-      </button>
+  </div>
+
+  <!-- Modal: Protótipo Fallback -->
+  <div class="modal-overlay" id="modal-prototipo-fallback" style="display:none">
+    <div class="modal" style="max-width:480px;">
+      <div class="modal-header">
+        <h3 class="modal-title">Ferramentas para Protótipo Visual</h3>
+        <button class="modal-close" onclick="App.closeModal('modal-prototipo-fallback')">
+          <i data-lucide="x" style="width:16px;height:16px"></i>
+        </button>
+      </div>
+      <div id="modal-prototipo-fallback-body"></div>
+      <div class="modal-footer">
+        <button class="btn-ghost" onclick="App.closeModal('modal-prototipo-fallback')">Fechar</button>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Toast -->
-<div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-<!-- AIGator — LandingAI Module -->
-<script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
-<script>
-  // Declarar App globalmente ANTES de qualquer módulo
-  window.App = {};
-</script>
-<script src="assets/js/00-config.js"></script>
-<script src="assets/js/01-state.js"></script>
-<script src="assets/js/02-api.js"></script>
-<script src="assets/js/screens/intake.js"></script>
-<script src="assets/js/screens/step.js"></script>
-<script src="assets/js/screens/art.js"></script>
-<script src="assets/js/screens/structure.js"></script>
-<script src="assets/js/screens/review.js"></script>
-<script src="assets/js/03-ui.js"></script>
-<script src="assets/js/04-handlers.js"></script>
-<script src="assets/js/app.js"></script>
+  <!-- AIGator — LandingAI Module -->
+  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
+  <script>
+    // Declarar App globalmente ANTES de qualquer módulo
+    window.App = {};
+  </script>
+  <script src="assets/js/00-config.js"></script>
+  <script src="assets/js/01-state.js"></script>
+  <script src="assets/js/02-api.js"></script>
+  <script src="assets/js/screens/intake.js"></script>
+  <script src="assets/js/screens/step.js"></script>
+  <script src="assets/js/screens/art.js"></script>
+  <script src="assets/js/screens/structure.js"></script>
+  <script src="assets/js/screens/review.js"></script>
+  <script src="assets/js/03-ui.js"></script>
+  <script src="assets/js/04-handlers.js"></script>
+  <script src="assets/js/app.js"></script>
 </body>
+
 </html>

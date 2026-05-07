@@ -69,7 +69,7 @@ const AI_MODELS = {
     provider: 'gemini',
     group: 'Google Gemini',
     tier: 'free',
-    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent', 
+    endpoint: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash:generateContent',
     maxTokens: 32768,
     temp: 0.7,
   },
@@ -145,14 +145,45 @@ const AI_MODELS = {
 };
 
 const STEPS = [
-  { id: 1, label: 'Identificação',      sub: 'Nome, nicho e tipo de projeto',   icon: 'user' },
-  { id: 2, label: 'Contato e CTA',      sub: 'WhatsApp, e-mail e conversão',    icon: 'phone' },
-  { id: 3, label: 'Presença Digital',   sub: 'Redes sociais e plataformas',     icon: 'globe' },
-  { id: 4, label: 'Atendimento',        sub: 'Modalidade, endereço, cidades',   icon: 'map-pin' },
-  { id: 5, label: 'Serviço / Produto',  sub: 'O que é vendido e como funciona', icon: 'briefcase' },
-  { id: 6, label: 'Público-Alvo',       sub: 'Perfil, dores e resultado',       icon: 'target' },
-  { id: 7, label: 'Autoridade',         sub: 'Diferenciais e prova social',     icon: 'star' },
-  { id: 8, label: 'Tom e Identidade',   sub: 'Estilo, vocabulário e restrições',icon: 'palette' },
+  {
+    id: 'step1',
+    title: 'Identidade',
+    icon: 'user',
+    fields: [
+      { key: 'nome_profissional', label: 'Nome do Profissional', type: 'text' },
+      { key: 'nome_marca', label: 'Nome da Marca', type: 'text' },
+      { key: 'nicho', label: 'Nicho / Segmento', type: 'text' },
+      { key: 'segmento', label: 'Segmento detalhado', type: 'text' },
+      { key: 'cidade', label: 'Cidade', type: 'text' },
+      { key: 'estado', label: 'Estado', type: 'text' },
+      { key: 'proposta_valor', label: 'Proposta de Valor', type: 'textarea' },
+      { key: 'missao', label: 'Missão', type: 'textarea' },
+      { key: 'anos_experiencia', label: 'Anos de Experiência', type: 'text' },
+      { key: 'formacao', label: 'Formação', type: 'text' },
+      { key: 'certificacoes', label: 'Certificações', type: 'textarea' },
+    ],
+  },
+  {
+    id: 'step2',
+    title: 'Avatar e Dor',
+    icon: 'target',
+    fields: [
+      { key: 'avatar_nome', label: 'Nome do Avatar', type: 'text' },
+      { key: 'avatar_idade', label: 'Faixa Etária', type: 'text' },
+      { key: 'avatar_genero', label: 'Gênero', type: 'text' },
+      { key: 'avatar_profissao', label: 'Profissão', type: 'text' },
+      { key: 'avatar_renda', label: 'Renda', type: 'text' },
+      { key: 'dor_principal', label: 'Dor Principal', type: 'textarea' },
+      { key: 'dores_secundarias', label: 'Dores Secundárias', type: 'textarea' },
+      { key: 'desejo_principal', label: 'Desejo Principal', type: 'textarea' },
+      { key: 'objecao_preco', label: 'Objeção — Preço', type: 'textarea' },
+      { key: 'objecao_tempo', label: 'Objeção — Tempo', type: 'textarea' },
+      { key: 'objecao_confianca', label: 'Objeção — Confiança', type: 'textarea' },
+      { key: 'objecao_resultado', label: 'Objeção — Resultado', type: 'textarea' },
+      { key: 'gatilhos_mentais', label: 'Gatilhos Mentais', type: 'textarea' },
+    ],
+  },
+  // step3 ... step8 com os campos correspondentes ao JSON do intake
 ];
 
 const REQUIRED_FIELDS = {
@@ -419,3 +450,157 @@ const ERROR_MAP = {
   'overloaded': { cause: 'O servidor do modelo está sobrecarregado.', tip: 'Aguarde 1–2 minutos e tente novamente.' },
   'openrouter': { cause: 'Erro no gateway OpenRouter.', tip: 'Verifique os créditos em openrouter.ai/credits.' },
 };
+
+function buildImplPrompt() {
+  const doc1 = this.buildDoc1();
+
+  // Remove o bloco de instruções manuais do DOC-1
+  // para o prompt da API ser mais limpo
+  const briefingOnly = doc1.replace(/=== INICIO DO PROMPT ===([\s\S]*?)=== FIM DO PROMPT ===/, '').trim();
+
+  return `
+Você é um desenvolvedor Astro especializado em landing pages de alta conversão.
+
+## SUA TAREFA
+
+Gerar um Blueprint de Implementação completo e 100% funcional para o projeto abaixo.
+
+## FORMATO DE SAÍDA OBRIGATÓRIO
+
+O documento que você vai gerar deve seguir EXATAMENTE esta estrutura:
+
+\`\`\`
+# Blueprint de Implementação — [Nome do Projeto]
+> **Documento para o Roo Code.**
+> Contém todos os arquivos do projeto na ordem correta de criação.
+> Não invente nada além do que está aqui.
+> Campos que exigem ação humana antes do go-live: \`[DOMINIO]\`, \`[GTM_ID]\`, \`[WEB3FORMS_KEY]\`.
+
+---
+
+## ORDEM DE CRIAÇÃO
+
+### FASE 1 — Fundação
+1. \`package.json\`
+2. \`astro.config.mjs\`
+3. \`tailwind.config.js\`
+4. \`.env.example\` → criar \`.env\` com valores reais
+
+### FASE 2 — Arquivos Estáticos
+5. \`public/robots.txt\`
+6. \`public/manifest.json\`
+7. \`public/favicon.svg\`
+8. \`src/assets/logo.svg\`
+
+### FASE 3 — Pré-requisito de Assets de Imagem
+[lista de imagens necessárias com dimensões]
+
+### FASE 4 — Componentes Globais
+[lista dos componentes]
+
+### FASE 5 — Layout
+[Layout.astro]
+
+### FASE 6 — Seções
+[uma seção por bloco da estrutura aprovada]
+
+### FASE 7 — Páginas
+[páginas]
+
+---
+
+## INSTALAÇÃO DE DEPENDÊNCIAS
+[bloco bash com npm install]
+
+---
+
+## BUILD E DEPLOY
+[comandos]
+
+---
+
+[A partir daqui: um título ### por arquivo, seguido do código completo em bloco de código]
+\`\`\`
+
+## STACK OBRIGATÓRIA
+
+- Framework: Astro 4.x (output: hybrid)
+- CSS: Tailwind CSS 3.x (config com design system completo do briefing)
+- Animações: GSAP 3.x + ScrollTrigger (em toda seção com scroll)
+- Smooth scroll: Lenis (@studio-freight/lenis) — inicializado no Layout
+- UI dinâmica: Framer Motion — apenas em componentes React (.tsx)
+- Ícones: Lucide React
+- Formulário: Web3Forms (endpoint via variável de ambiente)
+- Deploy: Vercel — adapter @astrojs/vercel — output hybrid
+- Analytics: Vercel Analytics + Speed Insights — importados no Layout
+- LGPD: CookieBanner.tsx com Google Consent Mode v2
+- Fontes: via @fontsource (não CDN externo)
+
+## DEPENDÊNCIAS EXATAS (package.json)
+
+\`\`\`json
+{
+  "dependencies": {
+    "@astrojs/react": "^3.6.0",
+    "@astrojs/sitemap": "^3.2.0",
+    "@astrojs/tailwind": "^5.1.0",
+    "@astrojs/vercel": "^7.8.0",
+    "@studio-freight/lenis": "^1.0.42",
+    "astro": "^4.16.0",
+    "framer-motion": "^11.11.0",
+    "gsap": "^3.12.5",
+    "lucide-react": "^0.414.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "resend": "^4.0.0",
+    "tailwindcss": "^3.4.14"
+  }
+}
+\`\`\`
+
+## PADRÕES DE CÓDIGO
+
+### Seções Astro:
+- Todos os dados (textos, preços, depoimentos) ficam inline no frontmatter (---)
+- Nenhum import de arquivo de dados externo
+- Script GSAP no <script> ao final com prefers-reduced-motion
+- Acessibilidade: aria-labelledby, role, focus-visible em todos os interativos
+
+### Animações GSAP (obrigatório em toda seção):
+\`\`\`js
+if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  gsap.registerPlugin(ScrollTrigger);
+  gsap.from('.classe', { opacity: 0, y: 30, duration: 0.6, ease: 'power2.out',
+    scrollTrigger: { trigger: '.classe', start: 'top 85%' } });
+}
+\`\`\`
+
+### WhatsApp links:
+- Sempre com texto pré-preenchido via encodeURIComponent
+- Usar o número e a mensagem padrão do briefing
+
+### Layout.astro deve incluir:
+- GTM no <head> (gtag) e <body> (noscript iframe)
+- Lenis inicializado com lerp: 0.1, duration: 1.2
+- Import de Vercel Analytics e Speed Insights
+- Meta tags: title, description, canonical, og:*, twitter:*
+- JSON-LD Schema.org baseado no schema_tipo do briefing
+
+## REGRAS ABSOLUTAS
+
+1. Todo arquivo deve ter o código COMPLETO. Zero atalhos como "// resto igual".
+2. Nunca use placeholders como "[TEXTO]" no código — use os dados reais do briefing.
+3. Exceção: use \`[DOMINIO]\`, \`[GTM_ID]\`, \`[WEB3FORMS_KEY]\` para dados que o cliente ainda não tem.
+4. Se o briefing não tem depoimentos reais: não gere a seção de depoimentos.
+5. Se o briefing não tem endereço: não gere a seção de mapa/localização.
+6. Se o briefing não tem @ do Instagram confirmado: não gere feed Instagram.
+7. H1 do Hero = a dor de busca, nunca o nome do serviço.
+8. Copy em 1ª pessoa do singular: "Eu atendo...", "Meu método...".
+9. CTAs específicos: nunca "Saiba mais" ou "Entre em contato".
+10. O tailwind.config.js deve ter os tokens exatos de cores, fontes e espaçamentos do briefing.
+
+---
+
+${briefingOnly}
+`.trim();
+}

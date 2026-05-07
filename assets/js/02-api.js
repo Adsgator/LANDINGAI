@@ -11,11 +11,11 @@ Object.assign(window.App, {
     if (!apiKey?.trim()) throw new Error(`Chave de API para ${model.provider} não configurada.`);
 
     switch (model.provider) {
-      case 'gemini':      return this._callGemini(prompt, model, apiKey);
-      case 'claude':      return this._callClaude(prompt, model, apiKey);
-      case 'grok':        return this._callOpenAICompat(prompt, model, apiKey);
-      case 'mistral':     return this._callMistral(prompt, model, apiKey);
-      case 'openrouter':  return this._callOpenRouter(prompt, model, apiKey);
+      case 'gemini': return this._callGemini(prompt, model, apiKey);
+      case 'claude': return this._callClaude(prompt, model, apiKey);
+      case 'grok': return this._callOpenAICompat(prompt, model, apiKey);
+      case 'mistral': return this._callMistral(prompt, model, apiKey);
+      case 'openrouter': return this._callOpenRouter(prompt, model, apiKey);
       default: throw new Error(`Provider "${model.provider}" não implementado.`);
     }
   },
@@ -56,22 +56,22 @@ Object.assign(window.App, {
     // Mapa de IDs internos → IDs reais da API Anthropic
     const MODEL_IDS = {
       'claude-sonnet-4': 'claude-sonnet-4-5-20251001',
-      'claude-opus-4':   'claude-opus-4-6',
-      'claude-haiku-4':  'claude-haiku-4-5-20251001',
+      'claude-opus-4': 'claude-opus-4-6',
+      'claude-haiku-4': 'claude-haiku-4-5-20251001',
     };
     const realModelId = MODEL_IDS[this.state.selectedModel] || this.state.selectedModel;
 
     const response = await fetch(model.endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type':      'application/json',
-        'x-api-key':         apiKey,
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true',
       },
       body: JSON.stringify({
-        model:       realModelId,
-        max_tokens:  model.maxTokens,
+        model: realModelId,
+        max_tokens: model.maxTokens,
         temperature: model.temp,
         system: 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro. Siga as instruções exatamente como especificadas.',
         messages: [{ role: 'user', content: prompt }],
@@ -120,14 +120,14 @@ Object.assign(window.App, {
     const response = await fetch(model.endpoint, {
       method: 'POST',
       headers: {
-        'Content-Type':   'application/json',
-        'Authorization':  `Bearer ${apiKey}`,
-        'HTTP-Referer':   'https://adsgator.com.br',
-        'X-Title':        'LandingAI — Adsgator',
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`,
+        'HTTP-Referer': 'https://adsgator.com.br',
+        'X-Title': 'LandingAI — Adsgator',
       },
       body: JSON.stringify({
-        model:       model.model,
-        max_tokens:  model.maxTokens,
+        model: model.model,
+        max_tokens: model.maxTokens,
         temperature: model.temp,
         messages: [
           {
@@ -190,5 +190,40 @@ Object.assign(window.App, {
     const text = data.choices?.[0]?.message?.content;
     if (!text) throw new Error(`Resposta vazia de ${model.label}.`);
     return text;
+  },
+
+  async callGeminiImage(prompt) {
+    const key = this.state.apiKeys?.gemini?.trim();
+    if (!key) throw new Error('API Key Gemini não configurada.');
+
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${key}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE'],
+            temperature: 1,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error?.message || 'Erro Gemini Image');
+    }
+
+    const data = await response.json();
+    const parts = data.candidates?.[0]?.content?.parts || [];
+
+    for (const part of parts) {
+      if (part.inlineData?.mimeType?.startsWith('image/')) {
+        return `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
+      }
+    }
+    throw new Error('Gemini não retornou imagem. Verifique se sua chave suporta geração de imagens.');
   }
 });

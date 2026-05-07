@@ -29,6 +29,10 @@ Object.assign(window.App, {
   },
 
   renderScreen() {
+    // reset scroll
+    const content = document.getElementById('content') || document.querySelector('.main-content');
+    if (content) content.scrollTop = 0;
+
     const container = document.getElementById('screen-content');
     if (!this.state.screen || !container) return;
 
@@ -50,7 +54,7 @@ Object.assign(window.App, {
     const title = document.getElementById('topbar-title');
     const subtitle = document.getElementById('topbar-subtitle');
     const fill = document.getElementById('topbar-progress-fill');
-    
+
     if (!title) return;
 
     if (this.state.screen === 'intake') {
@@ -79,7 +83,7 @@ Object.assign(window.App, {
     else if (this.state.screen === 'structure') current = total - 2;
     else if (this.state.screen === 'art') current = total - 1;
     else if (this.state.screen === 'review') current = total;
-    
+
     const pct = Math.round((current / total) * 100);
     if (fill) fill.style.width = `${pct}%`;
 
@@ -120,17 +124,17 @@ Object.assign(window.App, {
       estrutura_aprovada: 4,
       arte_ficha_aprovada: 3,
     };
-    
+
     const fields = Object.keys(weights);
     let totalWeight = 0;
     let currentScore = 0;
-    
+
     fields.forEach(f => {
       const weight = weights[f];
       totalWeight += weight;
       if (this.B[f]) currentScore += weight;
     });
-    
+
     return totalWeight > 0 ? Math.round((currentScore / totalWeight) * 100) : 0;
   },
 
@@ -224,8 +228,8 @@ Object.assign(window.App, {
 
     if (btnPrev) btnPrev.style.visibility = isFirst ? 'hidden' : 'visible';
     if (btnNext) {
-        btnNext.innerHTML = isLast ? 'Concluir <i data-lucide="check" style="width:16px;height:16px"></i>' : 'Próximo <i data-lucide="arrow-right" style="width:16px;height:16px"></i>';
-        lucide.createIcons({ nodes: [btnNext] });
+      btnNext.innerHTML = isLast ? 'Concluir <i data-lucide="check" style="width:16px;height:16px"></i>' : 'Próximo <i data-lucide="arrow-right" style="width:16px;height:16px"></i>';
+      lucide.createIcons({ nodes: [btnNext] });
     }
   },
 
@@ -239,12 +243,51 @@ Object.assign(window.App, {
     if (m) m.classList.remove('open');
   },
 
-  showToast(msg, type = 'info') {
-    const t = document.getElementById('toast');
-    if (!t) return;
-    t.textContent = msg;
-    t.className = `toast visible ${type}`;
-    setTimeout(() => t.classList.remove('visible'), 3000);
+  showToast(message, type = 'info', duration = 4000) {
+    const existing = document.getElementById('toast-container');
+    const container = existing || (() => {
+      const el = document.createElement('div');
+      el.id = 'toast-container';
+      document.body.appendChild(el);
+      return el;
+    })();
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.innerHTML = `
+      <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : type === 'warning' ? 'alert-triangle' : 'info'}" style="width:15px;height:15px;flex-shrink:0;"></i>
+      <span>${message}</span>
+      <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;padding:0;color:inherit;opacity:0.6;">
+        <i data-lucide="x" style="width:13px;height:13px;"></i>
+      </button>
+    `;
+
+    container.appendChild(toast);
+    lucide.createIcons({ nodes: [toast] });
+
+    // Entrada
+    requestAnimationFrame(() => toast.classList.add('toast-visible'));
+
+    // Saída após duration
+    setTimeout(() => {
+      toast.classList.remove('toast-visible');
+      setTimeout(() => toast.remove(), 300);
+    }, duration);
+  },
+
+  updateStepsNavBadges() {
+    const steps = this.STEPS || [];
+    const B = this.state.briefing || {};
+
+    steps.forEach((step, i) => {
+      const filled = (step.fields || []).filter(f => B[f.key] && String(B[f.key]).trim()).length;
+      const total = (step.fields || []).length;
+      const badge = document.querySelector(`.step-nav-item[data-step="${i}"] .step-nav-badge`);
+      if (badge) {
+        badge.textContent = `${filled}/${total}`;
+        badge.className = `step-nav-badge ${filled === total ? 'badge-complete' : filled > 0 ? 'badge-partial' : 'badge-empty'}`;
+      }
+    });
   },
 
   renderApiModal() {
@@ -427,7 +470,7 @@ Object.assign(window.App, {
   },
 
   /* ── AI Log System (V3 Delta) ────────────────────────────────── */
-  openAILog(title, steps) {
+  openAILog(titulo, steps) {
     this.state.aiLog = {
       title,
       steps,
@@ -440,6 +483,9 @@ Object.assign(window.App, {
     };
     this._renderAILog();
     this.openModal('modal-gen');
+    requestAnimationFrame(() => {
+      document.getElementById('ai-log-overlay').classList.add('is-visible');
+    });
   },
 
   aiLogStep(id, liveMsg = '') {
@@ -477,8 +523,11 @@ Object.assign(window.App, {
   },
 
   closeAILog() {
-    this.aiLogDone();
-    setTimeout(() => this.closeModal('modal-gen'), 800);
+    const overlay = document.getElementById('ai-log-overlay');
+    if (overlay) {
+      overlay.classList.remove('is-visible');
+      setTimeout(() => overlay.remove(), 250);
+    }
   },
 
   _renderAILog() {

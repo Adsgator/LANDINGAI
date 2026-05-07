@@ -34,14 +34,14 @@ Object.assign(window.App, {
       if (p) this.state.projects = JSON.parse(p);
       if (a && a.trim()) this.state.activeId = a.trim();
       if (k) this.state.apiKeys = JSON.parse(k);
-      
+
       // Validação do modelo selecionado (caso tenha mudado no config ou seja velho)
       if (s) {
-          const settings = JSON.parse(s);
-          if (settings.selectedModel) this.state.selectedModel = settings.selectedModel;
+        const settings = JSON.parse(s);
+        if (settings.selectedModel) this.state.selectedModel = settings.selectedModel;
       }
       if (!AI_MODELS[this.state.selectedModel]) {
-          this.state.selectedModel = 'gemini-2.5-flash';
+        this.state.selectedModel = 'gemini-2.5-flash';
       }
     } catch (e) { console.error('Erro ao carregar localStorage:', e); }
   },
@@ -95,13 +95,13 @@ Object.assign(window.App, {
     if (!this.P || !name) return;
     this.P.name = name;
     if (!this.B.slug) {
-        this.P.briefing.slug = name
-          .toLowerCase()
-          .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-          .replace(/[^a-z0-9\s-]/g, '')
-          .replace(/\s+/g, '-')
-          .replace(/-+/g, '-')
-          .trim();
+      this.P.briefing.slug = name
+        .toLowerCase()
+        .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9\s-]/g, '')
+        .replace(/\s+/g, '-')
+        .replace(/-+/g, '-')
+        .trim();
     }
     this.P.updatedAt = new Date().toISOString();
     this.autosave();
@@ -129,10 +129,10 @@ Object.assign(window.App, {
   cloneProject(id) {
     const src = this.state.projects[id];
     if (!src) return;
-    const newId  = 'p_' + Date.now();
-    const clone  = JSON.parse(JSON.stringify(src));
-    clone.id     = newId;
-    clone.name   = (src.name || 'Projeto') + ' — Cópia';
+    const newId = 'p_' + Date.now();
+    const clone = JSON.parse(JSON.stringify(src));
+    clone.id = newId;
+    clone.name = (src.name || 'Projeto') + ' — Cópia';
     clone.createdAt = new Date().toISOString();
     clone.updatedAt = new Date().toISOString();
     // Limpar aprovações para o clone começar limpo
@@ -145,13 +145,13 @@ Object.assign(window.App, {
   },
 
   exportProject(id) {
-    const p   = this.state.projects[id];
+    const p = this.state.projects[id];
     if (!p) return;
     const json = JSON.stringify(p, null, 2);
     const blob = new Blob([json], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
-    a.href = url; a.download = `projeto-${p.name?.replace(/\s+/g,'-') || id}.json`; a.click();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `projeto-${p.name?.replace(/\s+/g, '-') || id}.json`; a.click();
     URL.revokeObjectURL(url);
   },
 
@@ -161,7 +161,7 @@ Object.assign(window.App, {
     const reader = new FileReader();
     reader.onload = e => {
       try {
-        const p  = JSON.parse(e.target.result);
+        const p = JSON.parse(e.target.result);
         if (!p.briefing) throw new Error('JSON inválido — sem campo briefing.');
         const newId = 'p_' + Date.now();
         p.id = newId;
@@ -178,11 +178,12 @@ Object.assign(window.App, {
     reader.readAsText(file);
   },
 
-  setField(field, value) {
-    if (!this.P) return;
-    this.P.briefing[field] = value;
-    this.P.updatedAt = new Date().toISOString();
-    this.autosave();
+  setField(key, value) {
+    if (!this.state.briefing) this.state.briefing = {};
+    this.state.briefing[key] = value;
+    this.saveState();
+    this.updateProgressBar();    // ← adicionar
+    this.updateStepsNavBadges(); // ← adicionar (ver abaixo)
   },
 
   toggleArray(field, value) {

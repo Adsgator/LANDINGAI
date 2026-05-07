@@ -112,7 +112,7 @@ Object.assign(window.App, {
           this.setField(field, value);
           chip.classList.add('on');
         }
-        
+
         // Re-renderiza para campos que mudam o layout
         const structural = ['modalidade', 'exibir_localizacao', 'objetivo_conversao', 'preco_exibir', 'depoimentos', 'google_business'];
         if (structural.includes(field)) {
@@ -126,7 +126,7 @@ Object.assign(window.App, {
       card.addEventListener('click', () => {
         const field = card.dataset.field;
         const value = card.dataset.selcard;
-        
+
         // Remove 'on' de todos os cards do mesmo grupo
         container.querySelectorAll(`[data-field="${field}"][data-selcard]`).forEach(c => {
           c.classList.remove('on');
@@ -136,7 +136,7 @@ Object.assign(window.App, {
         this.setField(field, value);
         card.classList.add('on');
         card.setAttribute('aria-selected', 'true');
-        
+
         // Sempre re-renderiza se for um campo estrutural
         const structural = ['tipo', 'objetivo_conversao', 'modalidade', 'preco_exibir', 'depoimentos', 'google_business'];
         if (structural.includes(field)) {
@@ -307,126 +307,46 @@ Object.assign(window.App, {
   },
 
   async runIntakeAnalysis() {
-    const text = this.B?.briefing_bruto;
-    if (!text || text.length < 50) {
-      this.showToast('Cole um material mais longo para análise (mínimo 50 caracteres).', 'warning');
+    const briefing = this.state.briefing?.intake_raw || '';
+    if (!briefing.trim()) {
+      this.showToast('Cole o briefing do cliente antes de analisar.', 'warning');
       return;
     }
-
     const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
     if (!hasKey) {
       this.showToast('Configure uma API Key primeiro.', 'warning');
       return;
     }
 
-    this.openAILog('Analisando Material Bruto', [
-      { id: 1, label: 'Lendo material...' },
-      { id: 2, label: 'Extraindo dados do projeto...' },
-      { id: 3, label: 'Preenchendo informações...' },
-      { id: 4, label: 'Salvando no briefing...' },
+    this.openAILog('Analisando Briefing Completo', [
+      { id: 1, icon: 'file-text', label: 'Lendo briefing...' },
+      { id: 2, icon: 'cpu', label: 'Extraindo todos os dados...' },
+      { id: 3, icon: 'layers', label: 'Mapeando campos dos steps...' },
+      { id: 4, icon: 'check-circle', label: 'Aplicando informações...' },
     ]);
 
     try {
-      this.aiLogStep(1, 'Processando texto...');
-      await this.aiLogDelay(200);
-
-      this.aiLogStep(2, 'Enviando para a IA...');
-
-      const prompt = `Você é um specialist em briefing de landing pages da agência Adsgator.
-Analise o material bruto abaixo e extraia o máximo de informações.
-
-MATERIAL DO CLIENTE:
-${text}
-
-Responda APENAS com um objeto JSON válido (sem markdown, sem explicações, sem \`\`\`json), com os seguintes campos (use string vazia "" para campos desconhecidos):
-
-{
-  "nome_cliente": "nome do profissional/responsável",
-  "nome_marca": "nome comercial/marca se diferente",
-  "segmento": "segmento específico do negócio (não genérico)",
-  "tipo": "servico|mentoria|consultoria|produto|saas",
-  "whatsapp": "apenas dígitos com DDI ex: 5511999999999",
-  "email": "email de contato",
-  "horarios": "dias e horários de atendimento",
-  "objetivo_conversao": "whatsapp|formulario|ligacao|email",
-  "instagram": "@usuario",
-  "youtube": "link do canal",
-  "google_business": "sim|nao",
-  "google_nota": "nota ex: 4.8",
-  "google_qtd": "número de avaliações",
-  "modalidade": "presencial|online|hibrido",
-  "endereco": "endereço completo se presencial",
-  "cidades_atendimento": "cidades ou regiões",
-  "servico_principal": "serviço principal foco da campanha",
-  "servicos_lista": "lista de serviços um por linha",
-  "servicos_descricao": "como funciona o serviço",
-  "preco_exibir": "sim|nao",
-  "preco_valor": "valor e forma de cobrança",
-  "publico_primario": "perfil detalhado do cliente ideal",
-  "publico_dor": "dor principal na voz do cliente",
-  "publico_resultado": "resultado desejado após contratar",
-  "diferencial": "o que diferencia concretamente",
-  "frase_impacto": "frase que captura o que faz",
-  "historia": "por que faz o que faz",
-  "casos_resultados": "números e resultados concretos",
-  "depoimentos": "sim|nao",
-  "estilo_desejado": "como o site deve ser percebido",
-  "sensacao_visitante": "emoção desejada ao navegar",
-  "restricoes": "o que NÃO quer de forma alguma",
-  "dominio": "domínio do site",
-  "gtm_id": "ID do GTM ex: GTM-XXXXXXX"
-}`;
-
-      const res = await this.callAI(prompt);
-
-      this.aiLogStep(3, 'Processando resposta...');
-
-      // Parse robusto: tenta JSON direto, depois com limpeza, depois extração via regex
-      let data = null;
-      const cleanRes = res.replace(/```json|```/g, '').trim();
-
-      try {
-        data = JSON.parse(cleanRes);
-      } catch (e1) {
-        // Tentar encontrar o JSON dentro da resposta
-        const match = cleanRes.match(/\{[\s\S]*\}/);
-        if (match) {
-          try {
-            data = JSON.parse(match[0]);
-          } catch (e2) {
-            throw new Error('A IA não retornou um JSON válido. Tente novamente ou use um modelo diferente.');
-          }
-        } else {
-          throw new Error('Não foi possível extrair dados da resposta da IA.');
-        }
-      }
-
-      this.aiLogStep(4, 'Salvando...');
-
-      // Filtrar campos vazios antes de mesclar
-      const filtered = Object.fromEntries(
-        Object.entries(data).filter(([, v]) => v && v !== '' && v !== '""')
-      );
-
-      Object.assign(this.P.briefing, filtered);
-      this.autosave();
+      this.aiLogStep(1);
+      const prompt = this.buildIntakePrompt(briefing);
       await this.aiLogDelay(300);
 
-      this.aiLogDone();
+      this.aiLogStep(2);
+      const resultado = await this.callAI(prompt);
+      await this.aiLogDelay(300);
 
-      setTimeout(() => {
-        this.closeModal('modal-gen');
-        this.goToStep(1);
-        this.showToast(`Análise concluída! ${Object.keys(filtered).length} campos preenchidos.`, 'success');
-      }, 800);
+      this.aiLogStep(3);
+      await this.aiLogDelay(400);
 
-    } catch (e) {
-      console.error('runIntakeAnalysis error:', e);
-      this.aiLogError(this.state.aiLog.active, e.message);
-      setTimeout(() => {
-        this.closeModal('modal-gen');
-        this.showToast('Erro na análise: ' + e.message, 'error');
-      }, 1500);
+      this.aiLogStep(4);
+      await this.applyIntakeJSON(resultado);
+      await this.aiLogDelay(500);
+
+      this.closeAILog();
+      this.renderScreen();
+      this.showToast('✓ Briefing analisado — ' + this.countFilledFields() + ' campos preenchidos!', 'success');
+    } catch (err) {
+      this.closeAILog();
+      this.showToast('Erro na análise: ' + err.message, 'error');
     }
   },
 
@@ -682,11 +602,34 @@ ${doc1}`;
     }
   },
 
-  downloadDoc1() {
-    const doc1 = this.buildDoc1();
-    const slug = this.B.slug || 'briefing';
-    this.downloadText(doc1, `doc1-${slug}.md`, 'text/markdown');
-    this.showToast('DOC-1 baixado!', 'success');
+  async downloadDoc1() {
+    const btn = document.getElementById('btn-download-doc1');
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<i data-lucide="loader" style="width:14px;height:14px;animation:spin 1s linear infinite;"></i> Gerando...';
+      lucide.createIcons({ nodes: [btn] });
+    }
+
+    try {
+      const doc1 = this.buildDoc1();
+      const slug = (this.state.projeto_nome || 'projeto').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const blob = new Blob([doc1], { type: 'text/markdown;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `doc1-${slug}.md`;
+      a.click();
+      URL.revokeObjectURL(url);
+      this.showToast('DOC-1 baixado com sucesso!', 'success');
+    } catch (err) {
+      this.showToast('Erro ao gerar DOC-1: ' + err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<i data-lucide="download" style="width:14px;height:14px"></i> Baixar DOC-1';
+        lucide.createIcons({ nodes: [btn] });
+      }
+    }
   },
 
   downloadText(content, filename, mime = 'text/plain') {
@@ -710,10 +653,10 @@ ${doc1}`;
   handleIntakeFiles(files) {
     if (!files.length) return;
     this.state.intakeFiles = [...(this.state.intakeFiles || []), ...files];
-    
+
     const list = document.getElementById('intake-files-list');
     if (!list) return;
-    
+
     list.innerHTML = this.state.intakeFiles.map((f, i) => `
       <div class="upload-preview-item">
         <i data-lucide="file-text" style="width:14px;height:14px"></i>
@@ -747,11 +690,11 @@ ${doc1}`;
   handleArtFiles(files) {
     if (!files.length) return;
     if (!this.P) return;
-    
+
     const existing = this.B.arte_arquivos || [];
     const novos = files.map(f => ({ name: f.name, size: f.size, type: f.type }));
     this.setField('arte_arquivos', [...existing, ...novos]);
-    
+
     const list = document.getElementById('art-files-list');
     if (list) {
       const all = this.B.arte_arquivos || [];
@@ -790,5 +733,180 @@ ${doc1}`;
     arr.splice(index, 1);
     this.setField(field, arr);
     this.renderScreen();
+  },
+
+  buildIntakePrompt(briefing) {
+    return `
+Você é um estrategista sênior de marketing digital especializado em landing pages de conversão.
+
+Leia o briefing abaixo e extraia TODAS as informações disponíveis.
+Retorne um JSON válido com EXATAMENTE esta estrutura.
+Para campos sem informação no briefing: retorne string vazia "".
+NUNCA invente informações que não estejam no briefing.
+Responda APENAS com o JSON, sem markdown, sem explicação.
+
+{
+  "step1": {
+    "nome_profissional": "",
+    "nome_marca": "",
+    "nicho": "",
+    "segmento": "",
+    "cidade": "",
+    "estado": "",
+    "proposta_valor": "",
+    "missao": "",
+    "anos_experiencia": "",
+    "formacao": "",
+    "certificacoes": ""
+  },
+  "step2": {
+    "avatar_nome": "",
+    "avatar_idade": "",
+    "avatar_genero": "",
+    "avatar_profissao": "",
+    "avatar_renda": "",
+    "dor_principal": "",
+    "dores_secundarias": "",
+    "desejo_principal": "",
+    "objecao_preco": "",
+    "objecao_tempo": "",
+    "objecao_confianca": "",
+    "objecao_resultado": "",
+    "gatilhos_mentais": ""
+  },
+  "step3": {
+    "servico_principal": "",
+    "servico_descricao": "",
+    "como_funciona_passo1": "",
+    "como_funciona_passo2": "",
+    "como_funciona_passo3": "",
+    "como_funciona_passo4": "",
+    "modalidade": "",
+    "duracao_sessao": "",
+    "frequencia": "",
+    "formato": "",
+    "resultado_esperado": "",
+    "prazo_resultado": "",
+    "servicos_adicionais": ""
+  },
+  "step4": {
+    "depoimento1_nome": "",
+    "depoimento1_texto": "",
+    "depoimento1_resultado": "",
+    "depoimento2_nome": "",
+    "depoimento2_texto": "",
+    "depoimento2_resultado": "",
+    "depoimento3_nome": "",
+    "depoimento3_texto": "",
+    "depoimento3_resultado": "",
+    "casos_de_sucesso": "",
+    "perfil_google": "",
+    "nota_google": "",
+    "quantidade_avaliacoes": "",
+    "instagram": "",
+    "seguidores": "",
+    "midia_aparicoes": ""
+  },
+  "step5": {
+    "diferencial1_titulo": "",
+    "diferencial1_descricao": "",
+    "diferencial2_titulo": "",
+    "diferencial2_descricao": "",
+    "diferencial3_titulo": "",
+    "diferencial3_descricao": "",
+    "diferencial4_titulo": "",
+    "diferencial4_descricao": "",
+    "metodologia_propria": "",
+    "garantia": "",
+    "atendimento_diferenciado": ""
+  },
+  "step6": {
+    "whatsapp": "",
+    "whatsapp_mensagem_padrao": "",
+    "email": "",
+    "preco_plano1_nome": "",
+    "preco_plano1_valor": "",
+    "preco_plano1_descricao": "",
+    "preco_plano2_nome": "",
+    "preco_plano2_valor": "",
+    "preco_plano2_descricao": "",
+    "preco_plano3_nome": "",
+    "preco_plano3_valor": "",
+    "preco_plano3_descricao": "",
+    "forma_pagamento": "",
+    "desconto_pix": "",
+    "parcelas": "",
+    "trial_gratuito": "",
+    "horario_atendimento": ""
+  },
+  "step7": {
+    "cor_primaria": "",
+    "cor_secundaria": "",
+    "cor_acento": "",
+    "cor_fundo": "",
+    "estilo_visual": "",
+    "fonte_titulo": "",
+    "fonte_corpo": "",
+    "tom_comunicacao": "",
+    "referencias_visuais": "",
+    "logo_descricao": "",
+    "imagens_disponiveis": "",
+    "video_disponivel": ""
+  },
+  "step8": {
+    "titulo_seo": "",
+    "descricao_seo": "",
+    "palavra_chave_principal": "",
+    "palavras_chave_secundarias": "",
+    "dominio_sugerido": "",
+    "schema_tipo": "",
+    "og_titulo": "",
+    "og_descricao": ""
+  }
+}
+
+BRIEFING DO CLIENTE:
+${briefing}
+`;
+  },
+
+  async applyIntakeJSON(jsonString) {
+    let data;
+    try {
+      const clean = jsonString.replace(/```json|```/g, '').trim();
+      data = JSON.parse(clean);
+    } catch (e) {
+      this.showToast('Erro ao interpretar resposta da IA. Tente novamente.', 'error');
+      return;
+    }
+
+    // Mapeia cada campo do JSON para o state
+    const B = this.state.briefing;
+    const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8'];
+
+    steps.forEach(step => {
+      if (!data[step]) return;
+      Object.entries(data[step]).forEach(([campo, valor]) => {
+        if (valor !== '' && valor !== null && valor !== undefined) {
+          B[campo] = valor;
+        }
+      });
+    });
+
+    // Atualiza segmento do projeto na sidebar
+    if (data.step1?.nicho) {
+      this.state.projeto_segmento = data.step1.nicho;
+      document.getElementById('project-segment').textContent = data.step1.nicho;
+    }
+
+    this.saveState();
+    this.updateProgressBar();
+    this.renderStepsNav();
+    this.showToast('IA preencheu todos os campos disponíveis!', 'success');
+  },
+
+  countFilledFields() {
+    const B = this.state.briefing || {};
+    return Object.values(B).filter(v => v && String(v).trim()).length;
   }
 });

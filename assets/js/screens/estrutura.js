@@ -524,10 +524,11 @@ function renderBlocoWireframe(bloco, index, tipo) {
     const innerHTML = innerLayouts[tipo] || innerLayouts.generic;
 
     return `
-    <div class="wf-block-v2" data-index="${index}" data-tipo="${tipo}" style="background:${cor.bg};">
-      <div class="wf-block-badge" style="background:${cor.accent};">${index + 1}</div>
-      <div class="wf-block-inner">
-        ${innerHTML}
-      </div>
-    </div>`;
-}
+      <div class="wf-block-v2" data-index="${index}" data-tipo="${tipo}" style="background:${cor.bg};">
+        <div class="wf-block-badge" style="background:${cor.accent};">${index + 1}</div>
+        <div class="wf-block-inner">
+          ${innerHTML}
+        </div>
+      </div>`;
+    }
+});

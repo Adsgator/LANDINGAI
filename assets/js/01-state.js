@@ -141,6 +141,8 @@ Object.assign(window.App, {
       else this.createProject();
     }
     this.autosave();
+    if (this.renderProjectsList) this.renderProjectsList();
+    if (this.renderAll) this.renderAll();
   },
 
   cloneProject(id) {

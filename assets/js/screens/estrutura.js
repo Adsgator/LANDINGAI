@@ -4,7 +4,7 @@
 
 Object.assign(window.App, {
     renderEstrutura() {
-        const B = this.state.briefing || {};
+        const B = this.B || {};
         const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
         const rascunho = B.estrutura_rascunho || '';
         const aprovada = B.estrutura_aprovada || '';
@@ -182,7 +182,7 @@ Object.assign(window.App, {
     },
 
     async gerarPrototipoVisual() {
-        const B = this.state.briefing || {};
+        const B = this.B || {};
         const rascunho = B.estrutura_rascunho || '';
 
         if (!rascunho) {
@@ -206,8 +206,8 @@ Object.assign(window.App, {
         try {
             this.aiLogStep(1);
             const cores = B.cor_primaria || '#1e293b';
-            const nomeMarca = B.nome_marca || 'Empresa';
-            const segmento = B.nicho || 'serviço';
+            const nomeMarca = B.nome_cliente || B.nome_marca || 'Empresa';
+            const segmento = B.segmento || B.nicho || 'serviço';
 
             const prompt = `
 Você é um designer UI especializado em landing pages.
@@ -307,7 +307,37 @@ Gere apenas a imagem do mockup, sem texto explicativo.
         this.openModal('modal-prototipo-fallback');
         document.getElementById('modal-prototipo-fallback-body').innerHTML = html;
         lucide.createIcons();
-    }
+    },
+
+    abrirEstruturaManual() {
+        const template = `### BLOCO 1: Cabeçalho
+**Objetivo narrativo:** Âncora de marca e CTA sempre visível
+**Copy sugerida:**
+- Logo: [Nome da marca]
+- CTA: "[Falar no WhatsApp]"
+
+---
+### BLOCO 2: Hero — Impacto Inicial
+**Objetivo narrativo:** Capturar atenção e justificar o clique do anúncio em 3 segundos
+**Copy sugerida:**
+- Título: "[H1 focada na dor de busca]"
+- Subtítulo: "[Ampliar o benefício]"
+- CTA: "[Quero resolver isso agora]"
+
+---
+### BLOCO 3: O Serviço
+...
+
+### SEQUÊNCIA FINAL
+1. Cabeçalho
+2. Hero
+3. O Serviço
+`;
+        this.setField('estrutura_rascunho', template);
+        const wireframeHTML = this.gerarWireframeHTML(template);
+        this.setField('estrutura_wireframe', wireframeHTML);
+        this.renderScreen();
+    },
 });
 
 function detectarTipoBloco(nome) {

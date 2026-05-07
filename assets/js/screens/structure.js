@@ -4,7 +4,7 @@
 
 Object.assign(window.App, {
   buildStructureScreen() {
-    return this.buildEstruturaHTML();
+    return this.renderEstrutura();
   },
 
   buildEstruturaHTML() {

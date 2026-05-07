@@ -317,13 +317,13 @@
         <div class="field-group">
           <label class="field-label">Nome do cliente ou projeto</label>
           <input type="text" class="field-input" id="rename-input" placeholder="Ex: Beatriz Mattos — Adestramento"
-            onkeydown="if(event.key==='Enter') App.saveProjectName()">
+            onkeydown="if(event.key==='Enter') App.saveProjectNameFromModal()">
           <span class="field-hint">Aparece no card da sidebar e no nome dos arquivos gerados.</span>
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn-ghost" onclick="App.closeModal('modal-rename')">Cancelar</button>
-        <button class="btn-primary" onclick="App.saveProjectName()">
+        <button class="btn-primary" onclick="App.saveProjectNameFromModal()">
           <i data-lucide="check" style="width:15px;height:15px"></i> Salvar
         </button>
       </div>

@@ -557,7 +557,7 @@ Object.assign(window.App, {
               <i data-lucide="download" style="width:14px;height:14px"></i>
             </button>
             <button class="btn-icon btn-icon--danger" title="Excluir"
-              onclick="if(confirm('Excluir \'${p.name}\'?')) App.deleteProject('${p.id}')">
+              onclick="if(confirm('Tem certeza que deseja excluir este projeto?')) App.deleteProject('${p.id}')">
               <i data-lucide="trash-2" style="width:14px;height:14px"></i>
             </button>
           </div>

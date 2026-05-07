@@ -164,11 +164,11 @@ Object.assign(window.App, {
   },
 
   buildDoc1() {
-    const B = this.state.briefing || {};
-    const projeto = this.state.projeto_nome || 'Projeto';
+    const B = this.B || {};
+    const projeto = this.P?.name || 'Projeto';
 
     // ── Calcula campos preenchidos por step ──────────────────────
-    const steps = this.STEPS || [];
+    const steps = STEPS || [];
     const stepsInfo = steps.map((s, i) => ({
       num: i + 1,
       titulo: s.title || s.titulo || `Step ${i + 1}`,

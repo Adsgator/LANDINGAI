@@ -3,6 +3,10 @@
    ============================================================ */
 
 Object.assign(window.App, {
+
+  /* ----------------------------------------------------------
+     Render principal
+  ---------------------------------------------------------- */
   renderAll() {
     this.renderScreen();
     this.renderStepsNav();
@@ -29,27 +33,31 @@ Object.assign(window.App, {
   },
 
   renderScreen() {
-    // reset scroll
-    const content = document.getElementById('content') || document.querySelector('.main-content');
-    if (content) content.scrollTop = 0;
+    // Scroll reset — ID correto é screen-content
+    const content = document.getElementById('screen-content');
+    if (!content) return;
+    content.scrollTop = 0;
 
-    const container = document.getElementById('screen-content');
-    if (!this.state.screen || !container) return;
+    if (!this.state.screen) return;
 
     switch (this.state.screen) {
-      case 'intake': container.innerHTML = this.buildIntakeScreen(); break;
-      case 'step': container.innerHTML = this.buildStepScreen(this.state.currentStep); break;
-      case 'art': container.innerHTML = this.buildArtScreen(); break;
-      case 'structure': container.innerHTML = this.buildStructureScreen(); break;
-      case 'review': container.innerHTML = this.buildReviewScreen(); break;
+      case 'intake': content.innerHTML = this.buildIntakeScreen(); break;
+      case 'step': content.innerHTML = this.buildStepScreen(this.state.currentStep); break;
+      case 'art': content.innerHTML = this.buildArtScreen(); break;
+      case 'structure': content.innerHTML = this.buildStructureScreen(); break;
+      case 'review': content.innerHTML = this.buildReviewScreen(); break;
+      default: content.innerHTML = ''; break;
     }
 
-    lucide.createIcons({ nodes: [container] });
-    this.bindScreenEvents(container);
+    lucide.createIcons({ nodes: [content] });
+    this.bindScreenEvents(content);
     this.renderBottombar();
-    container.scrollTo(0, 0);
+    this.updateTopbar();
   },
 
+  /* ----------------------------------------------------------
+     Topbar
+  ---------------------------------------------------------- */
   updateTopbar() {
     const title = document.getElementById('topbar-title');
     const subtitle = document.getElementById('topbar-subtitle');
@@ -75,8 +83,8 @@ Object.assign(window.App, {
       subtitle.textContent = 'Pronto para gerar documentação';
     }
 
-    // Update progress bar
-    const total = STEPS.length + 3; // intake + steps + art + review
+    // Barra de progresso
+    const total = STEPS.length + 3; // intake + 8 steps + structure + art + review = 12
     let current = 0;
     if (this.state.screen === 'intake') current = 1;
     else if (this.state.screen === 'step') current = 1 + this.state.currentStep;
@@ -87,366 +95,470 @@ Object.assign(window.App, {
     const pct = Math.round((current / total) * 100);
     if (fill) fill.style.width = `${pct}%`;
 
-    // Model label
+    // Label do modelo
     const modelLabel = document.getElementById('btn-model-label');
     if (modelLabel) modelLabel.textContent = AI_MODELS[this.state.selectedModel]?.label || 'Selecionar Modelo';
   },
 
+  /* ----------------------------------------------------------
+     Sidebar
+  ---------------------------------------------------------- */
   updateSidebar() {
     const nameEl = document.getElementById('project-name');
-    const segmentEl = document.getElementById('project-segment');
+    const segEl = document.getElementById('project-segment');
     const scoreFill = document.getElementById('project-score-fill');
     const scorePct = document.getElementById('project-score-pct');
     const apiDot = document.getElementById('sidebar-api-dot');
     const apiLabel = document.getElementById('sidebar-api-label');
 
     if (nameEl) nameEl.textContent = this.P ? (this.P.name || 'Sem nome') : 'Nenhum projeto';
-    if (segmentEl) segmentEl.textContent = this.B ? (this.B.segmento || '—') : '—';
+    if (segEl) segEl.textContent = this.B?.segmento || '—';
 
-    // Calc score
     const score = this.calcGlobalScore();
     if (scoreFill) scoreFill.style.width = `${score}%`;
     if (scorePct) scorePct.textContent = `${score}%`;
 
-    // API status
-    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
-    const keyCount = Object.values(this.state.apiKeys).filter(k => k?.trim()).length;
+    const keys = Object.values(this.state.apiKeys).filter(k => k?.trim());
+    const hasKey = keys.length > 0;
     if (apiDot) apiDot.className = `status-dot ${hasKey ? 'ok' : ''}`;
-    if (apiLabel) apiLabel.textContent = hasKey ? `${keyCount} API${keyCount > 1 ? 's' : ''} ativa${keyCount > 1 ? 's' : ''}` : 'Sem API';
+    if (apiLabel) apiLabel.textContent = hasKey
+      ? `${keys.length} API${keys.length > 1 ? 's' : ''} ativa${keys.length > 1 ? 's' : ''}`
+      : 'Sem API';
   },
 
   calcGlobalScore() {
     if (!this.B) return 0;
     const weights = {
-      // Campos obrigatórios do briefing têm peso 1
       ...Object.fromEntries(Object.values(REQUIRED_FIELDS).flat().map(f => [f, 1])),
-      // Novas aprovações têm peso maior
       estrutura_aprovada: 4,
       arte_ficha_aprovada: 3,
     };
-
     const fields = Object.keys(weights);
-    let totalWeight = 0;
-    let currentScore = 0;
-
+    let total = 0, score = 0;
     fields.forEach(f => {
-      const weight = weights[f];
-      totalWeight += weight;
-      if (this.B[f]) currentScore += weight;
+      total += weights[f];
+      if (this.B[f]) score += weights[f];
     });
-
-    return totalWeight > 0 ? Math.round((currentScore / totalWeight) * 100) : 0;
+    return total > 0 ? Math.round((score / total) * 100) : 0;
   },
 
+  updateProgressBar() {
+    const score = this.calcGlobalScore();
+    const fill = document.getElementById('project-score-fill');
+    const pct = document.getElementById('project-score-pct');
+    if (fill) fill.style.width = `${score}%`;
+    if (pct) pct.textContent = `${score}%`;
+  },
+
+  /* ----------------------------------------------------------
+     Nav lateral de steps
+     CORRIGIDO: btn.onclick passa s.id como número inteiro,
+     não como string. Isso corrige o bug onde clicar no step
+     na sidebar não renderizava o conteúdo.
+  ---------------------------------------------------------- */
   renderStepsNav() {
     const nav = document.getElementById('steps-nav');
     if (!nav) return;
-
     nav.innerHTML = '';
 
     // Intake IA
     const intakeBtn = document.createElement('button');
-    intakeBtn.className = `steps-nav-item ${this.state.screen === 'intake' ? 'active' : ''} ${this.B.briefing_bruto ? 'visited' : ''}`;
+    intakeBtn.className = `steps-nav-item ${this.state.screen === 'intake' ? 'active' : ''} ${this.B?.briefing_bruto ? 'visited' : ''}`;
     intakeBtn.innerHTML = `
       <i data-lucide="zap" class="steps-nav-icon"></i>
       <span class="steps-nav-label">Intake IA</span>
     `;
-    intakeBtn.onclick = () => this.goToScreen('intake');
+    intakeBtn.addEventListener('click', () => this.goToScreen('intake'));
     nav.appendChild(intakeBtn);
 
-    // Steps 1-8
+    // Steps 1-8 (IDs são números)
     STEPS.forEach(s => {
       const isActive = this.state.screen === 'step' && this.state.currentStep === s.id;
       const isDone = (REQUIRED_FIELDS[s.id] || []).every(f => !!this.B[f]);
       const btn = document.createElement('button');
       btn.className = `steps-nav-item ${isActive ? 'active' : ''} ${isDone ? 'done' : ''}`;
       btn.innerHTML = `
-        <i data-lucide="${isDone && !isActive ? 'check-circle' : s.icon}" class="steps-nav-icon ${isDone && !isActive ? 'done' : ''}"></i>
+        <i data-lucide="${isDone && !isActive ? 'check-circle' : s.icon}"
+           class="steps-nav-icon ${isDone && !isActive ? 'done' : ''}"></i>
         <span class="steps-nav-label">${s.title}</span>
       `;
-      btn.onclick = () => this.goToStep(s.id);
+      // CRÍTICO: s.id é número inteiro → goToStep recebe número → aritmética funciona
+      btn.addEventListener('click', () => this.goToStep(s.id));
       nav.appendChild(btn);
     });
 
-    // Seção especial: Etapas Finais
-    const specialLabel = document.createElement('div');
-    specialLabel.className = 'sidebar-label';
-    specialLabel.style.marginTop = '8px';
-    specialLabel.textContent = 'Etapas Finais';
-    nav.appendChild(specialLabel);
+    // Etapas Finais
+    const divider = document.createElement('div');
+    divider.className = 'sidebar-label';
+    divider.style.marginTop = '8px';
+    divider.textContent = 'Etapas Finais';
+    nav.appendChild(divider);
 
-    const specialItems = [
+    const specials = [
       {
-        key: 'structure',
-        icon: 'layout',
-        label: 'Estrutura da LP',
-        done: !!this.B.estrutura_aprovada,
+        key: 'structure', icon: 'layout', label: 'Estrutura da LP',
+        done: !!this.B?.estrutura_aprovada,
         active: this.state.screen === 'structure',
       },
       {
-        key: 'art',
-        icon: 'palette',
-        label: 'Direção de Arte',
-        done: !!this.B.arte_ficha_aprovada,
+        key: 'art', icon: 'palette', label: 'Direção de Arte',
+        done: !!this.B?.arte_ficha_aprovada,
         active: this.state.screen === 'art',
       },
       {
-        key: 'review',
-        icon: 'zap',
-        label: 'Revisão e Geração',
+        key: 'review', icon: 'check-square', label: 'Revisão Final',
         done: false,
         active: this.state.screen === 'review',
       },
     ];
 
-    specialItems.forEach(item => {
-      const el = document.createElement('button');
-      el.className = `steps-nav-item steps-nav-special ${item.active ? 'active' : ''} ${item.done ? 'visited' : ''}`;
-      el.setAttribute('role', 'listitem');
-      el.innerHTML = `
+    specials.forEach(item => {
+      const btn = document.createElement('button');
+      btn.className = `steps-nav-item ${item.active ? 'active' : ''} ${item.done ? 'done' : ''}`;
+      btn.innerHTML = `
         <i data-lucide="${item.done && !item.active ? 'check-circle' : item.icon}"
            class="steps-nav-icon ${item.done && !item.active ? 'done' : ''}"></i>
         <span class="steps-nav-label">${item.label}</span>
-        ${item.done && !item.active ? '<i data-lucide="check" class="steps-nav-done" style="width:11px;height:11px;margin-left:auto;color:var(--accent)"></i>' : ''}
       `;
-      el.onclick = () => this.goToScreen(item.key);
-      nav.appendChild(el);
+      btn.addEventListener('click', () => this.goToScreen(item.key));
+      nav.appendChild(btn);
     });
 
     lucide.createIcons({ nodes: [nav] });
   },
 
+  updateStepsNavBadges() {
+    // Atualização leve sem re-render completo
+    this.renderStepsNav();
+  },
+
+  /* ----------------------------------------------------------
+     Bottombar
+  ---------------------------------------------------------- */
   renderBottombar() {
-    const bar = document.getElementById('bottombar');
-    if (!bar) return;
+    const prev = document.getElementById('btn-prev');
+    const next = document.getElementById('btn-next');
+    const center = document.getElementById('bottombar-center');
+    const { screen, currentStep } = this.state;
 
-    const isFirst = this.state.screen === 'intake';
-    const isLast = this.state.screen === 'review';
-
-    const btnPrev = document.getElementById('btn-prev');
-    const btnNext = document.getElementById('btn-next');
-
-    if (btnPrev) btnPrev.style.visibility = isFirst ? 'hidden' : 'visible';
-    if (btnNext) {
-      btnNext.innerHTML = isLast ? 'Concluir <i data-lucide="check" style="width:16px;height:16px"></i>' : 'Próximo <i data-lucide="arrow-right" style="width:16px;height:16px"></i>';
-      lucide.createIcons({ nodes: [btnNext] });
+    if (prev) {
+      prev.style.visibility = screen === 'intake' ? 'hidden' : 'visible';
+      prev.onclick = () => this.goPrev();
+    }
+    if (next) {
+      if (screen === 'review') {
+        next.style.display = 'none';
+      } else {
+        next.style.display = '';
+        next.onclick = () => this.goNext();
+        next.innerHTML = screen === 'art'
+          ? '<i data-lucide="check-square" style="width:16px;height:16px"></i> Revisar'
+          : 'Próximo <i data-lucide="arrow-right" style="width:16px;height:16px"></i>';
+        lucide.createIcons({ nodes: [next] });
+      }
+    }
+    if (center) {
+      if (screen === 'step') {
+        center.innerHTML = `<span style="font-size:12px;color:var(--text-tertiary);font-family:var(--font-mono)">
+          ${currentStep} / ${STEPS.length}
+        </span>`;
+      } else {
+        center.innerHTML = '';
+      }
     }
   },
 
-  openModal(id) {
-    const m = document.getElementById(id);
-    if (m) m.classList.add('open');
+  /* ----------------------------------------------------------
+     Navegação
+  ---------------------------------------------------------- */
+  goToScreen(screen) {
+    this.state.screen = screen;
+    this.renderAll();
   },
 
-  closeModal(id) {
-    const m = document.getElementById(id);
-    if (m) m.classList.remove('open');
+  goToStep(n) {
+    const num = parseInt(n, 10); // garante que é número
+    if (isNaN(num) || num < 1 || num > STEPS.length) return;
+    this.state.screen = 'step';
+    this.state.currentStep = num;
+    if (this.P && !this.P.visitedSteps.includes(num)) {
+      this.P.visitedSteps.push(num);
+    }
+    this.renderAll();
   },
 
-  showToast(message, type = 'info', duration = 4000) {
-    const existing = document.getElementById('toast-container');
-    const container = existing || (() => {
-      const el = document.createElement('div');
-      el.id = 'toast-container';
-      document.body.appendChild(el);
-      return el;
-    })();
-
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.innerHTML = `
-      <i data-lucide="${type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : type === 'warning' ? 'alert-triangle' : 'info'}" style="width:15px;height:15px;flex-shrink:0;"></i>
-      <span>${message}</span>
-      <button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;padding:0;color:inherit;opacity:0.6;">
-        <i data-lucide="x" style="width:13px;height:13px;"></i>
-      </button>
-    `;
-
-    container.appendChild(toast);
-    lucide.createIcons({ nodes: [toast] });
-
-    // Entrada
-    requestAnimationFrame(() => toast.classList.add('toast-visible'));
-
-    // Saída após duration
-    setTimeout(() => {
-      toast.classList.remove('toast-visible');
-      setTimeout(() => toast.remove(), 300);
-    }, duration);
+  goNext() {
+    const { screen, currentStep } = this.state;
+    if (screen === 'intake') { this.goToStep(1); }
+    else if (screen === 'step') {
+      if (currentStep < STEPS.length) this.goToStep(currentStep + 1);
+      else this.goToScreen('structure');
+    }
+    else if (screen === 'structure') { this.goToScreen('art'); }
+    else if (screen === 'art') { this.goToScreen('review'); }
+    else if (screen === 'review') { this.showToast('Briefing pronto para geração!', 'success'); }
   },
 
-  updateStepsNavBadges() {
-    const steps = this.STEPS || [];
-    const B = this.state.briefing || {};
+  goPrev() {
+    const { screen, currentStep } = this.state;
+    if (screen === 'review') { this.goToScreen('art'); }
+    else if (screen === 'art') { this.goToScreen('structure'); }
+    else if (screen === 'structure') { this.goToStep(STEPS.length); }
+    else if (screen === 'step') {
+      if (currentStep > 1) this.goToStep(currentStep - 1);
+      else this.goToScreen('intake');
+    }
+  },
 
-    steps.forEach((step, i) => {
-      const filled = (step.fields || []).filter(f => B[f.key] && String(B[f.key]).trim()).length;
-      const total = (step.fields || []).length;
-      const badge = document.querySelector(`.step-nav-item[data-step="${i}"] .step-nav-badge`);
-      if (badge) {
-        badge.textContent = `${filled}/${total}`;
-        badge.className = `step-nav-badge ${filled === total ? 'badge-complete' : filled > 0 ? 'badge-partial' : 'badge-empty'}`;
-      }
+  /* ----------------------------------------------------------
+     Modal selector de modelo — agrupado por provider
+  ---------------------------------------------------------- */
+  renderModelDropdown() {
+    const dropdown = document.getElementById('model-dropdown');
+    if (!dropdown) return;
+
+    // Agrupa por group
+    const groups = {};
+    Object.entries(AI_MODELS).forEach(([id, m]) => {
+      if (!groups[m.group]) groups[m.group] = [];
+      groups[m.group].push({ id, ...m });
+    });
+
+    dropdown.innerHTML = Object.entries(groups).map(([groupName, models]) => `
+      <div class="model-group">
+        <div class="model-group-label">${groupName}</div>
+        ${models.map(m => `
+          <button class="model-option ${this.state.selectedModel === m.id ? 'active' : ''}"
+                  data-model="${m.id}">
+            <span class="model-option-label">${m.label}</span>
+            <span class="model-option-tier tier-${m.tier}">${m.tier === 'free' ? 'Free' : 'Paid'}</span>
+          </button>
+        `).join('')}
+      </div>
+    `).join('');
+
+    dropdown.querySelectorAll('[data-model]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.saveSelectedModel(btn.dataset.model);
+        this.updateTopbar();
+        dropdown.style.display = 'none';
+        dropdown.classList.remove('open');
+        this.showToast(`Modelo: ${AI_MODELS[btn.dataset.model]?.label}`, 'success');
+      });
     });
   },
 
+  /* ----------------------------------------------------------
+     Modal de Config API — renderiza providers do AI_PROVIDERS
+  ---------------------------------------------------------- */
   renderApiModal() {
     const body = document.getElementById('api-modal-body');
     if (!body) return;
 
-    const providers = [
-      { id: 'gemini', label: 'Google Gemini', icon: 'zap', hint: 'Recomendado (Flash é grátis)', link: 'https://aistudio.google.com/app/apikey' },
-      { id: 'openrouter', label: 'OpenRouter', icon: 'globe', hint: 'Acesso a Claude, DeepSeek, Llama', link: 'https://openrouter.ai/keys' },
-      { id: 'claude', label: 'Anthropic Claude', icon: 'cpu', hint: 'Direto (requer proxy ou tier pago)', link: 'https://console.anthropic.com/' },
-      { id: 'xai', label: 'xAI (Grok)', icon: 'terminal', hint: 'Acesso direto ao Grok', link: 'https://console.x.ai/' },
-      { id: 'mistral', label: 'Mistral AI', icon: 'wind', hint: 'Acesso direto à Mistral', link: 'https://console.mistral.ai/api-keys/' },
-    ];
-
-    body.innerHTML = `
-      <div class="api-modal-list">
-        ${providers.map(p => `
-          <div class="api-field-group">
-            <div class="api-field-label">
-              <i data-lucide="${p.icon}" style="width:14px;height:14px"></i>
-              <span>${p.label}</span>
-              <a href="${p.link}" target="_blank" class="api-link" title="Obter Chave">
-                <i data-lucide="external-link" style="width:12px;height:12px"></i>
-              </a>
-              <span class="api-field-hint">${p.hint}</span>
-            </div>
-            <div class="api-input-row">
-              <div class="api-input-wrap" style="flex:1">
-                <input type="password" class="field-input" id="api-key-${p.id}" 
-                  value="${this.state.apiKeys[p.id] || ''}" placeholder="Cole sua chave aqui...">
-                <button class="btn-icon" onclick="App.toggleKeyVisibility('api-key-${p.id}')">
-                  <i data-lucide="eye" style="width:16px;height:16px"></i>
-                </button>
-              </div>
-              <button class="btn-primary btn-sm" onclick="App.saveIndividualApiKey('${p.id}')">
-                Salvar
-              </button>
-            </div>
+    body.innerHTML = API_PROVIDERS.map(p => {
+      const val = this.state.apiKeys[p.id] || '';
+      const hasVal = !!val;
+      return `
+        <div class="api-provider-row">
+          <div class="api-provider-header">
+            <span class="api-provider-label">
+              ${p.label}
+              ${hasVal ? '<span class="api-badge-ok">✓</span>' : ''}
+            </span>
+            <a href="${p.url}" target="_blank" rel="noopener" class="api-link">
+              ${p.urlLabel} <i data-lucide="external-link" style="width:11px;height:11px"></i>
+            </a>
           </div>
-        `).join('')}
-      </div>
-      <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border-subtle); display:flex; justify-content:center;">
-        <button class="btn-ghost btn-sm" onclick="App.closeModal('modal-api')">Fechar Configurações</button>
-      </div>
-    `;
+          <p class="api-provider-hint">${p.hint}</p>
+          <div class="api-input-wrap">
+            <input type="password" class="field-input" id="apikey-${p.id}"
+              placeholder="Cole sua API Key aqui"
+              value="${val}"
+              autocomplete="off"
+            >
+            <button class="btn-icon" onclick="App.toggleApiKeyVisibility('${p.id}')" title="Mostrar/ocultar">
+              <i data-lucide="eye" style="width:14px;height:14px"></i>
+            </button>
+          </div>
+          <button class="btn-primary btn-sm" style="margin-top:8px"
+            onclick="App.saveApiKeyFromInput('${p.id}')">
+            Salvar
+          </button>
+        </div>
+      `;
+    }).join('<hr style="border-color:var(--border-subtle);margin:16px 0">');
+
     lucide.createIcons({ nodes: [body] });
   },
 
-  saveIndividualApiKey(provider) {
-    const val = document.getElementById(`api-key-${provider}`)?.value;
-    if (val !== undefined) {
-      this.saveApiKey(provider, val);
-      this.showToast(`${provider.toUpperCase()} salva!`, 'success');
-      this.updateSidebar();
-    }
-  },
-
-  saveAllApiKeys() {
-    ['gemini', 'openrouter', 'claude', 'xai', 'mistral'].forEach(p => {
-      const val = document.getElementById(`api-key-${p}`)?.value;
-      if (val !== undefined) this.saveApiKey(p, val);
-    });
-    this.showToast('Todas as chaves salvas!', 'success');
-    this.closeModal('modal-api');
+  saveApiKeyFromInput(provider) {
+    const input = document.getElementById(`apikey-${provider}`);
+    if (!input) return;
+    this.saveApiKey(provider, input.value);
     this.updateSidebar();
+    this.showToast(`API Key de ${provider} salva!`, 'success');
   },
 
-  toggleKeyVisibility(inputId) {
-    const input = document.getElementById(inputId);
+  toggleApiKeyVisibility(provider) {
+    const input = document.getElementById(`apikey-${provider}`);
     if (!input) return;
     input.type = input.type === 'password' ? 'text' : 'password';
   },
 
-  renderModelDropdown() {
-    const wrap = document.getElementById('model-dropdown');
-    if (!wrap) return;
-
-    const groups = {};
-    Object.entries(AI_MODELS).forEach(([key, model]) => {
-      if (!groups[model.group]) groups[model.group] = [];
-      groups[model.group].push({ key, ...model });
-    });
-
-    wrap.innerHTML = Object.entries(groups).map(([group, models]) => `
-      <div class="model-group-label">${group}</div>
-      ${models.map(m => `
-        <button class="model-option ${this.state.selectedModel === m.key ? 'active' : ''}"
-          onclick="App.selectModel('${m.key}')">
-          <span class="model-option-name">${m.label}</span>
-          <span class="model-tier model-tier--${m.tier}">${m.tier === 'free' ? 'Grátis' : 'Pago'}</span>
-        </button>
-      `).join('')}
-      <div class="model-divider"></div>
-    `).join('');
+  /* ----------------------------------------------------------
+     Modais (abertura/fechamento)
+  ---------------------------------------------------------- */
+  openModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.add('open');
+    // Para modais que usam display:none ao invés de classe
+    if (el.style.display === 'none') el.style.display = '';
   },
 
-  selectModel(key) {
-    this.state.selectedModel = key;
-    this.saveStorage();
-    const btn = document.getElementById('btn-model-label');
-    if (btn) btn.textContent = AI_MODELS[key]?.label || key;
-    const dd = document.getElementById('model-dropdown');
-    if (dd) dd.style.display = 'none';
-    this.showToast(`Modelo: ${AI_MODELS[key]?.label}`, 'success');
-    this.updateTopbar();
+  closeModal(id) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.remove('open');
   },
 
+  /* ----------------------------------------------------------
+     Toast
+  ---------------------------------------------------------- */
+  showToast(msg, type = 'info', duration = 3500) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.className = `toast toast--${type} show`;
+    clearTimeout(this._toastTimer);
+    this._toastTimer = setTimeout(() => toast.classList.remove('show'), duration);
+  },
+
+  /* ----------------------------------------------------------
+     AI Log modal (progresso das operações de IA)
+  ---------------------------------------------------------- */
+  openAILog(title, steps) {
+    this.state.aiLog = {
+      title,
+      steps,
+      active: null,
+      done: [],
+      errors: [],
+      startedAt: Date.now(),
+      stepTimes: {},
+      liveMsg: '',
+    };
+    this._renderAILog();
+    this.openModal('modal-gen');
+  },
+
+  _renderAILog() {
+    const titleEl = document.getElementById('modal-gen-title');
+    const listEl = document.getElementById('gen-steps-list');
+    const fillEl = document.getElementById('gen-progress-fill');
+    const pctEl = document.getElementById('gen-progress-pct');
+    const badgeEl = document.getElementById('gen-model-badge');
+
+    if (titleEl) titleEl.textContent = this.state.aiLog.title;
+    if (badgeEl) badgeEl.textContent = AI_MODELS[this.state.selectedModel]?.label || '';
+
+    const { steps, active, done, errors } = this.state.aiLog;
+    const completedCount = done.length + errors.length;
+    const pct = steps.length ? Math.round((completedCount / steps.length) * 100) : 0;
+
+    if (fillEl) fillEl.style.width = `${pct}%`;
+    if (pctEl) pctEl.textContent = `${pct}%`;
+
+    if (listEl) {
+      listEl.innerHTML = steps.map(s => {
+        let cls = 'log-step--wait';
+        let icon = 'clock';
+        if (errors.includes(s.id)) { cls = 'log-step--error'; icon = 'alert-circle'; }
+        else if (done.includes(s.id)) { cls = 'log-step--done'; icon = 'check-circle'; }
+        else if (active === s.id) { cls = 'log-step--active'; icon = s.icon || 'loader'; }
+        return `
+          <div class="log-step ${cls}">
+            <i data-lucide="${icon}" class="log-step-icon"></i>
+            <span class="log-step-label">${s.label}</span>
+          </div>
+        `;
+      }).join('');
+      lucide.createIcons({ nodes: [listEl] });
+    }
+  },
+
+  aiLogStep(stepId, liveMsg = '') {
+    const log = this.state.aiLog;
+    if (log.active !== null && !log.done.includes(log.active)) {
+      log.done.push(log.active);
+    }
+    log.active = stepId;
+    log.liveMsg = liveMsg;
+    log.stepTimes[stepId] = Date.now();
+    this._renderAILog();
+  },
+
+  aiLogDone() {
+    const log = this.state.aiLog;
+    if (log.active !== null) log.done.push(log.active);
+    log.active = null;
+    this._renderAILog();
+  },
+
+  aiLogError(stepId, msg) {
+    const log = this.state.aiLog;
+    log.errors.push(stepId || log.active);
+    log.active = null;
+    this._renderAILog();
+  },
+
+  closeAILog() {
+    this.closeModal('modal-gen');
+  },
+
+  aiLogDelay(ms) {
+    return new Promise(r => setTimeout(r, ms));
+  },
+
+  /* ----------------------------------------------------------
+     Lista de projetos no modal
+  ---------------------------------------------------------- */
   renderProjectsList() {
     const list = document.getElementById('projects-list');
+    const header = document.getElementById('projects-list-header');
     if (!list) return;
 
-    const projects = Object.values(this.state.projects).sort((a, b) =>
-      new Date(b.updatedAt) - new Date(a.updatedAt)
-    );
+    const projects = Object.values(this.state.projects)
+      .sort((a, b) => new Date(b.updatedAt || 0) - new Date(a.updatedAt || 0));
 
-    // Cabeçalho com contagem e botão excluir tudo
-    const header = document.getElementById('projects-list-header');
     if (header) {
-      header.innerHTML = projects.length > 0 ? `
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <span style="font-size:12px;color:var(--text-tertiary)">${projects.length} projeto(s)</span>
-          <button class="btn-ghost btn-sm" style="color:var(--danger);font-size:11px"
-            onclick="App.confirmDeleteAll()">
-            <i data-lucide="trash-2" style="width:12px;height:12px"></i>
-            Excluir todos
-          </button>
-        </div>
-      ` : '';
-      lucide.createIcons({ nodes: [header] });
+      header.innerHTML = `<p style="font-size:12px;color:var(--text-tertiary);margin-bottom:12px">${projects.length} projeto(s)</p>`;
     }
 
-    if (projects.length === 0) {
-      list.innerHTML = `<p style="font-size:13px;color:var(--text-tertiary);text-align:center;padding:20px 0">Nenhum projeto ainda</p>`;
+    if (!projects.length) {
+      list.innerHTML = '<p style="font-size:13px;color:var(--text-tertiary);text-align:center;padding:24px">Nenhum projeto ainda.</p>';
       return;
     }
 
     list.innerHTML = projects.map(p => {
-      const date = new Date(p.updatedAt).toLocaleDateString('pt-BR');
       const isActive = p.id === this.state.activeId;
+      const date = p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('pt-BR') : '—';
       return `
-        <div class="project-list-item ${isActive ? 'active' : ''}"
-          onclick="App.loadProject('${p.id}')">
-          <i data-lucide="folder" class="project-list-icon" style="width:16px;height:16px;flex-shrink:0"></i>
-          <div class="project-list-info">
-            <div class="project-list-name">${p.name || 'Sem nome'}</div>
-            <div class="project-list-meta">${p.briefing?.segmento || '—'} · ${date}</div>
+        <div class="project-list-item ${isActive ? 'active' : ''}">
+          <div class="project-list-info" onclick="App.loadProject('${p.id}')">
+            <span class="project-list-name">${p.name || 'Sem nome'}</span>
+            <span class="project-list-meta">${p.briefing?.segmento || '—'} · ${date}</span>
           </div>
-          <div class="project-list-actions" onclick="event.stopPropagation()">
-            <button class="project-list-btn" onclick="App.state.activeId='${p.id}'; App.openRenameModal();" title="Renomear">
-              <i data-lucide="edit-3" style="width:13px;height:13px"></i>
+          <div class="project-list-actions">
+            <button class="btn-icon" title="Duplicar" onclick="App.cloneProject('${p.id}')">
+              <i data-lucide="copy" style="width:14px;height:14px"></i>
             </button>
-            <button class="project-list-btn" onclick="App.cloneProject('${p.id}')" title="Duplicar">
-              <i data-lucide="copy" style="width:13px;height:13px"></i>
+            <button class="btn-icon" title="Exportar" onclick="App.exportProject('${p.id}')">
+              <i data-lucide="download" style="width:14px;height:14px"></i>
             </button>
-            <button class="project-list-btn" onclick="App.exportProject('${p.id}')" title="Exportar JSON">
-              <i data-lucide="download" style="width:13px;height:13px"></i>
-            </button>
-            <button class="project-list-btn danger" onclick="App.deleteProject('${p.id}')" title="Excluir">
-              <i data-lucide="trash-2" style="width:13px;height:13px"></i>
+            <button class="btn-icon btn-icon--danger" title="Excluir"
+              onclick="if(confirm('Excluir \'${p.name}\'?')) App.deleteProject('${p.id}')">
+              <i data-lucide="trash-2" style="width:14px;height:14px"></i>
             </button>
           </div>
         </div>
@@ -456,182 +568,13 @@ Object.assign(window.App, {
     lucide.createIcons({ nodes: [list] });
   },
 
-  confirmDeleteAll() {
-    const count = Object.keys(this.state.projects).length;
-    if (!count) return;
-    if (confirm(`Excluir todos os ${count} projeto(s)? Esta ação não pode ser desfeita.`)) {
-      this.state.projects = {};
-      this.state.activeId = null;
-      this.autosave();
-      this.createProject('Novo Projeto');
-      this.closeModal('modal-projects');
-      this.showToast('Todos os projetos foram excluídos.', 'success');
-    }
-  },
-
-  /* ── AI Log System (V3 Delta) ────────────────────────────────── */
-  openAILog(titulo, steps) {
-    this.state.aiLog = {
-      title: titulo,
-      steps: steps,
-      active: null,
-      done: [],
-      errors: [],
-      startedAt: Date.now(),
-      stepTimes: {},
-      liveMsg: ''
-    };
-    this._renderAILog();
-    const overlay = document.getElementById('modal-gen');
-    if (overlay) {
-      overlay.classList.add('is-visible');
-    }
-  },
-
-  aiLogStep(id, liveMsg = '') {
-    const log = this.state.aiLog;
-    if (log.active !== null) {
-      log.done.push(log.active);
-      log.stepTimes[log.active + '_end'] = Date.now();
-    }
-    log.active = id;
-    log.liveMsg = liveMsg;
-    log.stepTimes[id + '_start'] = Date.now();
-    this._renderAILog();
-  },
-
-  aiLogError(id, msg = '') {
-    const log = this.state.aiLog;
-    log.errors.push(id);
-    log.active = null;
-    log.liveMsg = msg;
-    this._renderAILog();
-  },
-
-  aiLogDone() {
-    const log = this.state.aiLog;
-    if (log.active !== null) {
-      log.done.push(log.active);
-      log.stepTimes[log.active + '_end'] = Date.now();
-    }
-    log.active = null;
-    this._renderAILog();
-  },
-
-  aiLogDelay(ms) {
-    return new Promise(resolve => setTimeout(resolve, ms));
-  },
-
-  closeAILog() {
-    const overlay = document.getElementById('modal-gen');
-    if (overlay) {
-      overlay.classList.remove('is-visible');
-      setTimeout(() => this.closeModal('modal-gen'), 250);
-    }
-  },
-
-  _renderAILog() {
-    const log = this.state.aiLog;
-    const total = log.steps.length;
-    const done = log.done.length;
-    const pct = Math.round((done / total) * 100);
-    const elapsed = log.startedAt ? ((Date.now() - log.startedAt) / 1000).toFixed(1) : '0.0';
-
-    const stepRows = log.steps.map(s => {
-      const isActive = log.active === s.id;
-      const isDone = log.done.includes(s.id);
-      const isError = log.errors.includes(s.id);
-
-      let stepElapsed = '';
-      if (isDone && log.stepTimes[s.id + '_start'] && log.stepTimes[s.id + '_end']) {
-        const ms = log.stepTimes[s.id + '_end'] - log.stepTimes[s.id + '_start'];
-        stepElapsed = `<span class="log-step-time">${(ms / 1000).toFixed(1)}s</span>`;
-      }
-
-      const iconName = isActive ? 'loader-2'
-        : isDone ? 'check-circle'
-          : isError ? 'x-circle'
-            : 'circle';
-
-      const stateClass = isActive ? 'log-step--active'
-        : isDone ? 'log-step--done'
-          : isError ? 'log-step--error'
-            : 'log-step--wait';
-
-      return `
-        <div class="log-step ${stateClass}">
-          <i data-lucide="${iconName}" class="log-step-icon ${isActive ? 'spin' : ''}"></i>
-          <span class="log-step-label">${s.label}</span>
-          ${stepElapsed}
-        </div>`;
-    }).join('');
-
-    const liveSection = log.liveMsg ? `
-      <div class="log-live">
-        <span class="log-live-dot"></span>
-        <span class="log-live-msg">${log.liveMsg}</span>
-      </div>` : '';
-
-    const model = AI_MODELS[this.state.selectedModel];
-
-    const modal = document.getElementById('modal-gen');
-    if (!modal) return;
-
-    modal.innerHTML = `
-      <div class="modal modal--sm ai-log-modal">
-        <div class="modal-header" style="border-bottom:none;padding-bottom:8px">
-          <div class="ai-log-header">
-            <div class="ai-log-title">
-              <i data-lucide="cpu" style="width:16px;height:16px;color:var(--accent2)"></i>
-              ${log.title}
-            </div>
-            <div class="ai-log-meta">
-              <span class="ai-log-model">${model?.label || '—'}</span>
-              <span class="ai-log-elapsed">${elapsed}s</span>
-            </div>
-          </div>
-        </div>
-        <div class="modal-body ai-log-body">
-          <div class="log-progress-wrap">
-            <div class="log-progress-bar">
-              <div class="log-progress-fill" style="width:${pct}%"></div>
-            </div>
-            <span class="log-progress-pct">${pct}%</span>
-          </div>
-          <div class="log-steps-list">
-            ${stepRows}
-          </div>
-          ${liveSection}
-          <p class="log-hint">
-            <i data-lucide="info" style="width:12px;height:12px"></i>
-            Isso pode levar 30–90 segundos dependendo do modelo.
-          </p>
-        </div>
-      </div>
-    `;
-    lucide.createIcons({ nodes: [modal] });
-  },
-
-  /* ── Projeto: Renomear ───────────────────────────────────────── */
+  /* ----------------------------------------------------------
+     Modal de renomear projeto
+  ---------------------------------------------------------- */
   openRenameModal() {
-    const p = this.P;
-    if (!p) return;
     const input = document.getElementById('rename-input');
-    if (input) input.value = p.name || '';
+    if (input) input.value = this.P?.name || '';
     this.openModal('modal-rename');
-    if (input) setTimeout(() => input.focus(), 100);
-  },
-
-  saveProjectName() {
-    const input = document.getElementById('rename-input');
-    if (!input || !this.P) return;
-    const newName = input.value.trim();
-    if (newName) {
-      this.P.name = newName;
-      this.autosave();
-      this.renderProjectsList();
-      this.closeModal('modal-rename');
-      this.showToast('Projeto renomeado', 'success');
-    }
+    setTimeout(() => input?.focus(), 100);
   },
 });

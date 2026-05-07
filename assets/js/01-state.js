@@ -7,7 +7,7 @@ Object.assign(window.App, {
     projects: {},
     activeId: null,
     screen: 'intake',
-    currentStep: 1,
+    currentStep: 1,           // número inteiro 1-8, sempre
     selectedModel: 'gemini-2.5-flash',
     apiKeys: {},
     intakeFiles: [],
@@ -25,25 +25,32 @@ Object.assign(window.App, {
     },
   },
 
+  /* ----------------------------------------------------------
+     Persistência
+  ---------------------------------------------------------- */
   loadStorage() {
     try {
       const p = localStorage.getItem(STORAGE_KEYS.PROJECTS);
       const a = localStorage.getItem(STORAGE_KEYS.ACTIVE);
       const k = localStorage.getItem(STORAGE_KEYS.API_KEYS);
       const s = localStorage.getItem(STORAGE_KEYS.SETTINGS);
+
       if (p) this.state.projects = JSON.parse(p);
       if (a && a.trim()) this.state.activeId = a.trim();
       if (k) this.state.apiKeys = JSON.parse(k);
 
-      // Validação do modelo selecionado (caso tenha mudado no config ou seja velho)
       if (s) {
         const settings = JSON.parse(s);
         if (settings.selectedModel) this.state.selectedModel = settings.selectedModel;
       }
+
+      // Garante que o modelo salvo ainda existe no config
       if (!AI_MODELS[this.state.selectedModel]) {
         this.state.selectedModel = 'gemini-2.5-flash';
       }
-    } catch (e) { console.error('Erro ao carregar localStorage:', e); }
+    } catch (e) {
+      console.error('[AIGator] Erro ao carregar localStorage:', e);
+    }
   },
 
   saveStorage() {
@@ -51,7 +58,12 @@ Object.assign(window.App, {
       localStorage.setItem(STORAGE_KEYS.PROJECTS, JSON.stringify(this.state.projects));
       localStorage.setItem(STORAGE_KEYS.ACTIVE, this.state.activeId || '');
       localStorage.setItem(STORAGE_KEYS.API_KEYS, JSON.stringify(this.state.apiKeys));
-    } catch (e) { console.error('Erro ao salvar localStorage:', e); }
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify({
+        selectedModel: this.state.selectedModel,
+      }));
+    } catch (e) {
+      console.error('[AIGator] Erro ao salvar localStorage:', e);
+    }
   },
 
   autosave() {
@@ -69,6 +81,9 @@ Object.assign(window.App, {
     }
   },
 
+  /* ----------------------------------------------------------
+     Projetos
+  ---------------------------------------------------------- */
   createProject(name = 'Novo Projeto') {
     const id = 'p_' + Date.now();
     this.state.projects[id] = {
@@ -92,10 +107,12 @@ Object.assign(window.App, {
   },
 
   saveProjectName(name) {
-    if (!this.P || !name) return;
-    this.P.name = name;
+    if (!this.P) return;
+    const n = (name || '').trim();
+    if (!n) return;
+    this.P.name = n;
     if (!this.B.slug) {
-      this.P.briefing.slug = name
+      this.P.briefing.slug = n
         .toLowerCase()
         .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
         .replace(/[^a-z0-9\s-]/g, '')
@@ -111,7 +128,7 @@ Object.assign(window.App, {
     if (!this.state.projects[id]) return;
     this.state.activeId = id;
     this.state.screen = 'intake';
-    this.autosave(); // salvar o activeId
+    this.autosave();
     this.closeModal('modal-projects');
     if (this.renderAll) this.renderAll();
   },
@@ -135,7 +152,6 @@ Object.assign(window.App, {
     clone.name = (src.name || 'Projeto') + ' — Cópia';
     clone.createdAt = new Date().toISOString();
     clone.updatedAt = new Date().toISOString();
-    // Limpar aprovações para o clone começar limpo
     delete clone.briefing.estrutura_aprovada;
     delete clone.briefing.arte_ficha_aprovada;
     this.state.projects[newId] = clone;
@@ -151,7 +167,9 @@ Object.assign(window.App, {
     const blob = new Blob([json], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `projeto-${p.name?.replace(/\s+/g, '-') || id}.json`; a.click();
+    a.href = url;
+    a.download = `projeto-${p.name?.replace(/\s+/g, '-') || id}.json`;
+    a.click();
     URL.revokeObjectURL(url);
   },
 
@@ -178,28 +196,49 @@ Object.assign(window.App, {
     reader.readAsText(file);
   },
 
+  /* ----------------------------------------------------------
+     Campos do briefing
+     setField é o único ponto de escrita no briefing.
+     Chama saveStorage() (não saveState() que não existe).
+  ---------------------------------------------------------- */
   setField(key, value) {
-    if (!this.state.briefing) this.state.briefing = {};
-    this.state.briefing[key] = value;
-    App.state.saveState();
-    this.updateProgressBar();
-    this.updateStepsNavBadges();
+    if (!this.P) return;
+    if (!this.P.briefing) this.P.briefing = {};
+    this.P.briefing[key] = value;
+    this.P.updatedAt = new Date().toISOString();
+    this.saveStorage();           // ← correto, não saveState()
+    this.updateProgressBar?.();
+    this.updateStepsNavBadges?.();
   },
 
   toggleArray(field, value) {
     if (!this.P) return;
-    const arr = this.B[field] || [];
+    const arr = [...(this.B[field] || [])];
     const idx = arr.indexOf(value);
     if (idx === -1) arr.push(value); else arr.splice(idx, 1);
-    this.P.briefing[field] = arr;
-    this.autosave();
+    this.setField(field, arr);
   },
 
   saveApiKey(provider, value) {
     this.state.apiKeys[provider] = value.trim();
+    this.saveStorage();           // persiste apiKeys + selectedModel
+  },
+
+  saveSelectedModel(modelId) {
+    if (!AI_MODELS[modelId]) return;
+    this.state.selectedModel = modelId;
     this.saveStorage();
-  }
+  },
 });
 
-Object.defineProperty(window.App, 'P', { get() { return this.state.projects[this.state.activeId]; } });
-Object.defineProperty(window.App, 'B', { get() { return this.P ? this.P.briefing : {}; } });
+/* ----------------------------------------------------------
+   Getters de conveniência (projeto ativo e briefing ativo)
+   P → projeto ativo
+   B → briefing do projeto ativo
+---------------------------------------------------------- */
+Object.defineProperty(window.App, 'P', {
+  get() { return this.state.projects[this.state.activeId]; },
+});
+Object.defineProperty(window.App, 'B', {
+  get() { return this.P ? this.P.briefing : {}; },
+});

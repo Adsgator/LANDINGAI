@@ -52,7 +52,7 @@ Object.assign(window.App, {
                   <i data-lucide="${isDone ? 'check-circle' : 'circle'}" class="step-card-status"></i>
                 </div>
                 <div class="step-card-body">
-                  <span class="step-card-label">${s.title}</span>
+                  <span class="step-card-label">${s.label}</span>
                   <span class="step-card-sub">${isDone ? 'Completo' : `${missingCount} pendente(s)`}</span>
                 </div>
               </div>
@@ -156,7 +156,7 @@ Object.assign(window.App, {
       fields.forEach(f => {
         if (!this.B[f]) {
           const stepObj = STEPS.find(s => s.id == step);
-          missing.push({ step, field: f, label: stepObj ? `${stepObj.title} > ${f}` : f });
+          missing.push({ step, field: f, label: stepObj ? `${stepObj.label} > ${f}` : f });
         }
       });
     });

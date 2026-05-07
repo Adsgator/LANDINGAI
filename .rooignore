@@ -12,7 +12,7 @@ assets/*.BACKUP.*
 .git/
 
 # ── Snapshots e Dumps (Pesados e redundantes) ─────────────────
-project_snapshot.md
+
 dump_project_v2.py
 
 # ── Scratch / Debug ───────────────────────────────────────────

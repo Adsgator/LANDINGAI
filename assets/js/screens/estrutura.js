@@ -35,45 +35,49 @@ Object.assign(window.App, {
           <div class="copy-bloco-numero">${i + 1}</div>
           <div class="copy-bloco-nome">${b.nome}</div>
         </div>
-        ${b.objetivo ? `<div class="copy-bloco-objetivo">${b.objetivo}</div>` : ''}
-        ${b.titulo ? `
-          <div class="copy-field">
-            <span class="copy-field-label">Título</span>
-            <span class="copy-field-value">${b.titulo}</span>
-          </div>` : ''}
-        ${b.subtitulo ? `
-          <div class="copy-field">
-            <span class="copy-field-label">Subtítulo</span>
-            <span class="copy-field-value">${b.subtitulo}</span>
-          </div>` : ''}
-        ${b.cta ? `
-          <div class="copy-field">
-            <span class="copy-field-label">CTA</span>
-            <span class="copy-field-value" style="color:var(--accent);font-weight:600;">${b.cta}</span>
-          </div>` : ''}
+        ${b.objetivo ? `<div class="copy-bloco-objetivo" style="background:var(--bg);padding:var(--space-2) var(--space-3);border-radius:var(--radius-sm);margin-bottom:var(--space-4);border-left:3px solid var(--accent);">${b.objetivo}</div>` : ''}
+        
+        <div style="display:grid;gap:var(--space-4);">
+          ${b.titulo ? `
+            <div class="copy-field">
+              <span class="copy-field-label">Título Principal (H1/H2)</span>
+              <span class="copy-field-value" style="font-size:15px;font-weight:700;">${b.titulo}</span>
+            </div>` : ''}
+          ${b.subtitulo ? `
+            <div class="copy-field">
+              <span class="copy-field-label">Subtítulo / Apoio Narrativo</span>
+              <span class="copy-field-value">${b.subtitulo}</span>
+            </div>` : ''}
+          ${b.cta ? `
+            <div class="copy-field">
+              <span class="copy-field-label">Chamada para Ação (CTA)</span>
+              <span class="copy-field-value" style="color:var(--accent);font-weight:700;border-color:var(--accent-dim);background:var(--accent-dim);">${b.cta}</span>
+            </div>` : ''}
+        </div>
       </div>
     `).join('') : '';
 
         return `
       <div class="estrutura-wrap">
         ${aprovada ? `
-          <div class="status-banner status-success">
-            <i data-lucide="check-circle" style="width:14px;height:14px"></i>
-            Estrutura aprovada — ${blocos.length} blocos confirmados
+          <div class="status-banner status-success" style="margin-bottom:var(--space-6);">
+            <i data-lucide="check-circle" style="width:16px;height:16px"></i>
+            Estrutura aprovada — Pronta para implementação.
           </div>
         ` : ''}
 
         ${!rascunho ? `
           <div class="estrutura-empty">
-            <i data-lucide="layout" style="width:40px;height:40px;color:var(--text-disabled)"></i>
-            <p>Clique em "Gerar Estrutura" para a IA propor os blocos e copy da página.</p>
-            <div class="estrutura-actions" style="margin-top:var(--space-4)">
+            <i data-lucide="layout" style="width:48px;height:48px;color:var(--text-disabled);margin-bottom:var(--space-4);"></i>
+            <h2 style="font-size:18px;font-weight:700;margin-bottom:var(--space-2);">Sua Landing Page Começa Aqui</h2>
+            <p style="color:var(--text-secondary);max-width:400px;margin:0 auto var(--space-6);">Deixe a IA analisar seu briefing e propor a melhor estrutura narrativa e copy para conversão.</p>
+            <div class="estrutura-actions" style="display:flex;justify-content:center;gap:var(--space-4);">
               <button class="btn-primary" onclick="App.runEstruturaAnalysis()" ${!hasKey ? 'disabled' : ''}>
-                <i data-lucide="sparkles" style="width:15px;height:15px"></i>
+                <i data-lucide="sparkles" style="width:16px;height:16px"></i>
                 Gerar Estrutura com IA
               </button>
               <button class="btn-ghost" onclick="App.abrirEstruturaManual()">
-                <i data-lucide="edit" style="width:14px;height:14px"></i>
+                <i data-lucide="edit" style="width:16px;height:16px"></i>
                 Definir manualmente
               </button>
             </div>
@@ -81,57 +85,81 @@ Object.assign(window.App, {
         ` : `
           <div class="estrutura-layout">
 
-            <!-- Painel de copy -->
+            <!-- Painel de copy (50%) -->
             <div class="estrutura-copy-panel">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-2);">
-                <h3 style="font-size:14px;font-weight:700;">Revisão de Copy — ${blocos.length} blocos</h3>
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--space-4);background:var(--surface);padding:var(--space-3);border-radius:var(--radius-md);border:1px solid var(--border);position:sticky;top:0;z-index:10;">
+                <div>
+                    <h3 style="font-size:14px;font-weight:800;color:var(--text-primary);">REVISÃO DE COPY</h3>
+                    <p style="font-size:11px;color:var(--text-secondary);">${blocos.length} blocos estratégicos</p>
+                </div>
                 <div style="display:flex;gap:var(--space-2);">
                   ${!aprovada ? `
-                    <button class="btn-ghost btn-sm" onclick="App.runEstruturaAnalysis()">
+                    <button class="btn-ghost btn-sm" onclick="App.runEstruturaAnalysis()" title="Regerar toda a estrutura">
                       <i data-lucide="refresh-cw" style="width:12px;height:12px"></i> Regerar
                     </button>
                     <button class="btn-primary btn-sm" onclick="App.aprovarEstrutura()">
-                      <i data-lucide="check" style="width:12px;height:12px"></i> Aprovar
+                      <i data-lucide="check" style="width:12px;height:12px"></i> Aprovar Estrutura
                     </button>
                   ` : `
                     <button class="btn-ghost btn-sm" onclick="App.reabrirEstrutura()">
-                      <i data-lucide="edit-2" style="width:12px;height:12px"></i> Reeditar
+                      <i data-lucide="edit-2" style="width:12px;height:12px"></i> Reabrir para Edição
                     </button>
                   `}
                 </div>
               </div>
+              
               ${copyPanel}
 
-              <!-- Textarea de edição -->
-              <div style="margin-top:var(--space-4);">
-                <label class="field-label">Editar estrutura bruta</label>
+              <!-- Editor Bruto -->
+              <div style="margin-top:var(--space-8);padding-top:var(--space-6);border-top:1px solid var(--border);">
+                <div style="display:flex;align-items:center;gap:var(--space-2);margin-bottom:var(--space-3);">
+                    <i data-lucide="code" style="width:14px;height:14px;color:var(--text-disabled);"></i>
+                    <label class="field-label" style="margin-bottom:0;">ESTRUTURA BRUTA (MARKDOWN)</label>
+                </div>
                 <textarea
                   class="field-input"
-                  style="min-height:180px;font-size:11px;font-family:monospace;"
+                  style="min-height:300px;font-size:12px;font-family:'Fira Code', monospace;background:var(--bg);line-height:1.6;"
                   placeholder="A estrutura gerada aparece aqui para edição livre..."
                   oninput="App.setField('estrutura_rascunho', this.value); App.renderScreen();"
                 >${rascunho}</textarea>
               </div>
             </div>
 
-            <!-- Wireframe visual -->
-            <div style="position:sticky;top:var(--space-4);">
-              <div style="font-size:11px;font-weight:600;color:var(--text-secondary);text-align:center;margin-bottom:var(--space-2);text-transform:uppercase;letter-spacing:0.05em;">
-                <i data-lucide="monitor" style="width:12px;height:12px"></i> Wireframe
-              </div>
-              ${B.estrutura_wireframe || '<div class="wireframe-placeholder">Gerando wireframe...</div>'}
+            <!-- Wireframe visual (50%) -->
+            <div class="wireframe-sticky-wrap">
+              <div style="background:var(--surface);padding:var(--space-4);border-radius:var(--radius-lg);border:1px solid var(--border);width:100%;box-shadow:var(--shadow-sm);">
+                  <div style="font-size:12px;font-weight:800;color:var(--text-primary);text-align:center;margin-bottom:var(--space-4);display:flex;align-items:center;justify-content:center;gap:var(--space-2);">
+                    <i data-lucide="smartphone" style="width:14px;height:14px"></i> PREVIEW DO WIREFRAME
+                  </div>
+                  
+                  <div style="max-height:65vh;overflow-y:auto;padding-right:var(--space-2);scrollbar-width:thin;">
+                    ${B.estrutura_wireframe || '<div class="wireframe-placeholder">Gerando wireframe...</div>'}
+                  </div>
 
-              ${hasKey ? `
-                <button class="btn-ghost btn-sm" style="width:100%;margin-top:var(--space-3);"
-                  onclick="App.gerarPrototipoVisual()">
-                  <i data-lucide="image" style="width:12px;height:12px"></i>
-                  Gerar protótipo visual com IA
-                </button>
+                  ${hasKey ? `
+                    <button class="btn-primary" style="width:100%;margin-top:var(--space-4);background:linear-gradient(135deg, var(--accent), #4f46e5);border:none;height:44px;"
+                      onclick="App.gerarPrototipoVisual()">
+                      <i data-lucide="sparkles" style="width:16px;height:16px"></i>
+                      Gerar Protótipo Visual com IA
+                    </button>
+                    <p style="font-size:10px;color:var(--text-disabled);text-align:center;margin-top:var(--space-2);">
+                        Usa Gemini 2.5 Flash Image para criar um mockup de alta fidelidade
+                    </p>
+                  ` : ''}
+              </div>
+              
+              ${B.estrutura_prototipo_img ? `
+                <div style="width:100%;background:var(--surface);padding:var(--space-4);border-radius:var(--radius-lg);border:1px solid var(--border);margin-top:var(--space-4);">
+                    <div style="font-size:11px;font-weight:700;margin-bottom:var(--space-3);text-transform:uppercase;color:var(--text-secondary);">Protótipo Visual Gerado</div>
+                    <img src="${B.estrutura_prototipo_img}" style="width:100%;border-radius:var(--radius-md);box-shadow:var(--shadow-md);cursor:pointer;" onclick="window.open(this.src)">
+                </div>
               ` : ''}
             </div>
 
           </div>
         `}
+      </div>
+    `;
 
         ${!hasKey ? `<span class="no-key-warn">
           <i data-lucide="alert-triangle" style="width:13px;height:13px"></i>

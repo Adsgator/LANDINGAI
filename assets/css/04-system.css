@@ -1149,9 +1149,18 @@
 /* Layout do painel de estrutura */
 .estrutura-layout {
   display: grid;
-  grid-template-columns: 1fr 260px;
-  gap: var(--space-6);
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-8);
   align-items: start;
+}
+
+.wireframe-sticky-wrap {
+  position: sticky;
+  top: var(--space-6);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
 }
 
 .estrutura-copy-panel {
@@ -1165,13 +1174,24 @@
 .copy-bloco-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: var(--space-4);
-  transition: border-color 0.2s;
+  border-radius: var(--radius-lg);
+  padding: var(--space-6);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  margin-bottom: var(--space-4);
+  position: relative;
+  overflow: hidden;
+}
+
+.copy-bloco-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
 }
 
 .copy-bloco-card.is-active {
   border-color: var(--accent);
+  background: var(--accent-dim);
 }
 
 .copy-bloco-card-header {
@@ -1226,13 +1246,15 @@
 }
 
 .copy-field-value {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--text-primary);
   background: var(--bg);
   border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 4px 8px;
-  line-height: 1.4;
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  line-height: 1.6;
+  white-space: pre-wrap;
+  font-weight: 450;
 }
 
 .copy-field-empty {

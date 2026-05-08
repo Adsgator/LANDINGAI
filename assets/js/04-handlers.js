@@ -687,7 +687,6 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
 
       this.aiLogStep(4);
       this.setField('estrutura_rascunho', resultado);
-      this.setField('estrutura_wireframe', '');
       await this.aiLogDelay(400);
 
       this.aiLogDone();
@@ -868,7 +867,6 @@ REGRAS:
       const resultado = await this.callAI(prompt);
 
       this.setField('estrutura_rascunho', resultado);
-      this.setField('estrutura_wireframe', '');
 
       if (feedbackInput) feedbackInput.value = '';
 
@@ -922,26 +920,93 @@ REGRAS:
     };
   },
 
+  validateStructure() {
+    const B = this.B || {};
+    const errors = [];
+    const warnings = [];
+
+    // ===== VALIDAÇÕES CRÍTICAS (Erros) =====
+
+    // 1. Verificar estrutura aprovada
+    if (!B.estrutura_aprovada || !B.estrutura_aprovada.trim()) {
+      errors.push('Estrutura não foi aprovada. Vá para "Estrutura LP" e aprove antes de gerar.');
+    }
+
+    // 2. Verificar rascunho existe
+    if (!B.estrutura_rascunho || !B.estrutura_rascunho.trim()) {
+      errors.push('Nenhuma estrutura foi gerada. Clique em "Gerar Estrutura" primeiro.');
+    }
+
+    // 3. Contar blocos
+    const rascunho = B.estrutura_rascunho || '';
+    const blocos = (rascunho.match(/###\s+BLOCO\s+\d+:/gi) || []).length;
+
+    if (blocos < 5) {
+      errors.push(`Estrutura incompleta: apenas ${blocos} blocos encontrados. Mínimo 5 obrigatório.`);
+    }
+
+    if (blocos > 12) {
+      warnings.push(`Estrutura grande demais: ${blocos} blocos. Considere consolidar (máximo recomendado: 9).`);
+    }
+
+    // 4. Verificar Hero está no começo (Geralmente Bloco 2 após Cabeçalho)
+    if (!rascunho.match(/###\s+BLOCO\s+\d+:.*HERO/i)) {
+      warnings.push('Não foi detectado um bloco de Hero. Verifique a estrutura.');
+    }
+
+    // 5. Verificar CTA Final e Rodapé
+    const temCTAFinal = rascunho.match(/###\s+BLOCO\s+\d+:.*(CTA|AÇÃO FINAL)/i);
+    const temRodape = rascunho.match(/###\s+BLOCO\s+\d+:.*(RODAPÉ|FOOTER)/i);
+
+    if (!temCTAFinal) warnings.push('Não encontrado bloco de CTA Final. Considere adicionar.');
+    if (!temRodape) warnings.push('Não encontrado bloco de Rodapé. Considere adicionar.');
+
+    // ===== VALIDAÇÕES DE ENTRADA (Steps) =====
+
+    // 6. Verificar que dados obrigatórios existem (baseado em REQUIRED_FIELDS)
+    if (!B.nome_cliente?.trim()) errors.push('Nome do cliente não preenchido (Step 1).');
+    if (!B.segmento?.trim()) errors.push('Segmento não preenchido (Step 1).');
+    if (!B.whatsapp?.trim()) errors.push('WhatsApp não preenchido (Step 2).');
+    if (!B.publico_primario?.trim()) errors.push('Público-alvo não definido (Step 6).');
+    if (!B.diferencial?.trim()) warnings.push('Diferenciais não preenchidos (Step 7).');
+
+    const dirArteAprovada = B.arte_ficha_aprovada?.trim();
+    if (!dirArteAprovada) {
+      warnings.push('Direção de arte não foi aprovada. Recomendado para consistência visual.');
+    }
+
+    // ===== VALIDAÇÕES DE API =====
+    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
+    if (!hasKey) {
+      errors.push('Nenhuma API Key configurada. Vá em Config. API.');
+    }
+
+    return {
+      valid: errors.length === 0,
+      errors: errors,
+      warnings: warnings,
+      stats: {
+        blocos: blocos,
+        nomeCliente: B.nome_cliente || '—',
+        segmento: B.segmento || '—',
+        apiConfigured: hasKey,
+      }
+    };
+  },
+
   async generateDocImpl() {
-    // Validar estrutura aprovada
-    const estruturaAprovada = this.B?.estrutura_aprovada?.trim();
-    if (!estruturaAprovada) {
-      this.showToast('⚠️ Aprove a Estrutura antes de gerar o DOC-IMPL.', 'warning');
+    // Validar estrutura
+    const validation = this.validateStructure();
+
+    if (!validation.valid) {
+      // Mostrar primeiro erro
+      this.showToast(`❌ ${validation.errors[0]}`, 'error');
       return;
     }
 
-    // Validar estrutura tem blocos
-    const rascunho = this.B?.estrutura_rascunho?.trim();
-    if (!rascunho) {
-      this.showToast('⚠️ Gere uma Estrutura antes de continuar.', 'warning');
-      return;
-    }
-
-    // Contar blocos (procura por "### BLOCO")
-    const blocoCount = (rascunho.match(/###\s+BLOCO\s+\d+:/gi) || []).length;
-    if (blocoCount < 5) {
-      this.showToast(`⚠️ Estrutura incompleta (${blocoCount} blocos). Mínimo 5 blocos obrigatório.`, 'warning');
-      return;
+    // Avisar sobre warnings (se houver)
+    if (validation.warnings.length > 0) {
+      console.warn('[AIGator] Warnings de validação:', validation.warnings);
     }
 
     const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
@@ -954,74 +1019,128 @@ REGRAS:
       .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-z0-9-]/g, '');
 
-    this.openAILog('Gerando Ficha de Implementação em 4 Partes', [
-      { id: 1, icon: 'package',    label: 'PARTE 1 — Fundação & Design System (30–60s)...' },
-      { id: 2, icon: 'image',      label: 'PARTE 2 — Assets & Componentes Globais (30–60s)...' },
-      { id: 3, icon: 'layers',     label: 'PARTE 3 — Seções da Landing Page (30–60s)...' },
-      { id: 4, icon: 'file-code',  label: 'PARTE 4 — Página Final & Deploy (30–60s)...' },
-      { id: 5, icon: 'download',   label: 'Baixando os 4 arquivos...' },
+    this.openAILog('Gerando Ficha de Implementação (DOC-IMPL)', [
+      { id: 1, icon: 'file-text', label: 'Iniciando geração (30-60s)...' },
+      { id: 2, icon: 'layout', label: 'PARTE 1: Config + Estrutura (30-60s)...' },
+      { id: 3, icon: 'box', label: 'PARTE 2: Layout + Componentes (20-40s)...' },
+      { id: 4, icon: 'grid', label: 'PARTE 3: Seções da LP (40-60s)...' },
+      { id: 5, icon: 'zap', label: 'PARTE 4: Deploy + Integrações (15-30s)...' },
+      { id: 6, icon: 'check-circle', label: 'Finalizando e salvando (10-20s)...' },
     ]);
 
+    // Toast informativo
+    this.showToast('⏳ Gerando 4 partes (pode levar 2-5 minutos). Não feche esta aba!', 'info');
+
     try {
-      // ── PARTE 1: Fundação ─────────────────────────────────────
-      this.aiLogStep(1, 'Gerando configuração base e design system...');
-      const parte1 = await this.callAI(this.buildImplPromptParte1());
-      await this.aiLogDelay(300);
-
-      // ── PARTE 2: Assets & Componentes Globais ────────────────
-      this.aiLogStep(2, 'Gerando componentes de layout...');
-      const parte2 = await this.callAI(this.buildImplPromptParte2());
-      await this.aiLogDelay(300);
-
-      // ── PARTE 3: Seções ───────────────────────────────────────
-      this.aiLogStep(3, 'Gerando seções específicas do projeto...');
-      const parte3 = await this.callAI(this.buildImplPromptParte3());
-      await this.aiLogDelay(300);
-
-      // ── PARTE 4: Página Final ─────────────────────────────────
-      this.aiLogStep(4, 'Gerando página final e configurações de deploy...');
-      const parte4 = await this.callAI(this.buildImplPromptParte4());
-      await this.aiLogDelay(300);
-
-      // ── Processamento de Configurações & Limpeza ──────────────
-      const { clinerules, gitignore, rooignore, parte1Clean } = this.formatarDocImpl(parte1);
-
-      // ── Download dos arquivos ───────────────────────────────
-      this.aiLogStep(5);
+      // ===== INICIO =====
+      this.aiLogStep(1);
+      this.aiLogMessage('Lendo briefing e preparando prompts...');
       await this.aiLogDelay(400);
 
-      this.downloadText(clinerules, '.clinerules', 'text/plain');
+      // ===== PARTE 1 =====
+      this.aiLogStep(2);
+      this.aiLogMessage('Solicitando PARTE 1 (Fundação)...');
+      const startP1 = Date.now();
+      const parte1 = await this.callAI(this.buildImplPromptParte1());
+      const durP1 = Math.round((Date.now() - startP1) / 1000);
+      this.aiLogMessage(`✓ PARTE 1 pronta em ${durP1}s`);
       await this.aiLogDelay(300);
-      this.downloadText(gitignore, '.gitignore', 'text/plain');
-      await this.aiLogDelay(300);
-      this.downloadText(rooignore, '.rooignore', 'text/plain');
-      await this.aiLogDelay(600);
 
-      this.downloadText(parte1Clean, `doc-impl-${slug}-parte1-fundacao.md`,   'text/markdown');
-      await this.aiLogDelay(600);
+      // ===== PARTE 2 =====
+      this.aiLogStep(3);
+      this.aiLogMessage('Solicitando PARTE 2 (Componentes)...');
+      const startP2 = Date.now();
+      const parte2 = await this.callAI(this.buildImplPromptParte2());
+      const durP2 = Math.round((Date.now() - startP2) / 1000);
+      this.aiLogMessage(`✓ PARTE 2 pronta em ${durP2}s`);
+      await this.aiLogDelay(300);
+
+      // ===== PARTE 3 =====
+      this.aiLogStep(4);
+      this.aiLogMessage('Solicitando PARTE 3 (Seções)...');
+      const startP3 = Date.now();
+      const parte3 = await this.callAI(this.buildImplPromptParte3());
+      const durP3 = Math.round((Date.now() - startP3) / 1000);
+      this.aiLogMessage(`✓ PARTE 3 pronta em ${durP3}s`);
+      await this.aiLogDelay(300);
+
+      // ===== PARTE 4 =====
+      this.aiLogStep(5);
+      this.aiLogMessage('Solicitando PARTE 4 (Deploy)...');
+      const startP4 = Date.now();
+      const parte4 = await this.callAI(this.buildImplPromptParte4());
+      const durP4 = Math.round((Date.now() - startP4) / 1000);
+      this.aiLogMessage(`✓ PARTE 4 pronta em ${durP4}s`);
+
+      const totalDur = durP1 + durP2 + durP3 + durP4;
+      this.aiLogMessage(`⏱️ Tempo total de IA: ${totalDur}s`);
+      await this.aiLogDelay(300);
+
+      // ===== SALVAR E DOWNLOAD =====
+      this.aiLogStep(6);
+      this.aiLogMessage('Formatando e baixando arquivos...');
+
+      // Processamento de Configurações & Limpeza
+      const { clinerules, gitignore, rooignore, parte1Clean } = this.formatarDocImpl(parte1);
+
+      // Salvar as 4 partes
+      this.setField('doc_impl_parte1', parte1Clean);
+      this.setField('doc_impl_parte2', parte2);
+      this.setField('doc_impl_parte3', parte3);
+      this.setField('doc_impl_parte4', parte4);
+
+      // Download
+      this.downloadText(clinerules, '.clinerules', 'text/plain');
+      await this.aiLogDelay(200);
+      this.downloadText(gitignore, '.gitignore', 'text/plain');
+      await this.aiLogDelay(200);
+      this.downloadText(rooignore, '.rooignore', 'text/plain');
+      await this.aiLogDelay(400);
+
+      this.downloadText(parte1Clean, `doc-impl-${slug}-parte1-fundacao.md`, 'text/markdown');
+      await this.aiLogDelay(400);
       this.downloadText(parte2, `doc-impl-${slug}-parte2-componentes.md`, 'text/markdown');
-      await this.aiLogDelay(600);
-      this.downloadText(parte3, `doc-impl-${slug}-parte3-secoes.md`,      'text/markdown');
-      await this.aiLogDelay(600);
-      this.downloadText(parte4, `doc-impl-${slug}-parte4-pagina.md`,      'text/markdown');
+      await this.aiLogDelay(400);
+      this.downloadText(parte3, `doc-impl-${slug}-parte3-secoes.md`, 'text/markdown');
+      await this.aiLogDelay(400);
+      this.downloadText(parte4, `doc-impl-${slug}-parte4-pagina.md`, 'text/markdown');
+
+      this.aiLogMessage('✓ Todos os arquivos baixados.');
+      await this.aiLogDelay(400);
 
       this.aiLogDone();
       this.state.isGenerating = false;
-      this.showNotification('AIGator', '4 arquivos de implementação gerados!');
+      this.showNotification('AIGator', 'DOC-IMPL gerado com sucesso!');
 
       setTimeout(() => {
         this.closeAILog();
-        this.showToast('4 arquivos baixados! Implemente na ordem: Parte 1 → 2 → 3 → 4', 'success', 6000);
+        this.showToast(`✓ DOC-IMPL pronto em ${totalDur}s! Implemente na ordem: P1 → P2 → P3 → P4`, 'success', 8000);
         this.renderScreen();
       }, 600);
 
-    } catch (e) {
-      console.error('[AIGator] generateDocImpl:', e);
+    } catch (err) {
+      console.error('[AIGator] generateDocImpl:', err);
+      const errorMsg = err.message || 'Erro desconhecido';
       this.state.isGenerating = false;
-      this.aiLogError(this.state.aiLog.active, e.message);
+      this.aiLogError(this.state.aiLog.active, errorMsg);
+
       setTimeout(() => {
         this.closeAILog();
-        this.showToast('Erro ao gerar: ' + e.message, 'error');
+        this.showToast(`❌ Erro ao gerar: ${errorMsg}`, 'error');
+
+        // Mostrar modal de erro com opções e dicas
+        this.openModal('modal-error');
+        document.getElementById('error-meta').textContent = `Falha durante a geração do DOC-IMPL`;
+        document.getElementById('error-message').textContent = errorMsg;
+        document.getElementById('error-cause').innerHTML = `
+          <strong>O que fazer:</strong>
+          <ul style="margin-top: 0.5rem; padding-left: 1.5rem; font-size: 13px; line-height: 1.5;">
+            <li>Verificar se a API Key está correta e tem saldo/quota</li>
+            <li>Tentar novamente com um modelo diferente (ex: Gemini Flash)</li>
+            <li>Verificar conexão com internet</li>
+            <li>Se persistir, baixe o <strong>DOC-1</strong> e use em uma IA externa (Claude/Gemini)</li>
+          </ul>
+        `;
       }, 1200);
     }
   },
@@ -1223,475 +1342,662 @@ Em \`src/styles/globals.css\`, definir:
 - \`<meta og:*>\` para redes sociais
 - \`<meta robots>\` para indexação
 - Estrutura de headings: 1 H1 por página
-- Sitemap.xml + robots.txt
-
-## 10. DEPLOYMENT — VERCEL OU NETLIFY
-
-- Arquivo \`.vercelignore\` ou \`.netlify\` configurado
-- Variáveis de ambiente carregadas via CI/CD
-- Build command: \`npm run build\`
-- Output: \`dist/\`
-
-## 11. NOMENCLATURA — OBRIGATÓRIA
-
-- Arquivos Astro: PascalCase (Hero.astro, Features.astro)
-- Arquivos CSS/JS: kebab-case (hero-section.css, gsap-setup.js)
-- Classes CSS: kebab-case (.hero-section, .cta-button)
-- IDs HTML: camelCase (#ctaButton, #heroSection)
-- Variáveis JS: camelCase (const heroTitle, let isAnimating)
-
-## 12. GIT — OBRIGATÓRIO
-
-- Commits em PT-BR: "feat: Hero section" "fix: animation timing"
-- Branches: feature/nome, bugfix/nome
-- Não commitar: node_modules/, dist/, .env, .DS_Store
-- Usar .gitignore (abaixo)
-
-## 13. TESTES — SE NECESSÁRIO
-
-- Unit tests: Vitest
-- E2E tests: Playwright
-- Coverage mínimo: 70%
-
-## 14. DOCUMENTAÇÃO — OBRIGATÓRIA
-
-- README.md: Como rodar, instalar deps
-- CHANGELOG.md: Histórico de versões
-- Comentários em funções complexas (não em código óbvio)
-
-## 15. FINAL — CHECKLIST
-
-Antes de fazer commit:
-- [ ] Código segue todas as regras acima
-- [ ] Nenhum erro de console
-- [ ] Responsivo em mobile (375px+)
-- [ ] Acessibilidade OK (alt em imgs, aria labels)
-- [ ] Performance OK (> 90 Lighthouse)
-- [ ] Build passa sem warnings: \`npm run build\`
-- [ ] Testei em Chrome, Firefox, Safari
-\`\`\`
+${estruturaAprovada}
 
 ---
 
-## ARQUIVO 2: \`.gitignore\`
+## REGRAS GERAIS DE IMPLEMENTAÇÃO
 
-\`\`\`gitignore
-# ============================================================
-# LandingAI — .gitignore
-# ============================================================
+Você DEVE seguir estas diretrizes em TODAS as partes:
 
-# ── Dependências ──────────────────────────────────────────
-node_modules/
-.npm/
-yarn.lock
-package-lock.json
-
-# ── Ambiente ──────────────────────────────────────────────
-.env
-.env.*
-!.env.example
-.env.local
-.env.*.local
-
-# ── Build ──────────────────────────────────────────────────
-dist/
-build/
-.astro/
-*.generated.*
-
-# ── Cache ──────────────────────────────────────────────────
-.cache
-*.cache
-.next
-.turbo
-turbo.json
-
-# ── Logs ──────────────────────────────────────────────────
-*.log
-logs/
-npm-debug.log*
-yarn-debug.log*
-pnpm-debug.log*
-
-# ── IDE ────────────────────────────────────────────────────
-.vscode/
-!.vscode/settings.json
-!.vscode/extensions.json
-.idea/
-*.sublime-project
-*.sublime-workspace
-.DS_Store
-Thumbs.db
-
-# ── OS ──────────────────────────────────────────────────────
-.DS_Store
-.AppleDouble
-.LSOverride
-*.swp
-*~
-._.DS_Store
-
-# ── Scratch & Debug ────────────────────────────────────────
-scratch/
-dump_*
-debug_*
-test_outputs/
-*.tmp
-
-# ── Deploy ─────────────────────────────────────────────────
-.vercel/
-.netlify/
-.firebase/
-
-# ── AI Assistants ──────────────────────────────────────────
-.cursor/
-.aider*
-.github/copilot-instructions.md
-
-# ── Node & Package Managers ────────────────────────────────
-.pnpm-store/
-.yarn/cache/
-.yarn/unplugged/
-.eslintcache
-
-# ── TypeScript ─────────────────────────────────────────────
-dist/
-*.tsbuildinfo
-
-# ── Vitest & Testing ──────────────────────────────────────
-coverage/
-.nyc_output/
-
-# ── Secrets & Sensitive ────────────────────────────────────
-*.pem
-*.key
-*.cert
-.htpasswd
-
-# ── Project Specific ──────────────────────────────────────
-output/
-generated/
-\`\`\`
+1. **Stack**: Astro 4.x, Tailwind CSS, GSAP (animações).
+2. **Design**: Moderno, premium, dark mode por padrão.
+3. **Responsividade**: Mobile-first obrigatório.
+4. **Sem placeholders**: Código 100% funcional.
+5. **Acessibilidade**: ARIA labels, contraste adequado, semântica HTML.
 
 ---
 
-## ARQUIVO 3: \`.rooignore\`
+## O QUE GERAR NESTA PARTE 1
 
-\`\`\`
-# ============================================================
-# .rooignore — Arquivo de Padrões para Roo Code
-# ============================================================
-# Roo Code deve IGNORAR estes arquivos/pastas
-# Não alterar, deletar, ou sobrescrever
+### Arquivo 1: \`.clinerules\`
 
-# ── Arquivos Críticos de Config ────────────────────────
-package.json
-package-lock.json
-tsconfig.json
-astro.config.mjs
-.clinerules
-.gitignore
-.rooignore
+Regras de arquitetura para o Roo (AI):
+- [ ] Definir estrutura de pastas: \`src/layouts/\`, \`src/components/ui/\`, \`src/components/sections/\`, \`src/styles/\`, \`src/scripts/\`.
+- [ ] Regras de nomenclatura: PascalCase para componentes, kebab-case para assets.
+- [ ] Proibir o uso de \`px\` (usar \`rem\`).
+- [ ] Exigir GSAP para todas as animações de scroll.
+- [ ] Obrigar o uso de variáveis CSS para o design system.
 
-# ── Arquivos de Deploy ────────────────────────────────
-.vercel/
-.netlify/
-.env*
+### Arquivo 2: \`.gitignore\`
 
-# ── Diretórios Críticos ───────────────────────────────
-node_modules/
-dist/
-.astro/
-.cache/
+Padrão para projetos Astro/Node:
+- [ ] \`node_modules/\`, \`dist/\`, \`.astro/\`, \`.env\`, \`.DS_Store\`.
 
-# ── Dependências ──────────────────────────────────────
-public/fonts/
-public/vendor/
+### Arquivo 3: \`.rooignore\`
 
-# ── IDE & Editor ──────────────────────────────────────
-.vscode/
-.idea/
-.cursor/
-
-# ── Sistema ───────────────────────────────────────────
-.DS_Store
-.git/
-.github/
-
-# ── Layout Base (Não modificar) ───────────────────────
-src/layouts/Layout.astro
-
-# ── Página Index (Apenas adicionar components) ────────
-src/pages/index.astro
-
-# ── Pasta de Public (Apenas adicionar assets) ────────
-public/
-\`\`\`
+- [ ] \`node_modules/\`, \`dist/\`, \`.git/\`.
 
 ---
 
-## ARQUIVO 4: Estrutura do Projeto (README para Roo)
+## RESPONDA COM
 
-Responda com o conteúdo dos 4 arquivos acima, separados por:
-
----ARQUIVO-1-CLINERULES---
-[conteúdo completo do .clinerules acima]
-
----ARQUIVO-2-GITIGNORE---
-[conteúdo completo do .gitignore acima]
-
----ARQUIVO-3-ROOIGNORE---
-[conteúdo completo do .rooignore acima]
-
----
-
-Apenas esses 3 arquivos. Nada mais. Sem explicação.
-
----
-`;
+Apenas os 3 arquivos acima. Nada mais. Sem explicação.
+`.trim();
   },
 
   buildImplPromptParte2() {
     const B = this.B || {};
-    const fichaArte = (() => {
-      try { return typeof B.ficha_direcao_arte === 'object' ? B.ficha_direcao_arte : JSON.parse(B.ficha_direcao_arte || '{}'); }
-      catch { return {}; }
-    })();
-
-    // Extrair imagens necessárias da estrutura aprovada
-    const estrutura = B.estrutura_aprovada || B.estrutura_rascunho || '';
-    const temHero      = /hero/i.test(estrutura);
-    const temServico   = /servi[cç]/i.test(estrutura);
-    const temResultado = /resultado|transforma/i.test(estrutura);
-
-    const imagensNecessarias = [
-      temHero      && "- `src/assets/images/hero-principal.webp` — Foto principal do profissional ou imagem de impacto do Hero. Dimensões ideais: 1200×900px.",
-      temServico   && "- `src/assets/images/servico-principal.webp` — Imagem do serviço ou ambiente profissional. Dimensões ideais: 800×600px.",
-      temResultado && "- `src/assets/images/resultado-transformacao.webp` — Imagem inspiradora de resultado/transformação. Dimensões ideais: 1200×800px.",
-      "- `public/og-image.jpg` — Imagem Open Graph para redes sociais. Dimensões: 1200×630px.",
-      "- `public/favicon.svg` — Ícone do site. Pode ser uma versão simplificada do logo.",
-    ].filter(Boolean).join('\n');
+    const estruturaAprovada = B.estrutura_aprovada || B.estrutura_rascunho || '';
 
     return `
-Você é um engenheiro front-end sênior especializado em Astro 4.x.
+Você é um Full-Stack Developer Senior especializado em Astro + Tailwind CSS.
 
-## SUA TAREFA — PARTE 2 DE 4: ASSETS & COMPONENTES GLOBAIS
+## CONTEXTO
 
-Esta parte assume que a PARTE 1 já foi implementada.
-Os arquivos \`globals.css\`, \`Layout.astro\` e \`Button.astro\` já existem.
+Esta é a PARTE 2 de 4 — você está gerando o Layout Base e componentes de UI reutilizáveis.
 
-## DADOS DO CLIENTE
+VOCÊ JÁ TEM:
+- PARTE 1 foi gerada com .clinerules, .gitignore, .rooignore
+- Estrutura de pastas definida em PARTE 1
 
-- **Nome:** ${B.nome_cliente || 'Profissional'}
-- **Segmento:** ${B.segmento || ''}
-- **WhatsApp:** ${B.whatsapp || ''}
-- **E-mail:** ${B.email || ''}
-- **Instagram:** ${B.instagram || ''}
-- **Domínio:** ${B.dominio || '[DOMINIO]'}
-- **Cor primária:** ${B.arte_cor_principal || fichaArte?.paleta?.primaria || '#6366f1'}
-- **Tom visual:** ${fichaArte?.tom_visual || 'moderno e profissional'}
-- **Logo disponível:** ${B.arte_logo === 'svg' ? 'SVG' : B.arte_logo === 'png' ? 'PNG' : 'Sem logo — usar texto'}
-
-## PRÉ-REQUISITO: ESTRUTURA DE PASTAS E IMAGENS PLACEHOLDER
-
-Antes de gerar qualquer componente, o Roo deve:
-1. Criar a pasta \`src/assets/images/\`
-2. Criar um arquivo SVG placeholder para cada imagem necessária (para o build não quebrar)
-
-### Imagens necessárias neste projeto:
-${imagensNecessarias}
-
-**Instrução para o Roo:** Para cada imagem .webp listada, criar um SVG placeholder temporário com o mesmo nome (ex: \`hero-principal.webp\` → criar \`hero-principal.svg\` na mesma pasta como placeholder). As imagens reais devem ser inseridas pelo cliente antes do go-live.
-
-## ARQUIVOS A GERAR (nesta ordem)
-
-### \`src/assets/images/.gitkeep\`
-(Arquivo vazio para manter a pasta no git)
-
-### \`src/components/SEO.astro\`
-(Props: title, description, image?, canonicalURL? — gera todas as meta tags OG, Twitter Card, canonical)
-
-### \`src/components/Header.astro\`
-(Logo ou nome em texto, navegação interna com smooth scroll para IDs das seções, CTA WhatsApp, menu mobile hamburger funcional com Tailwind)
-
-### \`src/components/Footer.astro\`
-(Nome da empresa, links de navegação, WhatsApp, e-mail, Instagram se disponível, copyright, texto de rodapé)
-
-### \`src/components/WhatsAppFloat.astro\`
-(Botão flutuante WhatsApp fixo no canto inferior direito — link \`wa.me/${B.whatsapp || '[WHATSAPP]'}\`)
-
-### \`src/scripts/animations.ts\`
-(Inicialização GSAP + ScrollTrigger + Lenis — exporta função \`initAnimations()\` que o index.astro chama)
+SUA TAREFA AGORA:
+Gerar Layout base e componentes UI que serão usados pelas seções (PARTE 3).
 
 ---
 
-REGRAS:
-1. Código 100% completo, sem placeholders de lógica
-2. PROIBIDO px — use rem
-3. Responsive (mobile-first)
-4. ARIA labels em todos os elementos interativos
-5. WhatsApp link com mensagem pré-preenchida: "${B.whatsapp_mensagem_padrao || 'Olá! Quero saber mais.'}"
+## ESTRUTURA APROVADA (REFERÊNCIA)
 
-Formato: título \`### \\\`caminho/arquivo\\\`\` seguido do bloco de código.
-    `.trim();
+${estruturaAprovada}
+
+---
+
+## REGRA DE CONSISTÊNCIA — CRÍTICA
+
+Você DEVE importar exatamente estas estruturas definidas na PARTE 1:
+
+✓ Pasta \`src/layouts/\` contém \`Layout.astro\`
+✓ Pasta \`src/components/ui/\` contém componentes reutilizáveis
+✓ Pasta \`src/components/sections/\` será usada na PARTE 3
+✓ Pasta \`src/pages/\` contém \`index.astro\` que vai importar sections
+✓ Pasta \`src/styles/\` contém globals.css, animations.css, components.css
+✓ Pasta \`src/scripts/\` contém gsap.ts, animations.ts, utils.ts
+
+---
+
+## O QUE GERAR
+
+### Arquivo 1: src/layouts/Layout.astro
+
+Layout base que:
+- [ ] Importa Layout como componente Astro
+- [ ] Contém \`<header>\`, \`<main>\`, \`<footer>\`
+- [ ] Define variáveis CSS globais (:root)
+- [ ] Importa fontes do Google (DM Sans, DM Mono, Syne)
+- [ ] Importa estilos globais
+- [ ] Renderiza \`<slot />\` no main
+- [ ] Inclui scripts de GSAP e analytics
+
+Exemplo estrutura:
+
+\`\`\`astro
+---
+// src/layouts/Layout.astro
+import Header from '../components/ui/Header.astro';
+import Footer from '../components/ui/Footer.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title}</title>
+  <meta name="description" content={description}>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=DM+Mono:wght@400;500&family=Syne:wght@400..800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles/globals.css">
+</head>
+<body>
+  <Header />
+  <main>
+    <slot />
+  </main>
+  <Footer />
+  <script src="/scripts/gsap.ts"></script>
+</body>
+</html>
+
+<style>
+  /* Estilos globais */
+</style>
+\`\`\`
+
+### Arquivo 2: src/components/ui/Button.astro
+
+Botão reutilizável que:
+- [ ] Aceita props: text, href, variant (primary/secondary), size (sm/md/lg)
+- [ ] Usa classes Tailwind CSS
+- [ ] Suporta <a> e <button>
+- [ ] Acessível (aria-labels, focus states)
+
+\`\`\`astro
+---
+// src/components/ui/Button.astro
+interface Props {
+  text: string;
+  href?: string;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  size?: 'sm' | 'md' | 'lg';
+  class?: string;
+}
+
+const { text, href, variant = 'primary', size = 'md', class: className } = Astro.props;
+
+const baseClass = 'inline-flex items-center justify-center font-semibold rounded-lg transition-all duration-200';
+const variants = {
+  primary: 'bg-emerald-500 text-white hover:bg-emerald-600',
+  secondary: 'bg-slate-700 text-white hover:bg-slate-800',
+  ghost: 'bg-transparent text-white border border-slate-600 hover:border-slate-400',
+};
+const sizes = {
+  sm: 'px-3 py-1.5 text-sm',
+  md: 'px-5 py-2.5 text-base',
+  lg: 'px-7 py-3.5 text-lg',
+};
+
+const classes = \`\${baseClass} \${variants[variant]} \${sizes[size]} \${className || ''}\`;
+---
+
+{href ? (
+  <a href={href} class={classes}>{text}</a>
+) : (
+  <button class={classes}>{text}</button>
+)}
+\`\`\`
+
+### Arquivo 3: src/components/ui/Card.astro
+
+Card reutilizável:
+- [ ] Aceita props: title, description, image, icon, cta
+- [ ] Flexível para seções, testimonials, pricing, etc
+- [ ] Responsive design
+
+### Arquivo 4: src/components/ui/Header.astro
+
+Header/Nav que:
+- [ ] Logo + navegação + CTA
+- [ ] Sticky no topo
+- [ ] Menu mobile responsivo
+- [ ] Links internos para cada seção
+
+### Arquivo 5: src/components/ui/Footer.astro
+
+Footer que:
+- [ ] Links de navegação
+- [ ] Social links
+- [ ] Copyright
+- [ ] Newsletter signup (opcional)
+
+### Arquivo 6: src/styles/globals.css
+
+CSS global que:
+- [ ] Define \`:root\` com variáveis CSS
+- [ ] Reset CSS padrão
+- [ ] Tipografia base
+- [ ] Dark mode padrão
+
+### Arquivo 7: src/styles/components.css
+
+Estilos dos componentes UI:
+- [ ] .button, .card, .header, .footer
+- [ ] Estados hover, active, focus
+- [ ] Responsive design
+
+### Arquivo 8: src/scripts/gsap.ts
+
+Setup GSAP que:
+- [ ] Importa GSAP e ScrollTrigger
+- [ ] Registra o plugin
+- [ ] Define easing defaults
+- [ ] Pronto para ser usado nas seções
+
+---
+
+## CHECKLIST — Antes de responder
+
+Quando gerar estes arquivos:
+
+1. [ ] Cada arquivo tem \`.astro\` ou \`.ts\` ou \`.css\` correto
+2. [ ] Imports estão corretos (paths relativos funcionam)
+3. [ ] Nomes de componentes são PascalCase (Button, Card, Header)
+4. [ ] Classes Tailwind CSS usadas (não inline styles)
+5. [ ] Props bem definidas (interfaces TypeScript)
+6. [ ] Sem código duplicado
+7. [ ] Pronto para PARTE 3 importar estes componentes
+
+---
+
+## RESPONDA COM
+
+Por favor, responda com APENAS os 8 arquivos acima:
+
+- src/layouts/Layout.astro
+- src/components/ui/Button.astro
+- src/components/ui/Card.astro
+- src/components/ui/Header.astro
+- src/components/ui/Footer.astro
+- src/styles/globals.css
+- src/styles/components.css
+- src/scripts/gsap.ts
+
+Cada arquivo deve ser completo e pronto para usar.
+Nada de placeholders ou TODO.
+`.trim();
   },
 
   buildImplPromptParte3() {
     const B = this.B || {};
-    const fichaArte = (() => {
-      try { return typeof B.ficha_direcao_arte === 'object' ? B.ficha_direcao_arte : JSON.parse(B.ficha_direcao_arte || '{}'); }
-      catch { return {}; }
-    })();
-
-    const estrutura = B.estrutura_aprovada || B.estrutura_rascunho || '';
+    const estruturaAprovada = B.estrutura_aprovada || B.estrutura_rascunho || '';
 
     return `
-Você é um Copywriter Sênior e engenheiro front-end especializado em landing pages de alta conversão em Astro 4.x.
+Você é um Frontend Developer Senior especializado em Astro + Tailwind CSS + GSAP.
 
-## SUA TAREFA — PARTE 3 DE 4: SEÇÕES DA LANDING PAGE
+## CONTEXTO
 
-Esta parte assume que as PARTES 1 e 2 já foram implementadas.
-\`Button.astro\`, \`Header.astro\`, \`Footer.astro\`, \`globals.css\` já existem e funcionam.
+Esta é a PARTE 3 de 4 — você está gerando as SEÇÕES da landing page.
 
-## DADOS DO CLIENTE
+VOCÊ JÁ TEM:
+- PARTE 1: Config + estrutura de pastas + .clinerules
+- PARTE 2: Layout base + componentes UI (Button, Card, Header, Footer)
 
-- **Nome:** ${B.nome_cliente || 'Profissional'}
-- **Segmento:** ${B.segmento || ''}
-- **Nicho:** ${B.nicho || ''}
-- **WhatsApp:** ${B.whatsapp || ''}
-- **Mensagem WhatsApp:** ${B.whatsapp_mensagem_padrao || 'Olá! Quero saber mais.'}
-- **Cor primária:** ${B.arte_cor_principal || fichaArte?.paleta?.primaria || '#6366f1'}
-- **Tom visual:** ${fichaArte?.tom_visual || 'moderno e profissional'}
-- **Intensidade visual:** ${B.arte_intensidade || fichaArte?.intensidade || 'medio'}
-- **Elementos visuais:** ${fichaArte?.elementos_visuais || ''}
-- **Tipografia display:** ${fichaArte?.tipografia?.display || 'Inter'}
-
-## ESTRUTURA DA PÁGINA APROVADA (COPY REAL — USE EXATAMENTE ESTA)
-
-${estrutura.substring(0, 6000)}
+AGORA:
+Você vai gerar as seções específicas da landing page baseado na estrutura aprovada.
 
 ---
 
-## INSTRUÇÕES DE GERAÇÃO
+## ESTRUTURA APROVADA
 
-Para CADA bloco da estrutura acima, gere 1 componente .astro em \`src/components/sections/\`.
+${estruturaAprovada}
 
-REGRAS CRÍTICAS:
-1. **USE A COPY REAL DA ESTRUTURA** — não invente títulos, subtítulos ou CTAs diferentes
-2. **PRIMEIRA PESSOA DO SINGULAR** em toda a copy — "Eu ajudo...", nunca "Ela atende..."
-3. **CTAs com links reais** — WhatsApp \`wa.me/${B.whatsapp || '[WHATSAPP]'}\` com mensagem encodada
-4. **PROIBIDO px** — use rem para tudo
-5. **Animações GSAP** — cada seção tem entrada com ScrollTrigger
-6. **Imagens** — use \`<img src="../../assets/images/[nome].webp"\` com \`loading="lazy"\` e \`alt\` descritivo
-7. **Componente isolado** — cada seção é auto-contida, importa Button se precisar de CTA
+---
 
-## FORMATO DE RESPOSTA
+## REGRA DE CONSISTÊNCIA — CRÍTICA
 
-Para cada bloco da estrutura aprovada, gere:
+Você DEVE:
 
-### \`src/components/sections/[NomeDoBloco].astro\`
+1. [ ] Importar \`Layout\` de \`../../layouts/Layout.astro\`
+2. [ ] Importar componentes UI de \`../ui/\` (Button, Card, etc)
+3. [ ] Usar APENAS classes Tailwind CSS (não inline styles)
+4. [ ] Importar GSAP animations de \`../../scripts/animations.ts\`
+5. [ ] Cada seção é um componente .astro independente
+6. [ ] Props bem tipadas (interface Props)
+7. [ ] ScrollTrigger para animations ao scroll
+
+---
+
+## LISTA DE SEÇÕES A GERAR
+
+Baseado na estrutura aprovada acima, gere EXATAMENTE:
+
+1. **Hero** — Impacto inicial (SEMPRE primeira seção não-header)
+   - Título (H1)
+   - Subtítulo
+   - CTA primário
+   - Background image/video (opcional)
+
+2. **[Seções da Estrutura]** — Conforme blocos 3-N da estrutura aprovada
+   - Cada bloco = 1 seção
+   - Nome do arquivo: PascalCase (Hero.astro, Features.astro, Pricing.astro, etc)
+   - Cada seção é independente e reutilizável
+
+3. **CTA Final** — Chamada à ação antes do footer (SEMPRE antes do footer)
+   - Texto
+   - Botão principal
+   - Fundo com contraste
+
+---
+
+## ESTRUTURA DE CADA SEÇÃO
+
+Todas devem seguir este padrão:
+
 \`\`\`astro
 ---
+// src/components/sections/[Nome].astro
 import Button from '../ui/Button.astro';
+
+interface Props {
+  title: string;
+  subtitle?: string;
+  cta_text?: string;
+  cta_href?: string;
+  image?: string;
+  variant?: 'light' | 'dark';
+}
+
+const { 
+  title, 
+  subtitle, 
+  cta_text, 
+  cta_href = '#contato',
+  image,
+  variant = 'dark'
+} = Astro.props;
 ---
-<section id="[id-da-secao]" class="...">
-  ...
+
+<section class="py-20 bg-slate-900 text-white overflow-hidden">
+  <div class="container mx-auto px-4">
+    <div class="flex flex-col md:flex-row items-center gap-12">
+      <div class="flex-1 section-content opacity-0 translate-y-10">
+        <h2 class="text-4xl md:text-5xl font-bold mb-6">{title}</h2>
+        {subtitle && <p class="text-xl text-slate-400 mb-8">{subtitle}</p>}
+        {cta_text && <Button text={cta_text} href={cta_href} variant="primary" size="lg" />}
+      </div>
+      {image && (
+        <div class="flex-1 opacity-0 translate-x-10 section-image">
+          <img src={image} alt={title} class="rounded-2xl shadow-2xl" />
+        </div>
+      )}
+    </div>
+  </div>
 </section>
+
 <script>
-  // Animação GSAP
+  import gsap from 'gsap';
+  import { ScrollTrigger } from 'gsap/ScrollTrigger';
+  
+  gsap.registerPlugin(ScrollTrigger);
+  
+  // Animação ao entrar na viewport
+  gsap.to('.section-content', {
+    opacity: 1,
+    y: 0,
+    duration: 0.8,
+    ease: 'power3.out',
+    scrollTrigger: {
+      trigger: '.section-content',
+      start: 'top 80%',
+    }
+  });
 </script>
 \`\`\`
 
-Gere TODOS os componentes de seção baseados na estrutura aprovada acima.
-    `.trim();
+---
+
+## RESPONSIVIDADE — OBRIGATÓRIA
+
+Cada seção deve:
+- [ ] Funcionar em 375px (mobile)
+- [ ] Breakpoints: sm (640px), md (768px), lg (1024px), xl (1280px)
+- [ ] Typography scales: title maior em desktop, menor em mobile
+- [ ] Grid/flex muda conforme breakpoint
+
+---
+
+## RESPONDA COM
+
+Gere TODAS as seções baseado na estrutura aprovada:
+
+1. src/components/sections/Hero.astro
+2. src/components/sections/[Bloco2].astro
+3. src/components/sections/[Bloco3].astro
+4. ... (conforme estrutura)
+5. src/components/sections/CTA.astro
+
+Cada arquivo completo, sem placeholders.
+`.trim();
   },
 
   buildImplPromptParte4() {
     const B = this.B || {};
-    const fichaArte = (() => {
-      try { return typeof B.ficha_direcao_arte === 'object' ? B.ficha_direcao_arte : JSON.parse(B.ficha_direcao_arte || '{}'); }
-      catch { return {}; }
-    })();
-
-    // Extrair nomes das seções da estrutura para montar o index
-    const estrutura = B.estrutura_aprovada || B.estrutura_rascunho || '';
-    const blocos = [];
-    const blocoRegex = /### BLOCO\s*\d+[:\-–]?\s*(.+?)(?:\n|$)/gi;
-    let m;
-    while ((m = blocoRegex.exec(estrutura)) !== null) {
-      const nome = m[1].trim();
-      // Ignorar cabeçalho e rodapé (já são Header/Footer)
-      if (!/cabeçalho|header|rodapé|footer/i.test(nome)) {
-        blocos.push(nome);
-      }
-    }
+    const stack = B.tech_stack || 'Astro, Tailwind CSS, GSAP, Vercel';
 
     return `
-Você é um engenheiro front-end sênior especializado em Astro 4.x, SEO e performance web.
+Você é um Full-Stack Developer Senior especializado em Astro + Deploy.
 
-## SUA TAREFA — PARTE 4 DE 4: PÁGINA FINAL, SEO & DEPLOY
+## CONTEXTO
 
-Esta parte assume que as PARTES 1, 2 e 3 já foram implementadas.
-Todos os componentes de seção já existem em \`src/components/sections/\`.
+Esta é a PARTE 4 de 4 — FINAL — você está gerando:
+1. Integração da homepage (index.astro)
+2. Configurações finais
+3. Deploy setup
 
-## DADOS DO PROJETO
+VOCÊ JÁ TEM:
+- PARTE 1: Config + pastas + .clinerules
+- PARTE 2: Layout + componentes UI
+- PARTE 3: Todas as seções (Hero, Features, Pricing, etc)
 
-- **Nome:** ${B.nome_cliente || 'Projeto'}
-- **Domínio:** ${B.dominio || '[DOMINIO]'}
-- **Título SEO:** ${B.titulo_seo || B.nome_cliente || 'Landing Page'}
-- **Descrição SEO:** ${B.descricao_seo || ''}
-- **Palavra-chave principal:** ${B.palavra_chave_principal || ''}
-- **Palavras-chave secundárias:** ${B.palavras_chave_secundarias || ''}
-- **Segmento:** ${B.segmento || ''}
-- **Cidade/Estado:** ${[B.cidade, B.estado].filter(Boolean).join(', ') || ''}
-- **Schema tipo:** ${B.schema_tipo || 'LocalBusiness'}
-- **GTM ID:** [GTM_ID] (o cliente deve preencher)
-- **Cor primária:** ${B.arte_cor_principal || fichaArte?.paleta?.primaria || '#6366f1'}
+AGORA:
+Você vai gerar a homepage que importa TUDO e define o setup final.
 
-## SEÇÕES DA LANDING PAGE (na ordem da estrutura aprovada)
+---
 
-${blocos.length > 0 ? blocos.map((b, i) => `${i + 1}. ${b}`).join('\n') : estrutura.substring(0, 800)}
+## STACK CONFIRMADO
 
-## ARQUIVOS A GERAR
+${stack}
 
-### \`src/pages/index.astro\`
-(Importa e monta todos os componentes na ordem da estrutura aprovada — Header, seções, WhatsAppFloat, Footer)
-(Passa props de SEO via componente SEO.astro)
-(Chama initAnimations() no script client:load)
+---
 
-### \`src/pages/obrigado.astro\`
-(Página de agradecimento simples — pós-conversão WhatsApp/formulário — com botão voltar para home)
+## REGRA DE CONSISTÊNCIA — CRÍTICA
 
-### \`public/robots.txt\`
-(Allow: / para todos os bots, Sitemap: https://${B.dominio || '[DOMINIO]'}/sitemap-index.xml)
+Você DEVE:
 
-### \`public/manifest.json\`
-(PWA manifest básico com nome, cores e ícones)
+1. [ ] Importar \`Layout\` de \`../layouts/Layout.astro\`
+2. [ ] Importar TODAS as seções de \`../components/sections/\`
+3. [ ] Ordem das seções: Header → Hero → [seções] → CTA → Footer
+4. [ ] Props passadas para cada seção com dados reais
+5. [ ] Nenhuma seção pode quebrar imports
+6. [ ] astro.config.mjs bate com PARTE 1
 
-### \`vercel.json\`
-(Configuração de headers de cache e redirect de www para apex)
+---
 
-## INSTRUÇÕES FINAIS PARA O ROO
+## O QUE GERAR
 
-Após implementar todos os arquivos das 4 partes, execute:
+### Arquivo 1: src/pages/index.astro
 
-\`\`\`bash
-npm install
-npx astro check
-npm run build
+Homepage principal que:
+- [ ] Importa Layout de layouts/
+- [ ] Importa TODAS as seções de components/sections/
+- [ ] Renderiza em ordem: Header → Hero → seções → CTA → Footer
+- [ ] Props são passadas corretamente
+- [ ] Sem erros de import
+
+Exemplo estrutura:
+
+\`\`\`astro
+---
+// src/pages/index.astro
+import Layout from '../layouts/Layout.astro';
+import Hero from '../components/sections/Hero.astro';
+import Features from '../components/sections/Features.astro';
+import Pricing from '../components/sections/Pricing.astro';
+import CTA from '../components/sections/CTA.astro';
+
+const pageTitle = 'Landing Page - Astro';
+const pageDescription = 'Descrição da página';
+---
+
+<Layout title={pageTitle} description={pageDescription}>
+  <Hero 
+    title="Título principal"
+    subtitle="Subtítulo explicativo"
+    cta_text="Começar agora"
+    cta_href="#contato"
+    image="/images/hero.jpg"
+  />
+  
+  <Features 
+    title="Nossos diferenciais"
+    items={[
+      { icon: 'zap', text: 'Diferencial 1' },
+      { icon: 'shield', text: 'Diferencial 2' },
+      { icon: 'star', text: 'Diferencial 3' },
+    ]}
+  />
+  
+  <Pricing 
+    title="Nossos planos"
+    plans={[
+      { name: 'Básico', price: '99', features: [...] },
+      { name: 'Pro', price: '199', features: [...] },
+      { name: 'Premium', price: '299', features: [...] },
+    ]}
+  />
+  
+  <CTA 
+    title="Pronto para começar?"
+    subtitle="Junte-se a centenas de clientes satisfeitos"
+    cta_text="Agendar demo"
+    cta_href="#contato"
+  />
+</Layout>
 \`\`\`
 
-Se \`astro check\` retornar erros de tipo, corrija antes de continuar.
-Se \`npm run build\` falhar por imagem ausente, verifique se os placeholders da PARTE 2 foram criados.
+### Arquivo 2: astro.config.mjs
 
-## CAMPOS QUE O CLIENTE DEVE PREENCHER ANTES DO GO-LIVE
+Configuração Astro que:
+- [ ] Output: 'hybrid' para SSR
+- [ ] Integrations: Tailwind, React (se necessário)
+- [ ] Deploy target: Vercel
+- [ ] compressHTML: true
+- [ ] Sem erros de sintaxe
 
-- \`[DOMINIO]\` → Domínio real (ex: anaesternutricionista.com.br)
-- \`[GTM_ID]\` → ID do Google Tag Manager (ex: GTM-XXXXXXX)
-- Imagens em \`src/assets/images/\` → Substituir placeholders pelas fotos reais
+\`\`\`javascript
+// astro.config.mjs
+import { defineConfig } from 'astro/config';
+import tailwind from '@astrojs/tailwind';
 
-Formato: título \`### \\\`caminho/arquivo\\\`\` seguido do bloco de código.
-    `.trim();
+export default defineConfig({
+  output: 'hybrid',
+  integrations: [
+    tailwind(),
+  ],
+  vite: {
+    ssr: {
+      external: ['gsap']
+    }
+  },
+  compressHTML: true,
+  image: {
+    domains: ['images.unsplash.com'],
+  },
+});
+\`\`\`
+
+### Arquivo 3: package.json
+
+Package.json que:
+- [ ] Scripts: dev, build, preview
+- [ ] Dependências: astro, @astrojs/tailwind, gsap, etc
+- [ ] DevDependencies: typescript, tailwindcss, etc
+- [ ] Node version: >=18
+
+\`\`\`json
+{
+  "name": "landing-page",
+  "version": "1.0.0",
+  "description": "Landing page gerada com Astro",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^4.0.0",
+    "@astrojs/tailwind": "^0.4.0",
+    "gsap": "^3.12.0",
+    "tailwindcss": "^3.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}
+\`\`\`
+
+### Arquivo 4: tsconfig.json
+
+TypeScript config que:
+- [ ] Target: ES2020
+- [ ] Strict mode: true
+- [ ] Paths configurados
+
+\`\`\`json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "strict": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  }
+}
+\`\`\`
+
+### Arquivo 5: public/.gitkeep
+
+Arquivo vazio para manter a pasta public no git.
+
+### Arquivo 6: README.md
+
+Documentação que:
+- [ ] Instruções de instalação
+- [ ] Como rodar dev
+- [ ] Como fazer build
+- [ ] Deploy instructions
+- [ ] Estrutura de pastas
+- [ ] Stack usado
+
+---
+
+## VERIFICAÇÃO FINAL
+
+Antes de responder, garantir:
+
+1. [ ] Arquivo index.astro importa TODAS as seções de PARTE 3
+2. [ ] Nenhum import quebrado
+3. [ ] astro.config.mjs está correto
+4. [ ] package.json lista todas as dependências
+5. [ ] tsconfig.json está configurado
+6. [ ] Build passaria sem erros: \`npm run build\`
+7. [ ] Dev server rodaria: \`npm run dev\`
+
+---
+
+## RESPONDA COM
+
+Apenas os 6 arquivos:
+
+1. src/pages/index.astro (completo, com todas as seções)
+2. astro.config.mjs (configuração final)
+3. package.json (com todas as deps)
+4. tsconfig.json (config TypeScript)
+5. public/.gitkeep
+6. README.md (documentação completa)
+
+Sem placeholders, pronto para npm install + npm run dev.
+
+`.trim();
   },
 
   /* ----------------------------------------------------------
@@ -1819,5 +2125,20 @@ Formato: título \`### \\\`caminho/arquivo\\\`\` seguido do bloco de código.
 
   openSidebar() {
     document.querySelector('.sidebar')?.classList.add('is-open');
+  },
+
+  aiLogMessage(msg) {
+    const log = document.getElementById('ai-log-messages');
+    if (!log) return;
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'ai-log-msg ai-log-msg--info';
+    msgEl.innerHTML = `
+      <span class="msg-time">${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+      <span class="msg-text">${msg}</span>
+    `;
+
+    log.appendChild(msgEl);
+    log.parentElement?.scrollTo({ top: log.parentElement.scrollHeight, behavior: 'smooth' });
   },
 });

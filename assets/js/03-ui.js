@@ -449,6 +449,8 @@ Object.assign(window.App, {
       liveMsg: '',
     };
     this._renderAILog();
+    const msgLog = document.getElementById('ai-log-messages');
+    if (msgLog) msgLog.innerHTML = '';
     this.openModal('modal-gen');
   },
 

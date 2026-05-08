@@ -3,6 +3,84 @@
    ============================================================ */
 
 Object.assign(window.App, {
+  // Método auxiliar para renderizar checklist
+  buildReadinessChecklist() {
+    const B = this.B || {};
+    const validation = this.validateStructure();
+
+    const checks = [
+      { label: 'Nome do cliente', done: !!B.nome_cliente?.trim(), step: 1 },
+      { label: 'Segmento de mercado', done: !!B.segmento?.trim(), step: 1 },
+      { label: 'WhatsApp', done: !!B.whatsapp?.trim(), step: 2 },
+      { label: 'Objetivo de conversão', done: !!B.objetivo_conversao?.trim(), step: 2 },
+      { label: 'Modalidade de atendimento', done: !!B.modalidade?.trim(), step: 4 },
+      { label: 'Serviço principal', done: !!B.servico_principal?.trim(), step: 5 },
+      { label: 'Público-alvo definido', done: !!B.publico_primario?.trim(), step: 6 },
+      { label: 'Estrutura da LP gerada', done: !!B.estrutura_rascunho?.trim(), step: 'Estrutura' },
+      { label: 'Estrutura aprovada', done: !!B.estrutura_aprovada?.trim(), step: 'Estrutura' },
+      { label: 'Direção de arte aprovada', done: !!B.arte_ficha_aprovada?.trim(), step: 'Direção de Arte' },
+      { label: 'API Key configurada', done: Object.values(this.state.apiKeys).some(k => k?.trim()), step: 'Config. API' }
+    ];
+
+    const completedCount = checks.filter(c => c.done).length;
+    const totalCount = checks.length;
+    const percentComplete = Math.round((completedCount / totalCount) * 100);
+
+    return `
+      <div class="readiness-card">
+        <div class="readiness-header">
+          <h3 class="readiness-title">Prontidão para Gerar DOC-IMPL</h3>
+          <div class="readiness-progress">
+            <div class="progress-bar">
+              <div class="progress-fill" style="width: ${percentComplete}%"></div>
+            </div>
+            <span class="progress-text">${percentComplete}% pronto</span>
+          </div>
+        </div>
+
+        <div class="readiness-checks">
+          ${checks.map(check => `
+            <div class="check-item ${check.done ? 'check-done' : 'check-pending'}" 
+                 onclick="${typeof check.step === 'number' ? `App.goToStep(${check.step})` : (check.step === 'Estrutura' ? "App.goToScreen('structure')" : (check.step === 'Direção de Arte' ? "App.goToScreen('art')" : "App.renderApiModal()"))}"
+                 style="cursor:pointer">
+              <div class="check-icon">
+                <i data-lucide="${check.done ? 'check-circle' : 'circle'}" style="width:16px;height:16px;"></i>
+              </div>
+              <div class="check-content">
+                <span class="check-label">${check.label}</span>
+                <span class="check-step">${typeof check.step === 'number' ? `Step ${check.step}` : check.step}</span>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+
+        ${validation.errors.length > 0 ? `
+          <div class="readiness-errors">
+            <div class="error-header">
+              <i data-lucide="alert-triangle" style="width:16px;height:16px;"></i>
+              <span>Impedimentos:</span>
+            </div>
+            <ul class="error-list">
+              ${validation.errors.map(err => `<li>${err}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+
+        ${validation.warnings.length > 0 ? `
+          <div class="readiness-warnings">
+            <div class="warning-header">
+              <i data-lucide="info" style="width:16px;height:16px;"></i>
+              <span>Sugestões:</span>
+            </div>
+            <ul class="warning-list">
+              ${validation.warnings.map(warn => `<li>${warn}</li>`).join('')}
+            </ul>
+          </div>
+        ` : ''}
+      </div>
+    `;
+  },
+
   buildReviewScreen() {
     const B = this.B;
     const isReady = this.checkReady();
@@ -19,6 +97,7 @@ Object.assign(window.App, {
     }
 
     const score = this.calcGlobalScore();
+    const checklist = this.buildReadinessChecklist();
 
     // Banner de validação de estrutura
     const estruturaAprovada = this.B?.estrutura_aprovada?.trim();
@@ -63,6 +142,8 @@ Object.assign(window.App, {
           <div class="review-score-sub">${score < 100 ? 'Preencha os campos obrigatórios para atingir 100%.' : 'Briefing completo e pronto para geração!'}</div>
         </div>
       </div>
+
+      ${checklist}
 
       <!-- Progresso dos Steps (Agora no topo) -->
       <div class="review-steps-preview">
@@ -146,35 +227,30 @@ Object.assign(window.App, {
             </div>
 
             ${B.estrutura_rascunho ? `
-            <div class="review-wireframe-wrap">
-              <div class="estrutura-browser-bar">
-                <span class="preview-dot-r"></span>
-                <span class="preview-dot-y"></span>
-                <span class="preview-dot-g"></span>
-                <span class="estrutura-url-bar">${(B.dominio || 'seusite.com.br').replace(/^https?:\/\//, '')}</span>
-              </div>
-              <div class="review-wireframe-body">
-                <div style="padding:20px; text-align:center; color:var(--text-secondary)">
-                   <i data-lucide="layout-template" style="width:32px;height:32px;margin-bottom:10px;opacity:0.5"></i>
-                   <p style="font-size:13px">Estrutura gerada. Veja os detalhes na aba "Estrutura".</p>
-                </div>
-              </div>
+            <div class="review-estrutura-summary-card">
+               <div class="estrutura-summary-info">
+                  <i data-lucide="layout-template" style="width:24px;height:24px;color:var(--accent2);opacity:0.8"></i>
+                  <div>
+                    <strong>${this.contarBlocos(B.estrutura_rascunho)} blocos gerados</strong>
+                    <p style="font-size:12px;color:var(--text-tertiary)">Narrativa em 1ª pessoa configurada</p>
+                  </div>
+                  <button class="btn-ghost btn-sm" onclick="App.goToScreen('estrutura')" style="margin-left:auto;">
+                    <i data-lucide="edit-3" style="width:12px;height:12px"></i>
+                    Ver Blocos
+                  </button>
+               </div>
             </div>
-            <div style="display:flex;gap:8px;margin-top:8px;align-items:center;">
-              <span style="font-size:11px;color:var(--text-secondary);">
-                ${B.estrutura_aprovada ? '✅ Estrutura aprovada' : '⚠️ Estrutura não aprovada'}
+            <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+              <span class="status-badge ${B.estrutura_aprovada ? 'on' : ''}" style="font-size:10px;text-transform:uppercase;letter-spacing:0.05em;">
+                ${B.estrutura_aprovada ? '✅ Estrutura Aprovada' : '⚠️ Pendente de Aprovação'}
               </span>
-              <button class="btn-ghost btn-sm" onclick="App.goToScreen('estrutura')" style="margin-left:auto;">
-                <i data-lucide="edit-3" style="width:12px;height:12px"></i>
-                Ajustar Estrutura
-              </button>
             </div>
             ` : `
             <div class="review-pending-alert">
               <i data-lucide="alert-triangle" style="width:15px;height:15px;color:var(--warning)"></i>
               <span>Estrutura ainda não definida.</span>
               <button class="btn-ghost btn-sm" onclick="App.goToScreen('estrutura')">
-                Ir para Estrutura →
+                Gerar Estrutura →
               </button>
             </div>
             `}

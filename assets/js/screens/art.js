@@ -54,34 +54,130 @@ Object.assign(window.App, {
             </div>
           </div>
 
-          <div class="form-row">
+          <!-- Grupo: Cores da Marca -->
+          <div class="form-section-title" style="margin-top: 16px;">Cores da Marca</div>
+          <div class="form-row-3">
             <div class="field-group">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                ${this.fieldLabel('arte_cor_principal', 'Cor principal da marca', false)}
-              </div>
+              ${this.fieldLabel('arte_cor_principal', 'Cor Principal', false)}
               <div class="color-picker-wrap">
                 <div class="color-picker-swatch">
                   <input type="color" data-field="arte_cor_principal" value="${B.arte_cor_principal || '#000000'}">
                 </div>
                 <input type="text" class="field-input color-picker-input" data-field="arte_cor_principal"
-                  placeholder="#HEX ou 'não definida'" value="${B.arte_cor_principal || ''}">
+                  placeholder="#HEX" value="${B.arte_cor_principal || ''}">
               </div>
             </div>
             <div class="field-group">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                ${this.fieldLabel('arte_cor_secundaria', 'Cor secundária', false)}
-              </div>
+              ${this.fieldLabel('arte_cor_secundaria', 'Cor Secundária', false)}
               <div class="color-picker-wrap">
                 <div class="color-picker-swatch">
                   <input type="color" data-field="arte_cor_secundaria" value="${B.arte_cor_secundaria || '#000000'}">
                 </div>
                 <input type="text" class="field-input color-picker-input" data-field="arte_cor_secundaria"
-                  placeholder="#HEX ou 'não definida'" value="${B.arte_cor_secundaria || ''}">
+                  placeholder="#HEX" value="${B.arte_cor_secundaria || ''}">
               </div>
+            </div>
+            <div class="field-group">
+              ${this.fieldLabel('arte_cor_complementar', 'Cor Auxiliar/Complementar', false)}
+              <div class="color-picker-wrap">
+                <div class="color-picker-swatch">
+                  <input type="color" data-field="arte_cor_complementar" value="${B.arte_cor_complementar || '#000000'}">
+                </div>
+                <input type="text" class="field-input color-picker-input" data-field="arte_cor_complementar"
+                  placeholder="#HEX" value="${B.arte_cor_complementar || ''}">
+              </div>
+            </div>
+          </div>
+
+          <!-- Grupo: Cores de Base / Layout -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 24px; margin-bottom: 8px;">
+            <div class="form-section-title" style="margin: 0; padding: 0; border: none;">Cores de Base / Layout</div>
+            
+            <div class="field-group" style="flex-direction: row; align-items: center; gap: 8px;">
+              <span style="font-size: 11px; color: var(--text-tertiary); font-weight: 600; text-transform: uppercase;">Preset:</span>
+              <select class="field-select" style="padding: 4px 8px; width: 140px; font-size: 12px;" onchange="App.applyColorPreset(this.value)">
+                <option value="">Personalizado...</option>
+                <option value="neutro">Neutro/Quente</option>
+                <option value="tech">Tech/Frio</option>
+                <option value="dark">Dark Mode</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div class="field-group">
+              ${this.fieldLabel('arte_cor_fundo', 'Fundo (Branco)', false)}
+              <div class="color-picker-wrap">
+                <div class="color-picker-swatch">
+                  <input type="color" id="input-color-fundo" data-field="arte_cor_fundo" value="${B.arte_cor_fundo || '#ffffff'}">
+                </div>
+                <input type="text" id="text-color-fundo" class="field-input color-picker-input" data-field="arte_cor_fundo"
+                  placeholder="#HEX" value="${B.arte_cor_fundo || '#ffffff'}">
+              </div>
+            </div>
+            <div class="field-group">
+              ${this.fieldLabel('arte_cor_texto', 'Texto Principal (Preto)', false)}
+              <div class="color-picker-wrap">
+                <div class="color-picker-swatch">
+                  <input type="color" id="input-color-texto" data-field="arte_cor_texto" value="${B.arte_cor_texto || '#1d1d1c'}">
+                </div>
+                <input type="text" id="text-color-texto" class="field-input color-picker-input" data-field="arte_cor_texto"
+                  placeholder="#HEX" value="${B.arte_cor_texto || '#1d1d1c'}">
+              </div>
+            </div>
+            <div class="field-group">
+              ${this.fieldLabel('arte_cor_suporte', 'Texto Suporte (Cinza)', false)}
+              <div class="color-picker-wrap">
+                <div class="color-picker-swatch">
+                  <input type="color" id="input-color-suporte" data-field="arte_cor_suporte" value="${B.arte_cor_suporte || '#535353'}">
+                </div>
+                <input type="text" id="text-color-suporte" class="field-input color-picker-input" data-field="arte_cor_suporte"
+                  placeholder="#HEX" value="${B.arte_cor_suporte || '#535353'}">
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Tipografia -->
+      <div class="art-section">
+        <div class="art-section-header">
+          <i data-lucide="type" class="art-section-icon" style="color:var(--accent)"></i>
+          <span class="art-section-title">Tipografia</span>
+        </div>
+        <div class="art-section-body">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin:0;">
+              Defina as famílias de fontes que guiarão o layout.
+            </p>
+            <div class="field-group" style="flex-direction: row; align-items: center; gap: 8px;">
+              <span style="font-size: 11px; color: var(--text-tertiary); font-weight: 600; text-transform: uppercase;">Preset:</span>
+              <select class="field-select" style="padding: 4px 8px; width: 170px; font-size: 12px;" onchange="App.applyFontPreset(this.value)">
+                <option value="">Personalizado...</option>
+                <option value="tech">Tech / Clean (Inter/Inter)</option>
+                <option value="moderno">Moderno / Startup (Poppins/Open Sans)</option>
+                <option value="elegante">Elegante / Premium (Playfair/Lato)</option>
+                <option value="editorial">Editorial / Clássico (Merriweather/Source Sans)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="field-group">
+              ${this.fieldLabel('arte_fonte_principal', 'Fonte Principal (Títulos)', false)}
+              <input type="text" id="input-fonte-principal" class="field-input" data-field="arte_fonte_principal"
+                placeholder="Ex: Inter" value="${B.arte_fonte_principal || 'Inter'}">
+            </div>
+            <div class="field-group">
+              ${this.fieldLabel('arte_fonte_secundaria', 'Fonte Secundária (Textos de Apoio)', false)}
+              <input type="text" id="input-fonte-secundaria" class="field-input" data-field="arte_fonte_secundaria"
+                placeholder="Ex: Inter" value="${B.arte_fonte_secundaria || 'Inter'}">
             </div>
           </div>
         </div>
       </div>
+
 
       <!-- Referências Pessoais -->
       <div class="art-section">
@@ -209,5 +305,60 @@ Object.assign(window.App, {
       </div>
     </div>
     `;
+  },
+
+  applyColorPreset(preset) {
+    if (!preset) return;
+
+    const presets = {
+      neutro: { fundo: '#ffffff', texto: '#1d1d1c', suporte: '#535353' },
+      tech: { fundo: '#f8fafc', texto: '#0f172a', suporte: '#475569' },
+      dark: { fundo: '#18181b', texto: '#f4f4f5', suporte: '#a1a1aa' }
+    };
+
+    const colors = presets[preset];
+    if (colors) {
+      // Atualizar os inputs DOM
+      document.getElementById('input-color-fundo').value = colors.fundo;
+      document.getElementById('text-color-fundo').value = colors.fundo;
+      document.getElementById('input-color-texto').value = colors.texto;
+      document.getElementById('text-color-texto').value = colors.texto;
+      document.getElementById('input-color-suporte').value = colors.suporte;
+      document.getElementById('text-color-suporte').value = colors.suporte;
+
+      // Atualizar o estado App.B
+      this.setField('arte_cor_fundo', colors.fundo);
+      this.setField('arte_cor_texto', colors.texto);
+      this.setField('arte_cor_suporte', colors.suporte);
+      
+      this.showToast('Cores de Base atualizadas com sucesso.', 'success');
+    }
+  },
+
+  applyFontPreset(preset) {
+    if (!preset) return;
+
+    const presets = {
+      tech: { principal: 'Inter', secundaria: 'Inter' },
+      moderno: { principal: 'Poppins', secundaria: 'Open Sans' },
+      elegante: { principal: 'Playfair Display', secundaria: 'Lato' },
+      editorial: { principal: 'Merriweather', secundaria: 'Source Sans Pro' }
+    };
+
+    const fonts = presets[preset];
+    if (fonts) {
+      // Atualizar os inputs DOM
+      const inputPrincipal = document.getElementById('input-fonte-principal');
+      const inputSecundaria = document.getElementById('input-fonte-secundaria');
+      
+      if (inputPrincipal) inputPrincipal.value = fonts.principal;
+      if (inputSecundaria) inputSecundaria.value = fonts.secundaria;
+
+      // Atualizar o estado App.B
+      this.setField('arte_fonte_principal', fonts.principal);
+      this.setField('arte_fonte_secundaria', fonts.secundaria);
+      
+      this.showToast('Combinação de fontes aplicada com sucesso.', 'success');
+    }
   }
 });

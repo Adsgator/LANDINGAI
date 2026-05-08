@@ -516,8 +516,14 @@ DADOS DO PROJETO:
 - Tom desejado: ${B.estilo_desejado || '—'}
 - Sensação desejada: ${B.sensacao_visitante || '—'}
 - Restrições: ${B.restricoes || 'Nenhuma'}
-- Cor principal da marca: ${B.arte_cor_principal || 'Não definida'}
-- Cor secundária: ${B.arte_cor_secundaria || 'Não definida'}
+- Cor principal (Marca): ${B.arte_cor_principal || 'Não definida'}
+- Cor secundária (Marca): ${B.arte_cor_secundaria || 'Não definida'}
+- Cor complementar (Marca): ${B.arte_cor_complementar || 'Não definida'}
+- Cor de fundo base: ${B.arte_cor_fundo || 'Não definida'}
+- Cor texto principal: ${B.arte_cor_texto || 'Não definida'}
+- Cor texto de suporte: ${B.arte_cor_suporte || 'Não definida'}
+- Fonte Principal (Títulos): ${B.arte_fonte_principal || 'A IA decide'}
+- Fonte Secundária (Textos/Apoio): ${B.arte_fonte_secundaria || 'A IA decide'}
 - Status da logo: ${B.arte_logo || 'Desconhecido'}
 - Fotos disponíveis: ${B.arte_fotos || 'Desconhecido'}
 - Tema preferido: ${B.arte_tema || 'IA decide'}
@@ -650,241 +656,18 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
     this.showToast('Direção de Arte gerada! Revise e aprove.', 'success');
   },
 
-  aprovarArte() {
-    if (!this.B) return;
-    this.setField('arte_ficha_aprovada', this.B.ficha_direcao_arte || '');
-    this.closeModal('modal-art-result');
-    this.showToast('Direção de Arte aprovada!', 'success');
-    this.renderScreen(true);
-    this.renderStepsNav();
-  },
-
-  /* ----------------------------------------------------------
-     Estrutura — Análise com IA
-  ---------------------------------------------------------- */
   async runEstruturaAnalysis() {
-    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
-    if (!hasKey) { this.showToast('Configure uma API Key primeiro.', 'warning'); return; }
-
-    this.openAILog('Gerando Estrutura da Landing Page', [
-      { id: 1, icon: 'file-text', label: 'Lendo briefing completo...' },
-      { id: 2, icon: 'layout', label: 'Definindo blocos e ordem narrativa...' },
-      { id: 3, icon: 'sparkles', label: 'Gerando copy de cada bloco...' },
-      { id: 4, icon: 'check-circle', label: 'Estrutura pronta!' },
-    ]);
-
-    try {
-      this.aiLogStep(1);
-      const doc1 = this.buildDoc1();
-      await this.aiLogDelay(300);
-
-      this.aiLogStep(2);
-      const prompt = this.buildEstruturaPrompt(doc1);
-      await this.aiLogDelay(200);
-
-      this.aiLogStep(3);
-      const resultado = await this.callAI(prompt);
-
-      this.aiLogStep(4);
-      this.setField('estrutura_rascunho', resultado);
-      await this.aiLogDelay(400);
-
-      this.aiLogDone();
-      this.closeAILog();
-      this.renderScreen();
-      this.showToast('Estrutura gerada! Revise os blocos e refine se necessário.', 'success');
-    } catch (err) {
-      this.aiLogError(this.state.aiLog.active, err.message);
-      setTimeout(() => {
-        this.closeAILog();
-        this.showToast('Erro ao gerar estrutura: ' + err.message, 'error');
-      }, 1200);
-    }
+    return this.gerarEstrutura();
   },
 
-  buildEstruturaPrompt(doc1) {
-    const B = this.B || {};
 
-    return `
-Você é um Copywriter Sênior e Estrategista de Conversão especializado em landing pages para prestadores de serviço no Brasil.
+  // aprovarEstrutura() agora é gerenciado em estrutura.js
 
-## DADOS DO CLIENTE — USE APENAS ESTES, NUNCA INVENTE
-
-${doc1.substring(0, 10000)}
-
----
-
-## SUA TAREFA
-
-Gere a estrutura narrativa COMPLETA da landing page com entre 6 e 9 blocos.
-
----
-
-## REGRAS ABSOLUTAS — VIOLAÇÃO = RESPOSTA INVÁLIDA
-
-1. **PRIMEIRA PESSOA DO SINGULAR EM TODA A COPY** — sem exceção
-   - ✅ "Eu ajudo...", "Meu método...", "Atendo...", "Transformei..."
-   - ❌ "Ela atende...", "O profissional oferece...", "Nossa equipe..."
-
-2. **H1 DO HERO = DOR DE BUSCA** — não o nome do serviço
-   - ✅ "Cansada de dietas que não funcionam?"
-   - ❌ "Consulta Nutricional Personalizada"
-
-3. **CTAs ESPECÍFICOS** — nunca genéricos
-   - ✅ "Quero agendar minha avaliação", "Falar com a nutricionista"
-   - ❌ "Saiba mais", "Clique aqui", "Entre em contato"
-
-4. **SÓ INCLUA BLOCOS COM DADOS REAIS**
-   - Sem depoimentos no briefing → não inclua bloco de depoimentos
-   - Sem endereço → não inclua mapa
-   - Sem Instagram confirmado → não inclua feed
-
-5. **MÍNIMO 6 BLOCOS, MÁXIMO 9** — sempre incluir:
-   - Bloco 1: Cabeçalho (sempre)
-   - Bloco 2: Hero (sempre)
-   - Último bloco antes do rodapé: CTA Final (sempre)
-   - Último bloco: Rodapé (sempre)
-
-6. **NARRATIVA CONECTADA** — cada bloco prepara o próximo psicologicamente
-
----
-
-## FORMATO DE SAÍDA — SIGA EXATAMENTE, SEM DESVIOS
-
-Responda APENAS com os blocos no formato abaixo. Nada antes, nada depois.
-
----
-### BLOCO 1: Cabeçalho
-**Objetivo narrativo:** Âncora de marca + CTA sempre visível
-**Copy sugerida:**
-- Logo/Nome: "[nome da marca]"
-- Menu: [itens de navegação baseados nos blocos]
-- CTA Header: "[texto do botão]"
-**Layout sugerido:** Logo à esquerda, nav central, CTA à direita. Sticky no topo.
-**Condicional:** Sempre presente
-
----
-### BLOCO 2: Hero — [subtítulo descritivo]
-**Objetivo narrativo:** Capturar atenção em 3 segundos e justificar o clique do anúncio
-**Copy sugerida:**
-- Título (H1): "[FRASE QUE ESPELHA A DOR DE BUSCA DO CLIENTE IDEAL]"
-- Subtítulo: "[ampliar o benefício em 1-2 linhas, 1ª pessoa]"
-- CTA Principal: "[ação específica com verbo forte]"
-- CTA Secundário (opcional): "[alternativa mais suave]"
-**Layout sugerido:** [texto à esquerda ou centralizado, onde vai a imagem]
-**Condicional:** Sempre presente
-
----
-### BLOCO [N]: [Nome do Bloco]
-**Objetivo narrativo:** [o que este bloco alcança psicologicamente]
-**Copy sugerida:**
-- Título: "[texto]"
-- Subtítulo: "[texto, se houver]"
-- Body: "[copy principal em 1ª pessoa]"
-- CTA (se aplicável): "[texto específico]"
-**Layout sugerido:** [descrição do layout]
-**Condicional:** [por que este bloco foi incluído — qual dado do briefing justifica]
-
----
-[CONTINUAR ATÉ O CTA FINAL E RODAPÉ]
-
----
-### SEQUÊNCIA FINAL
-1. Cabeçalho
-2. Hero
-3. [próximos blocos em ordem]
-...
-[último]: Rodapé
-    `.trim();
-  },
-
-  aprovarEstrutura() {
-    const rascunho = this.B?.estrutura_rascunho;
-    if (!rascunho?.trim()) { this.showToast('Gere a estrutura antes de aprovar.', 'warning'); return; }
-    this.setField('estrutura_aprovada', rascunho);
-    this.showToast('Estrutura aprovada! Avance para Direção de Arte.', 'success');
-    this.renderScreen();
-    this.renderStepsNav();
-  },
 
   async refinarEstrutura() {
-    const hasKey = Object.values(this.state.apiKeys).some(k => k?.trim());
-    if (!hasKey) { this.showToast('Configure uma API Key primeiro.', 'warning'); return; }
-
-    const feedbackInput = document.getElementById('estrutura-feedback-input');
-    const feedback = feedbackInput?.value?.trim();
-
-    if (!feedback) {
-      this.showToast('Descreva o que deseja ajustar antes de refinar.', 'warning');
-      return;
-    }
-
-    const rascunhoAtual = this.B?.estrutura_rascunho;
-    if (!rascunhoAtual?.trim()) {
-      this.showToast('Gere a estrutura antes de refinar.', 'warning');
-      return;
-    }
-
-    this.openAILog('Refinando Estrutura com IA', [
-      { id: 1, icon: 'message-square', label: 'Analisando seu feedback...' },
-      { id: 2, icon: 'refresh-cw', label: 'Aplicando ajustes...' },
-      { id: 3, icon: 'check-circle', label: 'Estrutura refinada!' },
-    ]);
-
-    try {
-      this.aiLogStep(1);
-      await this.aiLogDelay(300);
-
-      const prompt = `
-Você é um Copywriter Sênior especializado em landing pages de alta conversão.
-
-## ESTRUTURA ATUAL DA LANDING PAGE
-
-${rascunhoAtual}
-
----
-
-## FEEDBACK DO CLIENTE
-
-"${feedback}"
-
----
-
-## SUA TAREFA
-
-Analise o feedback e refine a estrutura mantendo o formato original.
-
-REGRAS:
-1. Aplique EXATAMENTE as mudanças pedidas no feedback
-2. Mantenha os blocos não mencionados IDÊNTICOS al original
-3. SEMPRE use 1ª pessoa do singular em toda a copy
-4. Mantenha o mesmo formato de saída (### BLOCO N: Nome)
-5. Retorne a estrutura COMPLETA — todos os blocos, não só os alterados
-6. CTAs sempre específicos, nunca genéricos
-      `.trim();
-
-      this.aiLogStep(2);
-      const resultado = await this.callAI(prompt);
-
-      this.setField('estrutura_rascunho', resultado);
-
-      if (feedbackInput) feedbackInput.value = '';
-
-      this.aiLogStep(3);
-      await this.aiLogDelay(400);
-
-      this.aiLogDone();
-      this.closeAILog();
-      this.renderScreen(true);
-      this.showToast('Estrutura refinada! Revise novamente.', 'success');
-    } catch (err) {
-      this.aiLogError(this.state.aiLog.active, err.message);
-      setTimeout(() => {
-        this.closeAILog();
-        this.showToast('Erro ao refinar: ' + err.message, 'error');
-      }, 1200);
-    }
+    this.showToast('O refinamento está sendo atualizado para o novo sistema.', 'info');
   },
+
 
   /* ----------------------------------------------------------
      Geração do DOC-IMPL
@@ -927,39 +710,35 @@ REGRAS:
 
     // ===== VALIDAÇÕES CRÍTICAS (Erros) =====
 
-    // 1. Verificar estrutura aprovada
-    if (!B.estrutura_aprovada || !B.estrutura_aprovada.trim()) {
-      errors.push('Estrutura não foi aprovada. Vá para "Estrutura LP" e aprove antes de gerar.');
+    // 1. Verificar estrutura inteligente
+    if (!B.estrutura_lp) {
+      errors.push('Nenhuma estrutura estratégica foi gerada. Vá para "Estrutura LP" primeiro.');
     }
 
-    // 2. Verificar rascunho existe
-    if (!B.estrutura_rascunho || !B.estrutura_rascunho.trim()) {
-      errors.push('Nenhuma estrutura foi gerada. Clique em "Gerar Estrutura" primeiro.');
+    // 2. Verificar aprovação
+    if (!B.estrutura_aprovada) {
+      errors.push('A estrutura não foi aprovada. Revise e aprove para prosseguir.');
     }
 
-    // 3. Contar blocos
-    const rascunho = B.estrutura_rascunho || '';
-    const blocos = (rascunho.match(/###\s+BLOCO\s+\d+:/gi) || []).length;
+    // 3. Contar blocos no JSON
+    let blocos = 0;
+    try {
+      const est = typeof B.estrutura_lp === 'string' ? JSON.parse(B.estrutura_lp) : B.estrutura_lp;
+      const listaBlocos = est?.estrutura_lp?.blocos || [];
+      blocos = listaBlocos.filter(b => b.incluir).length;
+      
+      if (blocos < 5) {
+        errors.push(`Estrutura incompleta: apenas ${blocos} blocos inclusos. Mínimo 5 obrigatório.`);
+      }
 
-    if (blocos < 5) {
-      errors.push(`Estrutura incompleta: apenas ${blocos} blocos encontrados. Mínimo 5 obrigatório.`);
+      // 4. Verificar Hero e outros blocos críticos
+      const IDs = listaBlocos.filter(b => b.incluir).map(b => b.id);
+      if (!IDs.includes('hero')) warnings.push('Não foi detectado um bloco de Hero (#hero).');
+      if (!IDs.includes('cta-final')) warnings.push('Não foi detectado um bloco de CTA Final (#cta-final).');
+    } catch (e) {
+      errors.push('Erro ao validar formato da estrutura (JSON corrompido).');
     }
 
-    if (blocos > 12) {
-      warnings.push(`Estrutura grande demais: ${blocos} blocos. Considere consolidar (máximo recomendado: 9).`);
-    }
-
-    // 4. Verificar Hero está no começo (Geralmente Bloco 2 após Cabeçalho)
-    if (!rascunho.match(/###\s+BLOCO\s+\d+:.*HERO/i)) {
-      warnings.push('Não foi detectado um bloco de Hero. Verifique a estrutura.');
-    }
-
-    // 5. Verificar CTA Final e Rodapé
-    const temCTAFinal = rascunho.match(/###\s+BLOCO\s+\d+:.*(CTA|AÇÃO FINAL)/i);
-    const temRodape = rascunho.match(/###\s+BLOCO\s+\d+:.*(RODAPÉ|FOOTER)/i);
-
-    if (!temCTAFinal) warnings.push('Não encontrado bloco de CTA Final. Considere adicionar.');
-    if (!temRodape) warnings.push('Não encontrado bloco de Rodapé. Considere adicionar.');
 
     // ===== VALIDAÇÕES DE ENTRADA (Steps) =====
 
@@ -1153,7 +932,13 @@ REGRAS:
 
   buildImplPromptParte1() {
     const B = this.B || {};
-    const estruturaAprovada = B.estrutura_aprovada || B.estrutura_rascunho || '';
+    const estruturaRaw = B.estrutura_aprovada || B.estrutura_lp || '';
+    // Tenta formatar se for JSON para facilitar leitura da IA
+    let estruturaAprovada = estruturaRaw;
+    try {
+      const parsed = typeof estruturaRaw === 'string' ? JSON.parse(estruturaRaw) : estruturaRaw;
+      estruturaAprovada = JSON.stringify(parsed, null, 2);
+    } catch (e) {}
 
     return `
 Você é um Full-Stack Developer Senior especializado em Astro + Tailwind CSS.
@@ -1388,7 +1173,12 @@ Apenas os 3 arquivos acima. Nada mais. Sem explicação.
 
   buildImplPromptParte2() {
     const B = this.B || {};
-    const estruturaAprovada = B.estrutura_aprovada || B.estrutura_rascunho || '';
+    const estruturaRaw = B.estrutura_aprovada || B.estrutura_lp || '';
+    let estruturaAprovada = estruturaRaw;
+    try {
+      const parsed = typeof estruturaRaw === 'string' ? JSON.parse(estruturaRaw) : estruturaRaw;
+      estruturaAprovada = JSON.stringify(parsed, null, 2);
+    } catch (e) {}
 
     return `
 Você é um Full-Stack Developer Senior especializado em Astro + Tailwind CSS.
@@ -1605,7 +1395,12 @@ Nada de placeholders ou TODO.
 
   buildImplPromptParte3() {
     const B = this.B || {};
-    const estruturaAprovada = B.estrutura_aprovada || B.estrutura_rascunho || '';
+    const estruturaRaw = B.estrutura_aprovada || B.estrutura_lp || '';
+    let estruturaAprovada = estruturaRaw;
+    try {
+      const parsed = typeof estruturaRaw === 'string' ? JSON.parse(estruturaRaw) : estruturaRaw;
+      estruturaAprovada = JSON.stringify(parsed, null, 2);
+    } catch (e) {}
 
     return `
 Você é um Frontend Developer Senior especializado em Astro + Tailwind CSS + GSAP.

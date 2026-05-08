@@ -1,12 +1,22 @@
 /* ============================================================
-   LandingAI v2 — Screen: Estrutura da LP
+   LandingAI v2 — Screen: Estrutura da LP (Refatorado)
    ============================================================ */
 
 Object.assign(window.App, {
 
   renderEstrutura() {
     const B = this.B || {};
-    const rascunho = B.estrutura_rascunho || '';
+    const estruturaRaw = B.estrutura_lp || null;
+    let estrutura = null;
+    
+    if (estruturaRaw) {
+      try {
+        estrutura = typeof estruturaRaw === 'string' ? JSON.parse(estruturaRaw) : estruturaRaw;
+      } catch (e) {
+        console.error('Erro ao processar JSON da estrutura:', e);
+      }
+    }
+
     const aprovada = B.estrutura_aprovada || '';
 
     return `
@@ -34,84 +44,39 @@ Object.assign(window.App, {
             <span class="estrutura-section-title">Gerar com IA</span>
           </div>
           <p class="estrutura-section-desc">
-            A IA lê o briefing completo e define blocos, copy em 1ª pessoa e ordem narrativa.
+            A IA analisa o briefing para decidir a melhor sequência de blocos e estratégia para o seu nicho.
           </p>
           <button class="btn-primary" id="btn-run-estrutura" ${aprovada ? 'disabled' : ''}>
             <i data-lucide="cpu" style="width:15px;height:15px"></i>
-            ${rascunho && !aprovada ? 'Gerar Novamente' : 'Gerar Estrutura'}
-          </button>
-          <button class="btn-ghost btn-sm" style="margin-top:8px" onclick="App.abrirEstruturaManual()" ${aprovada ? 'disabled' : ''}>
-            <i data-lucide="edit-3" style="width:13px;height:13px"></i>
-            Preencher manualmente
+            ${estrutura ? 'Gerar Novamente' : 'Gerar Estrutura'}
           </button>
         </div>
 
-        <!-- 2. Card: Rascunho em Markdown -->
-        ${rascunho ? `
-        <div class="estrutura-section-card">
-          <div class="estrutura-section-header">
-            <i data-lucide="file-text" style="width:15px;height:15px;color:var(--text-secondary)"></i>
-            <span class="estrutura-section-title">Rascunho Markdown</span>
-          </div>
-          <p class="estrutura-section-desc">
-            Edite diretamente se quiser ajustar algo pontual.
-          </p>
-          <textarea
-            class="field-textarea estrutura-textarea"
-            data-field="estrutura_rascunho"
-            rows="10"
-            style="min-height: 200px;"
-            ${aprovada ? 'disabled' : ''}
-          >${rascunho}</textarea>
-          ${!aprovada ? `
-          <button class="btn-primary" style="margin-top:12px;width:100%" id="btn-approve-estrutura">
-            <i data-lucide="check" style="width:15px;height:15px"></i>
-            Aprovar Estrutura
-          </button>
-          ` : ''}
-        </div>
-        ` : ''}
-
-        <!-- 3. Card: Visualização dos Blocos -->
-        <div class="estrutura-section-card estrutura-preview-card">
-          <div class="estrutura-section-header">
-            <i data-lucide="layout-template" style="width:15px;height:15px;color:var(--text-secondary)"></i>
-            <span class="estrutura-section-title">Visualização dos Blocos</span>
-            ${rascunho ? `<span class="estrutura-preview-badge">${this.contarBlocos(rascunho)} blocos</span>` : ''}
-          </div>
-
-          ${rascunho ? `
-          <div class="estrutura-blocos-container">
-            ${this.renderBlocosVisuais(rascunho)}
-          </div>
-          ` : `
-          <div class="estrutura-preview-empty">
-            <i data-lucide="layout" style="width:32px;height:32px;color:var(--text-disabled)"></i>
-            <p>A visualização aparece após gerar a estrutura</p>
-          </div>
+        <!-- 2. Visualização da Estrutura (JSON Renderizado) -->
+        <div id="estrutura-container">
+          ${estrutura ? this.renderizarEstrutura(estrutura) : `
+            <div class="estrutura-section-card">
+              <div class="estrutura-preview-empty">
+                <i data-lucide="layout" style="width:32px;height:32px;color:var(--text-disabled)"></i>
+                <p>A estrutura inteligente aparecerá aqui após a geração.</p>
+              </div>
+            </div>
           `}
         </div>
 
-        <!-- 4. Card: Refinar com IA -->
-        ${rascunho && !aprovada ? `
-        <div class="estrutura-section-card estrutura-feedback-card">
-          <div class="estrutura-section-header">
-            <i data-lucide="message-square" style="width:15px;height:15px;color:var(--accent)"></i>
-            <span class="estrutura-section-title">Refinar com IA</span>
+        <!-- 3. Card: Aprovação -->
+        ${estrutura && !aprovada ? `
+        <div class="estrutura-section-card" style="border-color: var(--accent-border); background: var(--accent-dim);">
+          <div style="display:flex; justify-content: space-between; align-items:center;">
+            <div>
+              <h4 style="margin:0; color:var(--accent)">Tudo pronto?</h4>
+              <p style="margin:4px 0 0; font-size:12px; color:var(--text-secondary)">Ao aprovar, você poderá avançar para a geração do conteúdo.</p>
+            </div>
+            <button class="btn-primary" id="btn-approve-estrutura">
+              <i data-lucide="check" style="width:15px;height:15px"></i>
+              Aprovar Estrutura
+            </button>
           </div>
-          <p class="estrutura-section-desc">
-            Descreva os ajustes e a IA atualizará os blocos acima.
-          </p>
-          <textarea
-            class="field-textarea"
-            id="estrutura-feedback-input"
-            rows="4"
-            placeholder="Ex: O Hero ficou muito técnico, quero mais direto e urgente..."
-          ></textarea>
-          <button class="btn-primary" id="btn-refinar-estrutura" style="margin-top:10px;width:100%">
-            <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
-            Refinar com IA
-          </button>
         </div>
         ` : ''}
       </div>
@@ -120,203 +85,350 @@ Object.assign(window.App, {
   },
 
   /* ----------------------------------------------------------
-     contarBlocos — conta quantos blocos foram gerados
+     COLETAR DADOS — Extrai campos relevantes do briefing
   ---------------------------------------------------------- */
-  contarBlocos(rascunho) {
-    const matches = rascunho.match(/###\s*BLOCO\s*\d+/gi);
-    return matches ? matches.length : 0;
+  coletarDadosParaEstrutura() {
+    const B = this.B || {};
+    
+    // Extrair campos relevantes para decisão de blocos
+    return {
+      // Sempre necessários
+      dor_principal: B.publico_dor || '',
+      solucao_principal: B.servico_principal || B.o_que_oferece || '',
+      diferencial: B.diferencial || B.diferencial1_titulo || '',
+      
+      // Condicionais
+      preco_exibir: B.preco_exibir === 'sim',
+      preco_valor: B.preco_plano1_valor || '',
+      
+      depoimentos: B.depoimentos === 'sim',
+      depoimentos_qtd: parseInt(B.depoimentos_qtd || 0),
+      
+      google_business: B.google_business === 'sim',
+      google_nota: parseFloat(B.google_nota || 0),
+      google_qtd: parseInt(B.google_qtd || 0),
+      
+      instagram_url: B.instagram || '',
+      
+      processo_desconhecido: (B.como_funciona_passo1 || B.como_funciona_detalhado) ? true : false,
+      
+      objecoes_principais: B.publico_dor || '', // usar para FAQ
+      
+      atendimento_presencial: B.atendimento === 'presencial' || B.modalidade === 'presencial',
+      endereco_autorizado: (B.endereco && B.endereco.trim().length > 0) || B.exibir_localizacao === 'sim',
+      
+      restricoes: B.restricoes || '', // NÃO USAR PARA CONTEÚDO
+    };
   },
 
   /* ----------------------------------------------------------
-     renderBlocosVisuais — converte markdown em cards visuais
+     MONTAR PROMPT — Gera o prompt para a IA
   ---------------------------------------------------------- */
-  renderBlocosVisuais(rascunho) {
-    if (!rascunho) return '';
+  montarPromptEstrutura(dadosBriefing) {
+    const systemPrompt = `
+# SYSTEM PROMPT: Gerador Inteligente de Estrutura de Landing Page
 
-    const blocoRegex = /###\s*BLOCO\s*(\d+)[:\-–]?\s*(.+?)[\r\n]+([\s\S]*?)(?=###\s*BLOCO\s*\d+|###\s*SEQUÊNCIA|$)/gi;
-    const blocos = [];
-    let match;
+Você é um especialista em criar landing pages para prestadores de serviço regional.
 
-    while ((match = blocoRegex.exec(rascunho)) !== null) {
-      blocos.push({
-        num:   parseInt(match[1]),
-        nome:  match[2].trim(),
-        corpo: match[3].trim(),
-      });
-    }
+## CONTEXTO
 
-    if (blocos.length === 0) {
-      // Fallback: exibir texto bruto em card único
-      return `
-        <div class="bloco-visual bloco-raw">
-          <p class="bloco-raw-hint">⚠️ Formato inesperado — exibindo texto bruto</p>
-          <pre style="font-size:12px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.6;">${rascunho.substring(0, 3000)}</pre>
-        </div>
-      `;
-    }
+O usuário passou um briefing sobre seu negócio. Você precisa:
+1. Analisar o briefing
+2. Decidir qual é a melhor sequência de blocos para ESSE caso específico
+3. Retornar EXCLUSIVAMENTE um JSON com a estrutura (sem explicações)
 
-    return blocos.map(b => {
-      const extrair = (chaves, fallback = '') => {
-        for (const chave of chaves) {
-          const rx = new RegExp(`(?:${chave})\\s*[:\\-]\\s*[""]?(.+?)[""]?(?:[\\r\\n]|$)`, 'i');
-          const r  = b.corpo.match(rx);
-          if (r?.[1]?.trim()) return r[1].replace(/\*\*/g, '').trim();
+## TABELA DE BLOCOS E REGRAS
+
+Blocos SEMPRE inclusos:
+- header (Cabeçalho)
+- hero (Hero com H1 focada na Dor #1)
+- o-servico (O Serviço)
+- diferenciais (Diferenciais)
+- cta-final (CTA Final)
+- footer (Rodapé)
+
+Blocos CONDICIONAIS (incluir SE):
+- como-funciona → Se o processo é desconhecido (EX: terapia, coaching, treinamento de cães)
+- planos-precos → Se \`preco_exibir === true\` AND valores foram fornecidos
+- depoimentos → Se \`depoimentos === true\` AND há pelo menos 2 depoimentos
+- google-reviews → Se \`google_nota >= 4.5\` AND \`google_qtd >= 10\`
+- instagram-feed → Se \`instagram_url\` preenchido AND público relevante
+- faq → Se há objeções claramente expressas no briefing
+- mapa-localizacao → Se \`atendimento_presencial === true\` AND endereço foi autorizado
+
+## ANÁLISE REQUERIDA
+
+Para cada bloco opcional, você DEVE:
+1. Verificar se os prerequisites foram atendidos
+2. Decidir se INCLUIR ou EXCLUIR
+3. Explicar a razão em \`razao\`
+
+## ORDEM DOS BLOCOS
+
+Não use ordem fixa. Adapte conforme o tipo de negócio:
+
+EXEMPLO 1: Psicólogo (processo desconhecido)
+→ Hero → O Serviço → Como Funciona → Diferenciais → Depoimentos → FAQ → CTA → Rodapé
+
+EXEMPLO 2: Advogado (precisa de autoridade)
+→ Hero → Especialidades → Diferenciais → Cases/Resultados → Google Reviews → CTA → Rodapé
+
+EXEMPLO 3: Personal Trainer (precisa de transformação visual)
+→ Hero → O Que Você Recebe → Como Funciona → Antes/Depois (cases) → Depoimentos → Preços → CTA → Rodapé
+
+## REGRAS CRÍTICAS
+
+❌ NUNCA copie a seção "Restrições (o que evitar)" para a página
+❌ NUNCA inclua blocos sem conteúdo suficiente
+❌ NUNCA crie objeções falsas para incluir FAQ
+❌ NUNCA ignore regras de prerequisitos
+
+✅ SEMPRE valide cada bloco opcional contra a tabela
+✅ SEMPRE ofereça justificativa clara para cada decisão
+✅ SEMPRE adapte a ordem conforme o tipo de negócio
+✅ SEMPRE deixe espaço para conteúdo real
+
+## FORMATO DE SAÍDA
+
+Retorne EXCLUSIVAMENTE um JSON válido (sem markdown backticks, sem texto antes/depois).
+
+Estrutura esperada:
+{
+  "estrutura_lp": {
+    "analise": {
+      "tipo_negocio": "string",
+      "dor_principal": "string",
+      "solucao": "string",
+      "justificativa_blocos": "string"
+    },
+    "blocos": [
+      {
+        "ordem": number,
+        "id": "string",
+        "nome": "string",
+        "tipo": "estrutural|opcional",
+        "incluir": boolean,
+        "razao": "string",
+        "conteudo_sugerido": {
+           "titulo": "string (opcional)",
+           "subtitulo": "string (opcional)",
+           "cta": "string (opcional)"
         }
-        return fallback;
-      };
+      }
+    ],
+    "resumo": {
+      "total_blocos": number,
+      "blocos_sempre": number,
+      "blocos_opcionais_inclusos": number,
+      "blocos_excluidos": number,
+      "pagina_tipo": "string"
+    }
+  }
+}
+`.trim();
 
-      const extrairBody = (chaves) => {
-        for (const chave of chaves) {
-          const rx = new RegExp(`(?:${chave})\\s*[:\\-]\\s*([\\s\\S]+?)(?=\\n\\s*-\\s*\\*\\*|\\n\\*\\*|\\n###|$)`, 'i');
-          const r  = b.corpo.match(rx);
-          if (r?.[1]?.trim()) {
-            return r[1].trim()
-              .replace(/^[-*]\s+/gm, '')
-              .replace(/\*\*/g, '')
-              .replace(/\n+/g, ' ')
-              .substring(0, 280);
-          }
+    const userPrompt = `
+Analise este briefing e retorne a estrutura ideal da landing page.
+
+DADOS DO NEGÓCIO:
+- Dor Principal: ${dadosBriefing.dor_principal}
+- Solução: ${dadosBriefing.solucao_principal}
+- Diferencial: ${dadosBriefing.diferencial}
+
+DADOS CONDICIONAIS:
+- Preço deve ser exibido: ${dadosBriefing.preco_exibir ? 'SIM' : 'NÃO'}
+- Depoimentos disponíveis: ${dadosBriefing.depoimentos ? `SIM (${dadosBriefing.depoimentos_qtd})` : 'NÃO'}
+- Google Business: ${dadosBriefing.google_business ? `SIM (${dadosBriefing.google_nota} stars, ${dadosBriefing.google_qtd} reviews)` : 'NÃO'}
+- Instagram: ${dadosBriefing.instagram_url ? 'Sim' : 'Não'}
+- Processo desconhecido para cliente (precisa de "Como Funciona"): ${dadosBriefing.processo_desconhecido ? 'SIM' : 'NÃO'}
+- Atendimento presencial com endereço: ${dadosBriefing.atendimento_presencial && dadosBriefing.endereco_autorizado ? 'SIM' : 'NÃO'}
+
+RESTRIÇÕES (o que NÃO incluir na copy):
+${dadosBriefing.restricoes || 'Nenhuma restrição especificada'}
+
+Retorne EXCLUSIVAMENTE um JSON válido com a estrutura otimizada.
+    `.trim();
+
+    return { systemPrompt, userPrompt };
+  },
+
+  /* ----------------------------------------------------------
+     GERAR ESTRUTURA — Orchestrator
+  ---------------------------------------------------------- */
+  async gerarEstrutura() {
+    this.openAILog('Analisando Briefing para Estrutura', [
+      { id: 1, icon: 'file-text', label: 'Coletando dados do briefing...' },
+      { id: 2, icon: 'cpu', label: 'Decidindo narrativa estratégica...' },
+      { id: 3, icon: 'layers', label: 'Validando blocos obrigatórios...' },
+      { id: 4, icon: 'check-circle', label: 'Finalizando estrutura...' },
+    ]);
+
+    try {
+      this.aiLogStep(1);
+      const dados = this.coletarDadosParaEstrutura();
+      await this.aiLogDelay(300);
+      
+      this.aiLogStep(2);
+      const { systemPrompt, userPrompt } = this.montarPromptEstrutura(dados);
+      
+      // Chamar IA (Usando a nova chamada que suporta system prompt se disponível, 
+      // ou concatenando se não. Como callAI atual só recebe prompt, vamos adaptar)
+      const fullPrompt = `${systemPrompt}\n\nUSER REQUEST:\n${userPrompt}`;
+      const response = await this.callAI(fullPrompt);
+      
+      this.aiLogStep(3);
+      // Extrair JSON
+      let jsonText = response.trim();
+      if (jsonText.includes('```')) {
+        jsonText = jsonText.replace(/```json\n?/, '').replace(/```\n?/, '').replace(/\n?```/, '');
+      }
+      // Pega apenas o que está entre chaves se houver lixo
+      const match = jsonText.match(/\{[\s\S]*\}/);
+      if (match) jsonText = match[0];
+      
+      const estrutura = JSON.parse(jsonText);
+      this.validarEstrutura(estrutura);
+      await this.aiLogDelay(300);
+
+      this.aiLogStep(4);
+      this.setField('estrutura_lp', JSON.stringify(estrutura));
+      await this.aiLogDelay(400);
+
+      this.aiLogDone();
+      setTimeout(() => {
+        this.closeAILog();
+        this.renderScreen();
+        this.showToast('Estrutura estratégica gerada com sucesso!', 'success');
+      }, 600);
+
+    } catch (error) {
+      console.error('Erro ao gerar estrutura:', error);
+      this.aiLogError(this.state.aiLog.active, error.message);
+      setTimeout(() => {
+        this.closeAILog();
+        this.showToast('Erro ao gerar estrutura: ' + error.message, 'error');
+      }, 1200);
+    }
+  },
+
+  /* ----------------------------------------------------------
+     VALIDAR ESTRUTURA
+  ---------------------------------------------------------- */
+  validarEstrutura(estrutura) {
+    if (!estrutura.estrutura_lp || !Array.isArray(estrutura.estrutura_lp.blocos)) {
+      throw new Error('JSON inválido: falta campo estrutura_lp.blocos');
+    }
+    
+    const blocos = estrutura.estrutura_lp.blocos;
+    
+    // Validar blocos sempre obrigatórios
+    const obrigatorios = ['header', 'hero', 'o-servico', 'diferenciais', 'cta-final', 'footer'];
+    const inclusos = blocos.filter(b => b.incluir === true).map(b => b.id);
+    
+    for (let obrigatorio of obrigatorios) {
+      if (!inclusos.includes(obrigatorio)) {
+        // Tenta achar por nome se o ID falhou (IA às vezes erra ID)
+        const porNome = blocos.find(b => b.nome.toLowerCase().includes(obrigatorio.replace('-','')) && b.incluir);
+        if (!porNome) {
+           console.warn(`Bloco obrigatório '${obrigatorio}' não detectado. Forçando inclusão no log.`);
         }
-        return '';
-      };
+      }
+    }
+    
+    return true;
+  },
 
-      const objetivo    = extrair(['Objetivo narrativo', 'Objetivo', 'Propósito']);
-      const titulo      = extrair(['- Título \\(H1\\)', '- Título', 'Título', 'H1', 'Headline']);
-      const subtitulo   = extrair(['- Subtítulo', 'Subtítulo', 'Subtitle']);
-      const ctaPrinc    = extrair(['- CTA Principal', '- CTA', 'CTA Principal', 'CTA']);
-      const condicional = extrair(['Condicional', 'Justificativa']);
-      const layout      = extrair(['Layout sugerido', 'Layout']);
-      const body        = extrairBody(['- Body', 'Body', '- Copy principal', 'Copy sugerida']);
-
-      const tipo = this.detectarTipoBloco(b.nome);
-
-      return `
-        <div class="bloco-visual bloco-tipo-${tipo}">
-          <div class="bloco-visual-header">
-            <span class="bloco-visual-num">${b.num}</span>
-            <span class="bloco-visual-nome">${b.nome}</span>
-            <span class="bloco-tipo-badge bloco-badge-${tipo}">${this.labelTipoBloco(tipo)}</span>
+  /* ----------------------------------------------------------
+     RENDERIZAR ESTRUTURA — UI
+  ---------------------------------------------------------- */
+  renderizarEstrutura(estrutura) {
+    const data = estrutura.estrutura_lp;
+    const blocos = data.blocos;
+    
+    return `
+      <div class="estrutura-analise">
+        <div class="analise-card">
+          <div class="analise-card-header">
+            <i data-lucide="brain-circuit" style="width:16px;height:16px;color:var(--accent)"></i>
+            <h3>Análise Estratégica</h3>
           </div>
-          <div class="bloco-visual-body">
-            ${objetivo ? `
-            <div class="bloco-row bloco-objetivo">
-              <span class="bloco-label">Objetivo</span>
-              <span class="bloco-value">${objetivo}</span>
-            </div>` : ''}
-            ${titulo ? `
-            <div class="bloco-row bloco-titulo-row">
-              <span class="bloco-label">Título</span>
-              <strong class="bloco-titulo-text">${titulo}</strong>
-            </div>` : ''}
-            ${subtitulo ? `
-            <div class="bloco-row">
-              <span class="bloco-label">Subtítulo</span>
-              <span class="bloco-value">${subtitulo}</span>
-            </div>` : ''}
-            ${body && !subtitulo ? `
-            <div class="bloco-row">
-              <span class="bloco-label">Copy</span>
-              <span class="bloco-value">${body}</span>
-            </div>` : ''}
-            ${ctaPrinc ? `
-            <div class="bloco-row bloco-cta-row">
-              <span class="bloco-label">CTA</span>
-              <span class="bloco-cta-pill">${ctaPrinc}</span>
-            </div>` : ''}
-            ${layout ? `
-            <div class="bloco-row bloco-layout-row">
-              <span class="bloco-label">Layout</span>
-              <span class="bloco-value bloco-layout-text">${layout}</span>
-            </div>` : ''}
-            ${condicional ? `
-            <div class="bloco-row bloco-condicional">
-              <span class="bloco-label">Por quê</span>
-              <span class="bloco-value">${condicional}</span>
-            </div>` : ''}
+          <div class="analise-grid">
+            <div class="analise-item">
+              <span class="analise-label">Tipo de Negócio</span>
+              <span class="analise-value">${data.analise.tipo_negocio}</span>
+            </div>
+            <div class="analise-item">
+              <span class="analise-label">Dor Principal</span>
+              <span class="analise-value">${data.analise.dor_principal}</span>
+            </div>
+          </div>
+          <div class="analise-justificativa">
+            <span class="analise-label">Justificativa da Narrativa</span>
+            <p>${data.analise.justificativa_blocos}</p>
           </div>
         </div>
-      `;
-    }).join('');
+      </div>
+      
+      <div class="estrutura-blocos-list">
+        ${blocos.map((bloco) => `
+          <div class="bloco-card ${bloco.incluir ? 'incluir' : 'excluir'}">
+            <div class="bloco-card-header">
+              <div class="bloco-main-info">
+                <span class="bloco-ordem">${bloco.ordem}</span>
+                <h4 class="bloco-nome">${bloco.nome}</h4>
+              </div>
+              <span class="bloco-status-badge ${bloco.incluir ? 'status-sim' : 'status-nao'}">
+                ${bloco.incluir ? 'INCLUIR' : 'EXCLUIR'}
+              </span>
+            </div>
+            <div class="bloco-card-body">
+              <p class="bloco-razao">
+                <i data-lucide="${bloco.incluir ? 'check' : 'x'}" style="width:12px;height:12px"></i>
+                ${bloco.razao}
+              </p>
+              ${bloco.incluir && bloco.conteudo_sugerido ? `
+                <div class="bloco-sugestao">
+                  ${bloco.conteudo_sugerido.titulo ? `<div><strong>Título:</strong> ${bloco.conteudo_sugerido.titulo}</div>` : ''}
+                  ${bloco.conteudo_sugerido.cta ? `<div class="bloco-cta-sugestao"><strong>CTA:</strong> <span>${bloco.conteudo_sugerido.cta}</span></div>` : ''}
+                </div>
+              ` : ''}
+              <div class="bloco-meta">
+                <span class="tag-tipo">${bloco.tipo}</span>
+                <span class="tag-id">#${bloco.id}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      
+      <div class="estrutura-resumo">
+        <div class="resumo-item">
+          <span class="resumo-val">${data.resumo.total_blocos}</span>
+          <span class="resumo-lab">Total</span>
+        </div>
+        <div class="resumo-item">
+          <span class="resumo-val">${data.resumo.blocos_sempre + data.resumo.blocos_opcionais_inclusos}</span>
+          <span class="resumo-lab">Inclusos</span>
+        </div>
+        <div class="resumo-item">
+          <span class="resumo-val" style="color:var(--text-tertiary)">${data.resumo.blocos_excluidos}</span>
+          <span class="resumo-lab">Excluídos</span>
+        </div>
+        <div class="resumo-tag">${data.resumo.pagina_tipo}</div>
+      </div>
+    `;
   },
 
-  detectarTipoBloco(nome) {
-    const n = nome.toLowerCase();
-    if (/cabeçalho|header|nav/.test(n))             return 'header';
-    if (/hero|destaque|capa/.test(n))               return 'hero';
-    if (/como funciona|passo|etapa|processo/.test(n)) return 'steps';
-    if (/diferencial|benefício|vantagem/.test(n))   return 'features';
-    if (/plano|preço|investimento|pacote/.test(n))  return 'pricing';
-    if (/depoimento|prova|testimon/.test(n))        return 'testimonial';
-    if (/avaliação|google|review/.test(n))          return 'reviews';
-    if (/faq|pergunta|dúvida/.test(n))              return 'faq';
-    if (/localização|mapa|endereço/.test(n))        return 'map';
-    if (/instagram|feed|social/.test(n))            return 'instagram';
-    if (/contato|formulário|form/.test(n))          return 'contact';
-    if (/cta|chamada|ação final|whatsapp/.test(n))  return 'cta';
-    if (/rodapé|footer/.test(n))                    return 'footer';
-    if (/sobre|about|história/.test(n))             return 'about';
-    return 'generic';
-  },
-
-  labelTipoBloco(tipo) {
-    const labels = {
-      header:      'Nav',
-      hero:        'Hero',
-      steps:       'Processo',
-      features:    'Diferenciais',
-      pricing:     'Preços',
-      testimonial: 'Prova Social',
-      reviews:     'Avaliações',
-      faq:         'FAQ',
-      map:         'Localização',
-      instagram:   'Instagram',
-      contact:     'Contato',
-      cta:         'CTA',
-      footer:      'Rodapé',
-      about:       'Sobre',
-      generic:     'Seção',
-    };
-    return labels[tipo] || 'Seção';
-  },
-
-  abrirEstruturaManual() {
-    const template = `### BLOCO 1: Cabeçalho
-**Objetivo narrativo:** Âncora de marca e CTA sempre visível no scroll
-**Copy sugerida:**
-- Logo/Nome: "[Nome da marca]"
-- Menu: Serviço | Como Funciona | Depoimentos | Contato
-- CTA Header: "Agendar consulta"
-**Layout sugerido:** Logo à esquerda, nav central, CTA à direita. Sticky.
-**Condicional:** Sempre presente
-
----
-### BLOCO 2: Hero — Impacto Inicial
-**Objetivo narrativo:** Capturar atenção e justificar o clique do anúncio em 3 segundos
-**Copy sugerida:**
-- Título (H1): "[FRASE QUE ESPELHA A DOR DE BUSCA]"
-- Subtítulo: "[Ampliar o benefício em 1-2 linhas, 1ª pessoa]"
-- CTA Principal: "[Ação específica com verbo forte]"
-**Layout sugerido:** Texto à esquerda, imagem à direita. Full-width em mobile.
-**Condicional:** Sempre presente
-
----
-### BLOCO 3: [Nome do Bloco]
-**Objetivo narrativo:** [objetivo]
-**Copy sugerida:**
-- Título: "[texto]"
-- Body: "[copy em 1ª pessoa]"
-- CTA: "[texto do botão]"
-**Layout sugerido:** [layout]
-**Condicional:** [justificativa]
-
----
-### SEQUÊNCIA FINAL
-1. Cabeçalho
-2. Hero
-3. [próximos blocos]
-`;
-    this.setField('estrutura_rascunho', template);
+  aprovarEstrutura() {
+    const B = this.B || {};
+    if (!B.estrutura_lp) {
+      this.showToast('Gere a estrutura antes de aprovar.', 'warning');
+      return;
+    }
+    this.setField('estrutura_aprovada', B.estrutura_lp);
+    this.showToast('Estrutura aprovada!', 'success');
     this.renderScreen();
-  },
+    this.renderStepsNav();
+  }
 
 });

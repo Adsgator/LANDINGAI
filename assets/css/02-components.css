@@ -417,26 +417,46 @@
 .color-picker-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
 .color-picker-swatch {
-  width: 36px;
-  height: 36px;
+  width: 42px;
+  height: 42px;
   border-radius: var(--r-sm);
   border: 1px solid var(--border-default);
   cursor: pointer;
   overflow: hidden;
   flex-shrink: 0;
+  background: var(--bg-raised);
+  position: relative;
 }
 
 .color-picker-swatch input[type="color"] {
-  width: 160%;
-  height: 160%;
-  margin: -30%;
-  cursor: pointer;
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: calc(100% + 10px);
+  height: calc(100% + 10px);
   border: none;
   padding: 0;
+  cursor: pointer;
+  background: none;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* Chrome/Safari fixes */
+.color-picker-swatch input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+.color-picker-swatch input[type="color"]::-webkit-color-swatch {
+  border: none;
+}
+
+/* Firefox fix */
+.color-picker-swatch input[type="color"]::-moz-color-swatch {
+  border: none;
 }
 
 .color-picker-input {
@@ -739,33 +759,6 @@
   transform: scale(1.01);
 }
 
-/* ── Color Picker ──────────────────────────────────────────── */
-.color-picker-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.color-picker-swatch {
-  width: 36px;
-  height: 36px;
-  border-radius: var(--r-sm);
-  overflow: hidden;
-  border: 1px solid var(--border-default);
-  flex-shrink: 0;
-}
-
-.color-picker-swatch input[type="color"] {
-  width: 150%;
-  height: 150%;
-  border: none;
-  cursor: pointer;
-  transform: translate(-15%, -15%);
-}
-
-.color-picker-input {
-  flex: 1;
-}
 
 /* ── Art Result Modal ──────────────────────────────────────── */
 .modal--lg {

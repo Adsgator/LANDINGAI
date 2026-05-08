@@ -68,21 +68,6 @@ Object.assign(window.App, {
       throw new Error('Nenhuma mensagem fornecida');
     }
 
-    // 4. Construir payload
-    const payload = {
-      model: modelConfig.model,
-      messages: finalMessages,
-      max_tokens: maxTokens,
-      temperature: temperature
-    };
-
-    // Para Claude (Anthropic), o system prompt é um campo separado no root
-    if (modelConfig.provider === 'anthropic' && systemPrompt) {
-      payload.system = systemPrompt;
-      // Remove do array de mensagens se for Anthropic
-      payload.messages = payload.messages.filter(m => m.role !== 'system');
-    }
-
     // 5. Headers universais
     const headers = {
       'Content-Type': 'application/json',
@@ -106,19 +91,58 @@ Object.assign(window.App, {
       Object.assign(headers, modelConfig.headers);
     }
 
-    // 7. Construir URL final
+    // 7. Construir URL e Payload final
     let url = `${modelConfig.baseURL}/v1/messages`;
-    
+    let finalPayload = {
+      model: modelConfig.model,
+      messages: finalMessages,
+      max_tokens: maxTokens,
+      temperature: temperature
+    };
+
     // Ajuste de endpoint para OpenAI/OpenRouter/Grok/Mistral
     if (['openai', 'openrouter', 'grok', 'mistral', 'github'].includes(modelConfig.provider)) {
       url = `${modelConfig.baseURL}/v1/chat/completions`;
     }
 
-    // Ajuste para Gemini (Google) - usa ?key= na URL
+    // Para Claude (Anthropic), o system prompt é um campo separado no root
+    if (modelConfig.provider === 'anthropic' && systemPrompt) {
+      finalPayload.system = systemPrompt;
+      // Remove do array de mensagens se for Anthropic
+      finalPayload.messages = finalPayload.messages.filter(m => m.role !== 'system');
+    }
+
+    // Ajuste para Gemini (Google) - usar o endpoint NATIVO, não o wrapper OpenAI
     if (modelConfig.provider === 'google') {
-      // O endpoint v1beta/openai suporta o formato OpenAI
-      url = `${modelConfig.baseURL}/v1beta/openai/chat/completions?key=${modelConfig.apiKey}`;
+      url = `${modelConfig.baseURL}/v1beta/models/${modelConfig.model}:generateContent?key=${modelConfig.apiKey}`;
       delete headers['Authorization'];
+      
+      // Construir payload no formato nativo do Gemini
+      let systemInstruction;
+      let contents = [];
+      
+      for (const m of finalMessages) {
+        if (m.role === 'system') {
+          systemInstruction = { parts: [{ text: m.content }] };
+        } else {
+          contents.push({
+            role: m.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: m.content }]
+          });
+        }
+      }
+
+      finalPayload = {
+        contents: contents,
+        generationConfig: {
+          temperature: temperature,
+          maxOutputTokens: maxTokens
+        }
+      };
+      
+      if (systemInstruction) {
+        finalPayload.systemInstruction = systemInstruction;
+      }
     }
 
     // 8. Fazer requisição
@@ -128,7 +152,7 @@ Object.assign(window.App, {
       const response = await fetch(url, {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(finalPayload)
       });
 
       // 9. Tratar resposta
@@ -140,8 +164,15 @@ Object.assign(window.App, {
 
       const data = await response.json();
 
-      // 10. Extrair conteúdo (padrão OpenAI/OpenRouter/Anthropic)
-      const content = data.content?.[0]?.text || data.choices?.[0]?.message?.content;
+      // 10. Extrair conteúdo
+      let content;
+      if (modelConfig.provider === 'google') {
+        // Extração do formato nativo Gemini
+        content = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      } else {
+        // Extração do formato OpenAI/Anthropic
+        content = data.content?.[0]?.text || data.choices?.[0]?.message?.content;
+      }
 
       if (!content) {
         console.error('Resposta da API:', data);
@@ -414,5 +445,153 @@ Antes de devolver a resposta, faça uma checklist:
 - [ ] Nenhum tópico proibido foi mencionado
 - [ ] Se falhar em qualquer item, REESCREVA a seção afetada.
 `;
+  },
+
+  /**
+   * Construir System Prompt com todas as regras rígidas
+   * @param {object} briefing - Dados do cliente
+   * @param {string} tipoGerada - 'estrutura', 'copy_hero', 'copy_completa', etc
+   * @returns {string} System Prompt completo
+   */
+  buildBlindedSystemPrompt(briefing, tipoGerada = 'estrutura') {
+    const basePrompt = `# LANDINGAI — Sistema de Geração Blindado
+
+Você é um especialista em landing pages para prestadores de serviço. 
+Sua resposta DEVE seguir EXATAMENTE estas 10 regras.
+
+## ⚠️ REGRAS OBRIGATÓRIAS
+
+1. **TAILWIND CSS — APENAS REM, NUNCA PX**
+   - Se usar valores absolutos: 0.25rem, 0.5rem, 1rem, 1.5rem, 2rem
+   - Prefira Tailwind nativo: p-4 (= 1rem), mt-12 (= 3rem), etc
+   - VALIDAÇÃO: Procurar em sua resposta por "px" — se encontrar, é FALHA
+
+2. **SEM PLACEHOLDERS NO HTML**
+   - Nada de [INSERIR], {{variável}}, [IMAGEM], [COPY]
+   - TODO conteúdo deve ser REAL
+   - Se não tem info, usar valor padrão ou deixar vazio
+   - VALIDAÇÃO: Se há [, {{, ou ]], é FALHA
+
+3. **COPY DEVE TER ESTRUTURA: Problema → Solução → Benefícios → Prova → CTA**
+   - Não é narrativa, é venda consciente
+   - Informativo + empático
+   - VALIDAÇÃO: Cada seção deve existir e ser clara
+
+4. **CTAs ESPECÍFICAS, NÃO GENÉRICAS**
+   - "Agendar Consulta" ≠ "Clique aqui"
+   - "Baixar Guia" ≠ "Saiba mais"
+   - VALIDAÇÃO: CTA deve ter verbo + objeto
+
+5. **RESPEITAR LIMITE DE CARACTERES**
+   - H1/H2: ≤70 chars
+   - Descrição: ≤160 chars
+   - Button: ≤30 chars
+   - VALIDAÇÃO: Contar caracteres antes de devolver
+
+6. **IMAGENS COM PLACEHOLDER CORRETO**
+   - Se não há imagem real: /img/placeholder-16-9.jpg
+   - Sempre ter atributo alt descritivo
+   - NUNCA inventar URLs
+   - VALIDAÇÃO: Toda tag <img> deve ter alt e src válido
+
+7. **LINKS VÁLIDOS**
+   - href="#" ou URL real
+   - Nunca href="" ou href="[link]"
+   - VALIDAÇÃO: Todo href deve ter valor
+
+8. **ACESSIBILIDADE IMPLEMENTADA**
+   - Toda <img> com alt
+   - Toda <form> com <label>
+   - Usar <header>, <main>, <footer>, <section>
+   - VALIDAÇÃO: Conferir presença de elementos semânticos
+
+9. **RESPONSIVE TAILWIND**
+   - Mobile-first
+   - Usar sm:, md:, lg:, xl:
+   - VALIDAÇÃO: Deve ter classes responsivas
+
+10. **METATAGS CORRETAS**
+    - <title> ≤60 chars e único
+    - <meta description> ≤160 chars
+    - <h1> apareça exatamente 1x
+    - VALIDAÇÃO: Estrutura HTML válida
+
+---
+
+## 📋 CONTEXTO DO CLIENTE
+
+Cliente: ${briefing.nome_cliente || briefing.cliente || '—'}
+Serviço: ${briefing.servico || briefing.segmento || '—'}
+Persona: ${briefing.persona_principal || briefing.publico_primario || '—'}
+Tom: ${briefing.tom_marca || briefing.estilo_desejado || 'Profissional + acessível'}
+Restrições: ${briefing.restricoes || 'Nenhuma'}
+
+---
+
+## ⚠️ ANTES DE DEVOLVER, FAÇA CHECKLIST:
+
+- [ ] Procurei a resposta por "px" — NENHUM encontrado
+- [ ] Procurei por "[", "{{", "]" — NENHUM encontrado
+- [ ] Toda imagem tem alt descritivo
+- [ ] Todo CTA é específica e clara
+- [ ] Copy tem 5 seções: Problema, Solução, Benefícios, Prova, CTA
+- [ ] Tailwind classes seguem convenção (p-4, not p-1rem)
+- [ ] <h1> aparece exatamente 1 vez
+- [ ] Não há links vazios (href="")
+- [ ] Sem jargão técnico não explicado
+- [ ] Estrutura semântica (header, main, footer)
+
+Se NÃO passou em TODOS os itens, REESCREVA antes de responder.
+
+---
+
+## 📝 TIPO DE GERAÇÃO: ${tipoGerada.toUpperCase()}
+
+${this.getTipoeGeracaoEspecifica(tipoGerada)}
+
+---`;
+
+    return basePrompt;
+  },
+
+  /**
+   * Regras específicas por tipo de geração
+   */
+  getTipoeGeracaoEspecifica(tipo) {
+    const regras = {
+      'estrutura': `
+### Para ESTRUTURA da LP:
+- Usar a tabela de blocos fornecida
+- Gerar JSON com array de blocos
+- Cada bloco ter: id, nome, tipo, copy, estrutura HTML
+- Validar TODAS as 10 regras acima para cada bloco`,
+
+      'copy_hero': `
+### Para COPY DO HERO:
+- H1 ≤70 chars focada na DOR #1
+- Subheading até 160 chars com benefício
+- 1 CTA clara e específica
+- Imagem responsiva com alt
+- Fundo com Tailwind (gradiente ou cor)`,
+
+      'copy_completa': `
+### Para COPY COMPLETA DE SEÇÃO:
+- Seguir estrutura: Problema → Solução → Benefícios → Prova → CTA
+- Cada subsection com heading (h2/h3)
+- Mínimo 3 benefícios listados
+- Incluir prova social (número, depoimento, ou credencial)
+- CTA no final com botão específico`,
+
+      'json_estrutura': `
+### Para JSON DE ESTRUTURA:
+- Formato: { blocos: [ { id, nome, tipo, copy, html, regras } ] }
+- Cada bloco DEVE cumprir as 10 regras
+- Incluir campo "validacao" com checklist`,
+
+      'default': `
+### Aplicar as 10 regras universalmente`
+    };
+
+    return regras[tipo] || regras['default'];
   }
 });

@@ -19,81 +19,168 @@ const STORAGE_LIMIT_BYTES = 4 * 1024 * 1024; // 4MB
 App.config = {
   models: {
     // ========== ANTHROPIC CLAUDE ==========
-    'claude-sonnet-4': {
-      name: 'Claude Sonnet 4',
+    'claude-sonnet': {
+      name: 'Claude 3.5 Sonnet',
       provider: 'anthropic',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-3-5-sonnet-20240620',
       baseURL: 'https://api.anthropic.com',
       freeModel: false,
-      info: 'Modelo mais avançado, ideal para tasks complexas'
+      info: 'Modelo mais avançado da Anthropic (3.5 Sonnet)'
     },
-    'claude-haiku-4': {
-      name: 'Claude Haiku 4 (Grátis)',
+    'claude-opus': {
+      name: 'Claude 3 Opus',
       provider: 'anthropic',
-      model: 'claude-haiku-4-20251022',
+      model: 'claude-3-opus-20240229',
+      baseURL: 'https://api.anthropic.com',
+      freeModel: false,
+      info: 'Modelo mais inteligente (3 Opus)'
+    },
+    'claude-haiku': {
+      name: 'Claude 3 Haiku',
+      provider: 'anthropic',
+      model: 'claude-3-haiku-20240307',
       baseURL: 'https://api.anthropic.com',
       freeModel: true,
-      info: 'Rápido e gratuito, bom para resumos e análises'
+      info: 'Rápido e econômico (3 Haiku)'
     },
 
     // ========== GOOGLE GEMINI ==========
-    'gemini-2-flash': {
-      name: 'Gemini 2.0 Flash',
+    'gemini-2.0-flash-lite': {
+      name: 'Gemini 2.0 Flash Lite',
       provider: 'google',
-      model: 'gemini-2.0-flash',
+      model: 'gemini-2.0-flash-lite',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: true,
-      info: 'Modelo gratuito do Google, muito rápido'
+      info: 'Versão leve e otimizada do Gemini 2.0'
     },
-    'gemini-2-pro': {
-      name: 'Gemini 2.0 Pro',
+    'gemini-2.5-flash-lite': {
+      name: 'Gemini 2.5 Flash Lite',
       provider: 'google',
-      model: 'gemini-2-pro',
+      model: 'gemini-2.5-flash-lite-preview-06-17',
+      baseURL: 'https://generativelanguage.googleapis.com',
+      freeModel: true,
+      info: 'Preview do Flash Lite 2.5'
+    },
+    'gemini-2.5-flash': {
+      name: 'Gemini 2.5 Flash',
+      provider: 'google',
+      model: 'gemini-2.5-flash-preview-05-20',
+      baseURL: 'https://generativelanguage.googleapis.com',
+      freeModel: true,
+      info: 'Versão estável e rápida'
+    },
+    'gemini-2.5-pro': {
+      name: 'Gemini 2.5 Pro',
+      provider: 'google',
+      model: 'gemini-2.5-pro-preview-06-05',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: false,
-      info: 'Mais potente que Flash'
+      info: 'Versão pro de alta precisão'
+    },
+    'gemini-2.5-flash-image': {
+      name: 'Gemini 2.5 Flash Image',
+      provider: 'google',
+      model: 'gemini-2.5-flash-preview-05-20',
+      baseURL: 'https://generativelanguage.googleapis.com',
+      freeModel: false,
+      info: 'Geração de Imagens',
+      supportsImages: true
+    },
+    'gemini-3-flash-preview': {
+      name: 'Gemini 3 Flash Preview',
+      provider: 'google',
+      model: 'gemini-3.1-flash-lite-preview',
+      baseURL: 'https://generativelanguage.googleapis.com',
+      freeModel: false,
+      info: 'Geração 3 Experimental'
+    },
+    'gemini-3.1-pro-preview': {
+      name: 'Gemini 3.1 Pro Preview',
+      provider: 'google',
+      model: 'gemini-3.1-pro-preview',
+      baseURL: 'https://generativelanguage.googleapis.com',
+      freeModel: false,
+      info: 'Geração 3.1 Experimental'
     },
 
-    // ========== OPENROUTER (Multi-provider) ==========
-    'openrouter-grok-3': {
-      name: 'Grok 3 (via OpenRouter)',
-      provider: 'openrouter',
-      model: 'xai/grok-3',
-      baseURL: 'https://openrouter.ai/api',
+    // ========== xAI GROK ==========
+    'grok-3': {
+      name: 'Grok 3',
+      provider: 'grok',
+      model: 'grok-3',
+      baseURL: 'https://api.x.ai',
       freeModel: false,
-      info: 'Modelo Grok via OpenRouter'
+      info: 'Modelo Grok 3 nativo'
     },
-    'openrouter-mistral': {
-      name: 'Mistral Large (via OpenRouter)',
-      provider: 'openrouter',
-      model: 'mistralai/mistral-large-2407',
-      baseURL: 'https://openrouter.ai/api',
+    'grok-3-mini': {
+      name: 'Grok 3 Mini',
+      provider: 'grok',
+      model: 'grok-3-mini',
+      baseURL: 'https://api.x.ai',
+      freeModel: true,
+      info: 'Grok rápido e eficiente'
+    },
+
+    // ========== MISTRAL ==========
+    'mistral-large': {
+      name: 'Mistral Large 2',
+      provider: 'mistral',
+      model: 'mistral-large-2407',
+      baseURL: 'https://api.mistral.ai',
       freeModel: false,
-      info: 'Modelo Mistral via OpenRouter'
+      info: 'Modelo mais potente da Mistral'
+    },
+    'mistral-medium': {
+      name: 'Mistral Medium 3',
+      provider: 'mistral',
+      model: 'mistral-medium-latest',
+      baseURL: 'https://api.mistral.ai',
+      freeModel: false,
+      info: 'Equilíbrio entre velocidade e qualidade'
     },
 
     // ========== OPENAI ==========
-    'openai-gpt4': {
+    'openai-gpt4o': {
+      name: 'GPT-4o',
+      provider: 'openai',
+      model: 'gpt-4o',
+      baseURL: 'https://api.openai.com',
+      freeModel: false,
+      info: 'Modelo omni mais rápido e inteligente da OpenAI'
+    },
+    'openai-gpt4-turbo': {
       name: 'GPT-4 Turbo',
       provider: 'openai',
       model: 'gpt-4-turbo',
       baseURL: 'https://api.openai.com',
       freeModel: false,
-      info: 'Modelo mais avançado do OpenAI'
+      info: 'Versão otimizada do GPT-4'
     },
-    'openai-gpt35': {
-      name: 'GPT-3.5 Turbo',
-      provider: 'openai',
-      model: 'gpt-3.5-turbo',
-      baseURL: 'https://api.openai.com',
+
+    // ========== OPENROUTER ==========
+    'openrouter-grok-3': {
+      name: 'Grok 3 (OpenRouter)',
+      provider: 'openrouter',
+      model: 'xai/grok-3',
+      baseURL: 'https://openrouter.ai/api',
       freeModel: false,
-      info: 'Modelo econômico do OpenAI'
+      info: 'Grok 3 via OpenRouter'
+    },
+    'openrouter-mistral-large': {
+      name: 'Mistral Large (OpenRouter)',
+      provider: 'openrouter',
+      model: 'mistralai/mistral-large-2407',
+      baseURL: 'https://openrouter.ai/api',
+      freeModel: false,
+      info: 'Mistral via OpenRouter'
     }
   },
 
   providers: [
     { id: 'google', label: 'Google Gemini', hint: 'Gratuito com limites generosos.', url: 'https://aistudio.google.com/app/apikey', urlLabel: 'Obter no AI Studio' },
     { id: 'anthropic', label: 'Anthropic Claude', hint: 'Pago por uso.', url: 'https://console.anthropic.com', urlLabel: 'Obter no Console' },
+    { id: 'grok', label: 'xAI Grok', hint: 'Acesso direto via x.ai.', url: 'https://console.x.ai', urlLabel: 'Obter no Console' },
+    { id: 'mistral', label: 'Mistral AI', hint: 'Acesso direto via Mistral.', url: 'https://console.mistral.ai', urlLabel: 'Obter no Console' },
     { id: 'openrouter', label: 'OpenRouter', hint: 'Acesso multi-provider.', url: 'https://openrouter.ai/keys', urlLabel: 'Obter no OpenRouter' },
     { id: 'openai', label: 'OpenAI', hint: 'Pago por uso.', url: 'https://platform.openai.com/api-keys', urlLabel: 'Obter no Console' },
   ],

@@ -684,4 +684,205 @@ Object.assign(window.App, {
       score: 100 - (violacoes.length * 10)
     };
   },
+
+  /**
+   * Validar se HTML/copy segue as 10 regras
+   * @param {string} html - HTML gerado
+   * @param {object} config - Configurações de validação
+   * @returns {object} { valido: boolean, erros: array, avisos: array }
+   */
+  validateBlindedOutput(html, config = {}) {
+    const erros = [];
+    const avisos = [];
+
+    if (!html || typeof html !== 'string') {
+      return { valido: false, erros: [{ msg: 'HTML vazio ou inválido' }], avisos: [], score: 0 };
+    }
+
+    // 1. Verificar px em Tailwind (procurando por p-, m-, w-, h-, text- seguidos de número e px)
+    // Ajustado para capturar mais casos como gap-10px, top-5px, etc
+    const pxMatches = html.match(/(?:p-|m-|w-|h-|text-|gap-|top-|left-|right-|bottom-|rounded-).+?\d+px/g);
+    if (pxMatches) {
+      erros.push({
+        tipo: 'tailwind_px',
+        encontrado: pxMatches.slice(0, 3),
+        msg: `❌ Encontrado ${pxMatches.length}x "px" em Tailwind. Use rem ou Tailwind nativo.`
+      });
+    }
+
+    // 2. Verificar placeholders
+    const placeholderMatches = html.match(/\[.+?\]|\{\{.+?\}\}|_INSERIR|_COPY|_IMAGEM/g);
+    if (placeholderMatches) {
+      erros.push({
+        tipo: 'placeholders',
+        encontrado: placeholderMatches.slice(0, 3),
+        msg: `❌ Encontrado ${placeholderMatches.length}x placeholder. Conteúdo deve ser real.`
+      });
+    }
+
+    // 3. Verificar imagens sem alt
+    const imgSemAlt = html.match(/<img(?!.*alt=)[^>]*>/g);
+    if (imgSemAlt) {
+      erros.push({
+        tipo: 'img_sem_alt',
+        qtd: imgSemAlt.length,
+        msg: `❌ ${imgSemAlt.length} imagem(ns) sem atributo alt`
+      });
+    }
+
+    // 4. Verificar links vazios
+    const linksVazios = html.match(/href=""\s/g);
+    if (linksVazios) {
+      erros.push({
+        tipo: 'links_vazios',
+        qtd: linksVazios.length,
+        msg: `❌ ${linksVazios.length} link(s) com href vazio`
+      });
+    }
+
+    // 5. Verificar h1
+    const h1Count = (html.match(/<h1[^>]*>/g) || []).length;
+    if (h1Count === 0) {
+      avisos.push('⚠️ Nenhum <h1> encontrado. Recomenda-se um.');
+    } else if (h1Count > 1) {
+      erros.push({
+        tipo: 'multiplos_h1',
+        qtd: h1Count,
+        msg: `❌ ${h1Count}x <h1> encontrado. Deve ter exatamente 1.`
+      });
+    }
+
+    // 6. Verificar CTAs genéricas
+    const ctasGenericas = ['clique aqui', 'saiba mais', 'enviar', 'ok'];
+    const htmlLower = html.toLowerCase();
+    ctasGenericas.forEach(cta => {
+      if (htmlLower.includes(cta)) {
+        avisos.push(`⚠️ CTA genérica detectada: "${cta}". Prefira "Agendar", "Baixar", etc.`);
+      }
+    });
+
+    // 7. Verificar estrutura semântica
+    if (!html.includes('<header>') && !html.includes('<Header')) {
+      avisos.push('⚠️ Sem <header> semântico');
+    }
+    if (!html.includes('<main>') && !html.includes('<Main')) {
+      avisos.push('⚠️ Sem <main> semântico');
+    }
+    if (!html.includes('<footer>') && !html.includes('<Footer')) {
+      avisos.push('⚠️ Sem <footer> semântico');
+    }
+
+    // 8. Verificar responsividade
+    const classesMobileFirst = html.match(/class="[^"]*(?:sm:|md:|lg:|xl:)[^"]*"/g) || [];
+    if (classesMobileFirst.length === 0) {
+      avisos.push('⚠️ Nenhuma classe responsiva (sm:, md:, etc) detectada');
+    }
+
+    // 9. Verificar título da página
+    const titleMatch = html.match(/<title>([^<]+)<\/title>/);
+    if (!titleMatch) {
+      avisos.push('⚠️ <title> não encontrado');
+    } else if (titleMatch[1].length > 60) {
+      avisos.push(`⚠️ <title> muito longo (${titleMatch[1].length} chars). Máximo 60.`);
+    }
+
+    // 10. Verificar meta description
+    const metaDescMatch = html.match(/<meta\s+name="description"\s+content="([^"]+)"/i);
+    if (!metaDescMatch) {
+      avisos.push('⚠️ <meta description> não encontrada');
+    } else if (metaDescMatch[1].length > 160) {
+      avisos.push(`⚠️ Meta description muito longa (${metaDescMatch[1].length} chars). Máximo 160.`);
+    }
+
+    // Retornar resultado
+    return {
+      valido: erros.length === 0,
+      erros: erros,
+      avisos: avisos,
+      score: Math.max(0, 100 - (erros.length * 10 + avisos.length * 5)),
+      timestamp: new Date().toISOString()
+    };
+  },
+
+  /**
+   * Mostrar modal com resultados da validação
+   */
+  mostrarModalValidacao(data) {
+    const { titulo, erros, avisos, acoes } = data;
+    
+    // Tenta encontrar ou cria o modal de validação
+    let modal = document.getElementById('modal-validation');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'modal-validation';
+      modal.className = 'modal';
+      modal.innerHTML = `
+        <div class="modal-content" style="max-width:500px">
+          <div class="modal-header">
+            <h3 id="modal-validation-title">Validação de Output</h3>
+            <button class="btn-icon" onclick="App.closeModal('modal-validation')">
+              <i data-lucide="x"></i>
+            </button>
+          </div>
+          <div class="modal-body" id="modal-validation-body"></div>
+          <div class="modal-footer" id="modal-validation-footer"></div>
+        </div>
+      `;
+      document.body.appendChild(modal);
+      lucide.createIcons({ nodes: [modal] });
+    }
+
+    const body = document.getElementById('modal-validation-body');
+    const footer = document.getElementById('modal-validation-footer');
+    const titleEl = document.getElementById('modal-validation-title');
+
+    if (titleEl) titleEl.textContent = titulo;
+
+    if (body) {
+      body.innerHTML = `
+        <div class="validation-summary">
+          ${erros.length > 0 ? `
+            <div class="validation-group validation-group--error" style="margin-bottom:20px">
+              <div style="display:flex; gap:8px; align-items:center; color:var(--danger); font-weight:600; margin-bottom:10px">
+                <i data-lucide="x-circle" style="width:18px;height:18px"></i>
+                <span>Erros Críticos (${erros.length})</span>
+              </div>
+              <ul style="font-size:13px; color:var(--text-primary); padding-left:20px">
+                ${erros.map(e => `<li style="margin-bottom:6px">${e.msg}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+          
+          ${avisos.length > 0 ? `
+            <div class="validation-group validation-group--warning">
+              <div style="display:flex; gap:8px; align-items:center; color:var(--warning); font-weight:600; margin-bottom:10px">
+                <i data-lucide="alert-triangle" style="width:18px;height:18px"></i>
+                <span>Avisos (${avisos.length})</span>
+              </div>
+              <ul style="font-size:13px; color:var(--text-secondary); padding-left:20px">
+                ${avisos.map(a => `<li style="margin-bottom:6px">${a}</li>`).join('')}
+              </ul>
+            </div>
+          ` : ''}
+        </div>
+      `;
+      lucide.createIcons({ nodes: [body] });
+    }
+
+    if (footer) {
+      footer.innerHTML = '';
+      acoes.forEach(acao => {
+        const btn = document.createElement('button');
+        btn.className = acao.primary ? 'btn-primary' : 'btn-ghost';
+        btn.textContent = acao.label;
+        btn.onclick = () => {
+          this.closeModal('modal-validation');
+          if (acao.onclick) acao.onclick();
+        };
+        footer.appendChild(btn);
+      });
+    }
+
+    this.openModal('modal-validation');
+  }
 });

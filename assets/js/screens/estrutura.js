@@ -271,9 +271,10 @@ Retorne EXCLUSIVAMENTE um JSON válido com a estrutura otimizada.
       this.aiLogStep(2);
       const { systemPrompt, userPrompt } = this.montarPromptEstrutura(dados);
       
-      // Adicionar prompt de restrições ao systemPrompt
+      // Adicionar prompt de restrições e blindagem ao systemPrompt
       const restricoesPrompt = this.buildRestricoesPrompt(dados.restricoes);
-      const fullSystemPrompt = `${systemPrompt}\n\n${restricoesPrompt}`;
+      const blindedPrompt = this.buildBlindedSystemPrompt(this.B, 'estrutura');
+      const fullSystemPrompt = `${blindedPrompt}\n\n${systemPrompt}\n\n${restricoesPrompt}`;
       
       this.aiLogStep(3);
       // Usar a nova função com retry para garantir que restrições sejam respeitadas

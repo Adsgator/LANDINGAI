@@ -504,9 +504,8 @@ ${briefing}
       await this.aiLogDelay(200);
 
       this.aiLogStep(2);
-      const prompt = `Você é um Art Director especialista em landing pages de alta conversão da agência Adsgator.
-
-Com base nas informações abaixo, crie uma Ficha de Direção de Arte completa para a landing page.
+      const systemPrompt = this.buildBlindedSystemPrompt(B, 'copy_completa');
+      const prompt = `Com base nas informações abaixo, crie uma Ficha de Direção de Arte completa para a landing page.
 
 DADOS DO PROJETO:
 - Cliente: ${B.nome_cliente || '—'}
@@ -558,7 +557,10 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
 }`;
 
       this.aiLogStep(3);
-      const res = await this.callAI(prompt);
+      const res = await this.callAI({
+        systemPrompt: systemPrompt,
+        userPrompt: prompt
+      });
 
       this.aiLogStep(4);
       let ficha = null;
@@ -569,6 +571,15 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
         const match = cleanRes.match(/\{[\s\S]*\}/);
         if (match) ficha = JSON.parse(match[0]);
         else throw new Error('Resposta da IA inválida. Tente novamente.');
+      }
+
+      // Validação do output (Regras Blindadas)
+      const textoValidar = JSON.stringify(ficha);
+      const validacao = this.validateBlindedOutput(textoValidar);
+      
+      if (!validacao.valido) {
+        console.warn('Output da arte falhou na validação blindada:', validacao.erros);
+        // Aqui poderíamos forçar um retry, mas vamos apenas mostrar o aviso no modal de resultado
       }
 
       this.aiLogStep(5);
@@ -880,12 +891,20 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       const startP1 = Date.now();
       
       const restricoesPrompt = this.buildRestricoesPrompt(this.B?.restricoes);
-      const systemPromptBase = 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro. Siga as instruções exatamente como especificadas.';
+      const systemPromptBase = this.buildBlindedSystemPrompt(this.B, 'copy_completa');
 
       const parte1 = await this.callAI({
         systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
         userPrompt: this.buildImplPromptParte1()
       });
+
+      // Validar PARTE 1
+      const val1 = this.validateBlindedOutput(parte1);
+      if (!val1.valido) {
+        this.aiLogMessage('⚠️ Parte 1 com avisos de blindagem...');
+        console.warn('Parte 1 falhou na blindagem:', val1.erros);
+      }
+
       const durP1 = Math.round((Date.now() - startP1) / 1000);
       this.aiLogMessage(`✓ PARTE 1 pronta em ${durP1}s`);
       await this.aiLogDelay(300);
@@ -898,6 +917,13 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
         systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
         userPrompt: this.buildImplPromptParte2()
       });
+
+      // Validar PARTE 2
+      const val2 = this.validateBlindedOutput(parte2);
+      if (!val2.valido) {
+        this.aiLogMessage('⚠️ Parte 2 com avisos de blindagem...');
+      }
+
       const durP2 = Math.round((Date.now() - startP2) / 1000);
       this.aiLogMessage(`✓ PARTE 2 pronta em ${durP2}s`);
       await this.aiLogDelay(300);
@@ -910,6 +936,13 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
         systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
         userPrompt: this.buildImplPromptParte3()
       });
+
+      // Validar PARTE 3
+      const val3 = this.validateBlindedOutput(parte3);
+      if (!val3.valido) {
+        this.aiLogMessage('⚠️ Parte 3 com avisos de blindagem...');
+      }
+
       const durP3 = Math.round((Date.now() - startP3) / 1000);
       this.aiLogMessage(`✓ PARTE 3 pronta em ${durP3}s`);
       await this.aiLogDelay(300);
@@ -922,6 +955,13 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
         systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
         userPrompt: this.buildImplPromptParte4()
       });
+
+      // Validar PARTE 4
+      const val4 = this.validateBlindedOutput(parte4);
+      if (!val4.valido) {
+        this.aiLogMessage('⚠️ Parte 4 com avisos de blindagem...');
+      }
+
       const durP4 = Math.round((Date.now() - startP4) / 1000);
       this.aiLogMessage(`✓ PARTE 4 pronta em ${durP4}s`);
 
@@ -964,6 +1004,21 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       this.aiLogDone();
       this.state.isGenerating = false;
       this.showNotification('AIGator', 'DOC-IMPL gerado com sucesso!');
+
+      // Se houve muitos erros de validação, avisar o usuário
+      const totalErros = val1.erros.length + val2.erros.length + val3.erros.length + val4.erros.length;
+      if (totalErros > 0) {
+        setTimeout(() => {
+          this.mostrarModalValidacao({
+            titulo: '⚠️ Alertas na Geração',
+            erros: [...val1.erros, ...val2.erros, ...val3.erros, ...val4.erros],
+            avisos: [...val1.avisos, ...val2.avisos, ...val3.avisos, ...val4.avisos],
+            acoes: [
+              { label: 'Entendido', primary: true, onclick: () => {} }
+            ]
+          });
+        }, 800);
+      }
 
       setTimeout(() => {
         this.closeAILog();

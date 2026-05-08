@@ -581,9 +581,93 @@ Object.assign(window.App, {
      Modal de renomear projeto
   ---------------------------------------------------------- */
   openRenameModal() {
-    const input = document.getElementById('rename-input');
-    if (input) input.value = this.P?.name || '';
-    this.openModal('modal-rename');
     setTimeout(() => input?.focus(), 100);
+  },
+
+  /* ----------------------------------------------------------
+     VALIDAÇÃO DE RESTRIÇÕES
+  ---------------------------------------------------------- */
+
+  /**
+   * Extrair todos os valores string de um objeto (JSON da ficha)
+   */
+  extrairTextoJson(obj) {
+    const texts = [];
+    function walk(item) {
+      if (typeof item === 'string') {
+        texts.push(item);
+      } else if (Array.isArray(item)) {
+        item.forEach(walk);
+      } else if (typeof item === 'object' && item !== null) {
+        Object.values(item).forEach(walk);
+      }
+    }
+    walk(obj);
+    return texts.join(' ');
+  },
+
+  /**
+   * Validar se a copy respeita as restrições normalizadas
+   */
+  validateCopyComRestricoes(copy, restricoes) {
+    const violacoes = [];
+    const copyLower = copy.toLowerCase();
+
+    // 1. Verificar palavras proibidas
+    restricoes.palavras_proibidas.forEach(palavra => {
+      const regex = new RegExp(`\\b${palavra}\\b`, 'gi');
+      const matches = copy.match(regex);
+      if (matches) {
+        violacoes.push({
+          tipo: 'palavra_proibida',
+          palavra: palavra,
+          ocorrencias: matches.length
+        });
+      }
+    });
+
+    // 2. Verificar tons proibidos (detecção por padrão)
+    if (restricoes.tons_proibidos.includes('agressivo')) {
+      const palavrasAgressivas = ['destruir', 'acabar', 'eliminar', 'matar', '!!!'];
+      palavrasAgressivas.forEach(palavra => {
+        if (copyLower.includes(palavra)) {
+          violacoes.push({
+            tipo: 'tom_proibido',
+            tom: 'agressivo',
+            marcador: palavra
+          });
+        }
+      });
+    }
+
+    if (restricoes.tons_proibidos.includes('narrativo')) {
+      const narrativeMarkers = ['era uma vez', 'o cliente nos procurou', 'começou'];
+      narrativeMarkers.forEach(marker => {
+        if (copyLower.includes(marker)) {
+          violacoes.push({
+            tipo: 'tom_proibido',
+            tom: 'narrativo',
+            marcador: marker
+          });
+        }
+      });
+    }
+
+    // 3. Verificar tópicos proibidos
+    restricoes.topicos_proibidos.forEach(topico => {
+      const regex = new RegExp(`\\b${topico}\\b`, 'gi');
+      if (copy.match(regex)) {
+        violacoes.push({
+          tipo: 'topico_proibido',
+          topico: topico
+        });
+      }
+    });
+
+    return {
+      valido: violacoes.length === 0,
+      violacoes: violacoes,
+      score: 100 - (violacoes.length * 10)
+    };
   },
 });

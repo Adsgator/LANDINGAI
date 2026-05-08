@@ -580,7 +580,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
 
       setTimeout(() => {
         this.closeAILog();
-        this._showArtResultModal(ficha);
+        this.exibirFichaGerada(ficha, 'art');
       }, 600);
 
     } catch (e) {
@@ -593,7 +593,64 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
     }
   },
 
-  _showArtResultModal(ficha) {
+  /**
+   * Exibe a ficha gerada (Arte ou Estrutura) validando restrições
+   */
+  async exibirFichaGerada(ficha, tipo = 'art') {
+    // 1. Normalizar restrições do state
+    const restricoesRaw = this.B?.restricoes || '';
+    const restricoes = this.normalizeRestricoes(restricoesRaw);
+    
+    // 2. Extrair todo o texto da ficha
+    const textoCompleto = this.extrairTextoJson(ficha);
+    
+    // 3. Validar
+    const validacao = this.validateCopyComRestricoes(textoCompleto, restricoes);
+    
+    // 4. Se houver violações, preparar aviso
+    let avisoHTML = '';
+    if (!validacao.valido) {
+      avisoHTML = `
+        <div class="alert alert-warning" style="margin-bottom:16px; border-left:4px solid var(--warning); background:rgba(255,193,7,0.1); padding:12px; border-radius:4px;">
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px; color:var(--warning); font-weight:600;">
+            <i data-lucide="alert-triangle" style="width:18px;height:18px;"></i>
+            <span>Atenção: Restrições não foram totalmente respeitadas</span>
+          </div>
+          <p style="font-size:13px; margin:0 0 8px 0; color:var(--text-secondary);">A IA incluiu conteúdo que viola as restrições configuradas:</p>
+          <ul style="font-size:12px; margin:0 0 12px 20px; padding:0; color:var(--text-primary);">
+            ${validacao.violacoes.map(v => `
+              <li>
+                <strong>${v.tipo === 'palavra_proibida' ? 'Palavra' : (v.tipo === 'tom_proibido' ? 'Tom' : 'Tópico')}:</strong> 
+                ${v.palavra || v.topico || v.marcador}
+                ${v.ocorrencias ? ` (${v.ocorrencias}x)` : ''}
+              </li>
+            `).join('')}
+          </ul>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-primary btn-sm" onclick="App.${tipo === 'art' ? 'runArtAnalysis()' : 'runEstruturaAnalysis()'}">
+              Regenerar
+            </button>
+            <button class="btn-ghost btn-sm" onclick="App.showToast('Você pode editar os campos manualmente para corrigir.', 'info')">
+              Editar Manualmente
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    // 5. Exibir o modal correspondente
+    if (tipo === 'art') {
+      this._showArtResultModal(ficha, avisoHTML);
+    } else {
+      // Para estrutura, o aviso é injetado na tela se necessário
+      this.renderScreen();
+      if (!validacao.valido) {
+        this.showToast('Restrições violadas na estrutura. Revise os alertas.', 'warning');
+      }
+    }
+  },
+
+  _showArtResultModal(ficha, avisoHTML = '') {
     const body = document.getElementById('art-result-body');
     if (body) {
       const swatches = (ficha.paleta || []).map(c => `
@@ -612,6 +669,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       `).join('');
 
       body.innerHTML = `
+        ${avisoHTML}
         <div class="art-result-card">
           <div class="art-result-section">
             <div class="art-result-section-title">Paleta de Cores</div>
@@ -820,7 +878,14 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       this.aiLogStep(2);
       this.aiLogMessage('Solicitando PARTE 1 (Fundação)...');
       const startP1 = Date.now();
-      const parte1 = await this.callAI(this.buildImplPromptParte1());
+      
+      const restricoesPrompt = this.buildRestricoesPrompt(this.B?.restricoes);
+      const systemPromptBase = 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro. Siga as instruções exatamente como especificadas.';
+
+      const parte1 = await this.callAI({
+        systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
+        userPrompt: this.buildImplPromptParte1()
+      });
       const durP1 = Math.round((Date.now() - startP1) / 1000);
       this.aiLogMessage(`✓ PARTE 1 pronta em ${durP1}s`);
       await this.aiLogDelay(300);
@@ -829,7 +894,10 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       this.aiLogStep(3);
       this.aiLogMessage('Solicitando PARTE 2 (Componentes)...');
       const startP2 = Date.now();
-      const parte2 = await this.callAI(this.buildImplPromptParte2());
+      const parte2 = await this.callAI({
+        systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
+        userPrompt: this.buildImplPromptParte2()
+      });
       const durP2 = Math.round((Date.now() - startP2) / 1000);
       this.aiLogMessage(`✓ PARTE 2 pronta em ${durP2}s`);
       await this.aiLogDelay(300);
@@ -838,7 +906,10 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       this.aiLogStep(4);
       this.aiLogMessage('Solicitando PARTE 3 (Seções)...');
       const startP3 = Date.now();
-      const parte3 = await this.callAI(this.buildImplPromptParte3());
+      const parte3 = await this.callAI({
+        systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
+        userPrompt: this.buildImplPromptParte3()
+      });
       const durP3 = Math.round((Date.now() - startP3) / 1000);
       this.aiLogMessage(`✓ PARTE 3 pronta em ${durP3}s`);
       await this.aiLogDelay(300);
@@ -847,7 +918,10 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       this.aiLogStep(5);
       this.aiLogMessage('Solicitando PARTE 4 (Deploy)...');
       const startP4 = Date.now();
-      const parte4 = await this.callAI(this.buildImplPromptParte4());
+      const parte4 = await this.callAI({
+        systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
+        userPrompt: this.buildImplPromptParte4()
+      });
       const durP4 = Math.round((Date.now() - startP4) / 1000);
       this.aiLogMessage(`✓ PARTE 4 pronta em ${durP4}s`);
 

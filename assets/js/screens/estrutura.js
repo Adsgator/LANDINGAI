@@ -259,7 +259,7 @@ Retorne EXCLUSIVAMENTE um JSON válido com a estrutura otimizada.
     this.openAILog('Analisando Briefing para Estrutura', [
       { id: 1, icon: 'file-text', label: 'Coletando dados do briefing...' },
       { id: 2, icon: 'cpu', label: 'Decidindo narrativa estratégica...' },
-      { id: 3, icon: 'layers', label: 'Validando blocos obrigatórios...' },
+      { id: 3, icon: 'layers', label: 'Validando restrições e blocos...' },
       { id: 4, icon: 'check-circle', label: 'Finalizando estrutura...' },
     ]);
 
@@ -271,34 +271,39 @@ Retorne EXCLUSIVAMENTE um JSON válido com a estrutura otimizada.
       this.aiLogStep(2);
       const { systemPrompt, userPrompt } = this.montarPromptEstrutura(dados);
       
-      // Chamar IA (Usando a nova chamada que suporta system prompt se disponível, 
-      // ou concatenando se não. Como callAI atual só recebe prompt, vamos adaptar)
-      const fullPrompt = `${systemPrompt}\n\nUSER REQUEST:\n${userPrompt}`;
-      const response = await this.callAI(fullPrompt);
+      // Adicionar prompt de restrições ao systemPrompt
+      const restricoesPrompt = this.buildRestricoesPrompt(dados.restricoes);
+      const fullSystemPrompt = `${systemPrompt}\n\n${restricoesPrompt}`;
       
       this.aiLogStep(3);
-      // Extrair JSON
-      let jsonText = response.trim();
-      if (jsonText.includes('```')) {
-        jsonText = jsonText.replace(/```json\n?/, '').replace(/```\n?/, '').replace(/\n?```/, '');
-      }
-      // Pega apenas o que está entre chaves se houver lixo
-      const match = jsonText.match(/\{[\s\S]*\}/);
-      if (match) jsonText = match[0];
+      // Usar a nova função com retry para garantir que restrições sejam respeitadas
+      const { resultado, validacao, aviso } = await this.generateEstruturaComRetry(
+        this.B, 
+        fullSystemPrompt, 
+        userPrompt
+      );
       
-      const estrutura = JSON.parse(jsonText);
-      this.validarEstrutura(estrutura);
+      this.validarEstrutura(resultado);
       await this.aiLogDelay(300);
 
       this.aiLogStep(4);
-      this.setField('estrutura_lp', JSON.stringify(estrutura));
+      this.setField('estrutura_lp', JSON.stringify(resultado));
+      
+      if (aviso) {
+        this.showToast(aviso, 'warning');
+      }
+
       await this.aiLogDelay(400);
 
       this.aiLogDone();
       setTimeout(() => {
         this.closeAILog();
         this.renderScreen();
-        this.showToast('Estrutura estratégica gerada com sucesso!', 'success');
+        if (!validacao.valido) {
+           this.showToast('Estrutura gerada com alguns avisos de restrição.', 'warning');
+        } else {
+           this.showToast('Estrutura estratégica gerada com sucesso!', 'success');
+        }
       }, 600);
 
     } catch (error) {

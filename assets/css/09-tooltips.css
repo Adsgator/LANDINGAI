@@ -117,25 +117,3 @@
   margin-left: var(--space-1);
 }
 
-/* Dark mode adjustments */
-body.dark-mode .tooltip {
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  border: 1px solid var(--border-default);
-}
-
-body.dark-mode .tooltip::after {
-  border-top-color: var(--bg-surface);
-}
-
-body.dark-mode .tooltip-right::after {
-  border-right-color: var(--bg-surface);
-}
-
-body.dark-mode .tooltip-left::after {
-  border-left-color: var(--bg-surface);
-}
-
-body.dark-mode .tooltip-bottom::after {
-  border-bottom-color: var(--bg-surface);
-}

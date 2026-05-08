@@ -79,8 +79,3 @@
   border-left: 4px solid var(--accent);
 }
 
-/* Dark mode adjustments */
-body.dark-mode .toast {
-  background: var(--bg-overlay);
-  border-color: var(--border-strong);
-}

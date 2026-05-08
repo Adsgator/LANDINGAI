@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Ads Project - LandingAI</title>
+    <link rel="stylesheet" href="styles/google-ads.css">
+</head>
+<body>
+    <div id="google-ads-app">
+        <!-- Input Section -->
+        <div class="ga-input-section">
+          <button id="btn-pull-context">
+            📥 Puxar Contexto da Landing Page
+          </button>
+          
+          <div class="ga-form-group">
+            <label>Verba Mensal Total (R$)</label>
+            <input type="number" id="budget-total" min="100" step="100" placeholder="1000">
+          </div>
+          
+          <div class="ga-form-group">
+            <label>Geolocalização</label>
+            <select id="location">
+              <option>Brasil Inteiro</option>
+              <option>Região específica</option>
+              <option>Cidade específica</option>
+            </select>
+            <input type="text" id="location-value" placeholder="Ex: São Paulo, SP">
+          </div>
+          
+          <div class="ga-form-group">
+            <label>Meta Principal</label>
+            <select id="main-goal">
+              <option value="leads">Gerar Leads</option>
+              <option value="calls">Receber Chamadas</option>
+              <option value="bookings">Agendar Consultas</option>
+              <option value="sales">Vender Produto</option>
+            </select>
+          </div>
+          
+          <div class="ga-form-group">
+            <label>URL da Landing Page (ou Print/Screenshot)</label>
+            <input type="text" id="lp-url" placeholder="https://exemplo.com">
+            <input type="file" id="lp-screenshot" accept="image/*">
+            <small>Cole a URL OU faça upload de um print da página</small>
+          </div>
+          
+          <button id="btn-generate-strategy" class="btn-primary">
+            ⚙️ Gerar Estratégia com IA
+          </button>
+        </div>
+        
+        <!-- Output Section will be rendered here -->
+        <div id="ga-output-section"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="02-ga-api.js"></script>
+    <script src="03-ga-ui.js"></script>
+    <script src="04-ga-export.js"></script>
+    <script src="01-ga-handlers.js"></script>
+    <script src="google-ads.js"></script>
+</body>
+</html>

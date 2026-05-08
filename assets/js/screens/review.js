@@ -20,7 +20,32 @@ Object.assign(window.App, {
 
     const score = this.calcGlobalScore();
 
+    // Banner de validação de estrutura
+    const estruturaAprovada = this.B?.estrutura_aprovada?.trim();
+    const estruturaRascunho = this.B?.estrutura_rascunho?.trim();
+
+    let alertaHTML = '';
+    if (!estruturaAprovada || !estruturaRascunho) {
+      alertaHTML = `
+        <div class="review-alert review-alert--warning">
+          <div class="alert-header">
+            <i data-lucide="alert-circle" style="width:20px;height:20px;color:var(--warning);"></i>
+            <span class="alert-title">Estrutura Pendente</span>
+          </div>
+          <p class="alert-message">
+            Você precisa ${!estruturaRascunho ? 'gerar' : 'aprovar'} a Estrutura da Landing Page antes de gerar o DOC-IMPL.
+          </p>
+          <div class="alert-actions">
+            <button class="btn-primary btn-sm" onclick="App.goToScreen('estrutura')">
+              <i data-lucide="layout" style="width:14px;height:14px;"></i> Ir para Estrutura
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
     return `
+    ${alertaHTML}
     <div class="review-screen">
       <div class="review-header">
         <h2 class="review-title">Revisão e Geração Final</h2>
@@ -156,11 +181,25 @@ Object.assign(window.App, {
           </div>
 
           <div class="review-actions-hero">
-            <button id="btn-generate-docimpl" class="btn-primary btn-xl" ${this.state.isGenerating ? 'disabled' : ''}>
+            <button id="btn-generate-docimpl" class="btn-primary btn-xl" ${this.state.isGenerating || !estruturaAprovada ? 'disabled' : ''}>
               <i data-lucide="sparkles"></i>
               ${this.state.isGenerating ? 'Gerando Ficha de Implementação...' : 'Gerar Ficha de Implementação (DOC-IMPL)'}
             </button>
             <p class="review-action-hint">A IA vai ler o briefing completo e criar todo o código base, design system e copy.</p>
+          </div>
+
+          <div class="doc-info-card">
+            <div class="info-header">
+              <i data-lucide="info" style="width:18px;height:18px;color:var(--accent2);"></i>
+              <span>O que é DOC-1?</span>
+            </div>
+            <p class="info-text">
+              DOC-1 é um arquivo Markdown com todo o briefing estruturado. Você pode copiar este documento 
+              e passar para Claude, Gemini, Grok ou qualquer IA para gerar a implementação em 4 partes.
+            </p>
+            <p class="info-text info-subtext">
+              Não precisa de API Key. Funciona 100% externamente.
+            </p>
           </div>
 
           <div class="review-doc1-box">
@@ -170,9 +209,9 @@ Object.assign(window.App, {
              </div>
              <div class="doc1-body">
                 <p>O DOC-1 é a versão textual organizada de tudo que foi coletado. Útil para documentação e aprovação do cliente.</p>
-                <button id="btn-download-doc1" class="btn-ghost btn-sm">
+                <button id="btn-download-doc1" class="btn-primary btn-sm" title="Baixe este documento e copie para Claude, Gemini ou sua IA preferida">
                   <i data-lucide="download"></i>
-                  Baixar DOC-1 (.md)
+                  Baixar DOC-1 (Para IA Externa)
                 </button>
              </div>
           </div>
@@ -552,6 +591,187 @@ ${B.estrutura_aprovada || B.estrutura_rascunho || '> Estrutura ainda não defini
 ---
 
 *DOC-1 gerado pelo LandingAI v2 · Adsgator · ${new Date().toLocaleString('pt-BR')}*
+
+---
+
+# 📖 COMO USAR ESTE DOCUMENTO
+
+## Para Usuários Técnicos
+
+Este é o **DOC-1** — um prompt completo e estruturado contendo:
+- Briefing completo do cliente
+- Análise de segmento de mercado
+- Direção de arte
+- Estrutura da landing page
+- Stack de tecnologias
+
+### Opção 1: Usar com Claude (Recomendado)
+
+1. Copie **TODO** o conteúdo deste arquivo
+2. Abra https://claude.ai
+3. Cole o conteúdo em uma nova conversa
+4. Envie a mensagem
+
+Claude vai reconhecer a estrutura e perguntar:
+\`"Quer que eu gere a Ficha de Implementação em 4 partes?"\`
+
+5. Responda com:
+\`\`\`
+Sim, gere a Ficha de Implementação seguindo este template:
+
+---PARTE-1---
+[Config files + estrutura do projeto]
+
+---PARTE-2---
+[Layout + Components Base]
+
+---PARTE-3---
+[Sections + Animações]
+
+---PARTE-4---
+[Integrações + Deploy]
+
+Cada parte deve ser um arquivo .md completo, pronto para Roo Code.
+\`\`\`
+
+6. Copie as 4 partes geradas e salve em arquivos separados
+
+### Opção 2: Usar com Gemini
+
+1. Copie **TODO** o conteúdo deste arquivo
+2. Abra https://gemini.google.com
+3. Cole o conteúdo em uma nova conversa
+4. Envie a mensagem
+
+Gemini vai ler e responder:
+\`"Entendi. Esta é uma ficha estruturada. Quer gerar a implementação?"\`
+
+5. Responda com:
+\`\`\`
+Gere a Ficha de Implementação em 4 partes modulares, cada uma sendo um arquivo .md independente.
+
+PARTE 1: Config + Estrutura (30-50KB)
+PARTE 2: Layout + UI Components (20-30KB)
+PARTE 3: Sections da LP + Animações (40-60KB)
+PARTE 4: Integrações + Deploy (15-25KB)
+
+Siga rigorosamente a estrutura de pastas proposta.
+\`\`\`
+
+6. Copie as 4 partes e salve em arquivos separados
+
+### Opção 3: Usar com Grok (xAI)
+
+1. Copie **TODO** o conteúdo deste arquivo
+2. Abra https://x.com/grok (ou acesse via app xAI)
+3. Cole o conteúdo
+4. Grok vai processar e gerar a implementação em 4 partes
+
+### Opção 4: Copiar para seu IDE com AI Assistant
+
+Se usa VS Code + GitHub Copilot ou Cursor:
+
+1. Copie este arquivo
+2. Crie um novo arquivo chamado \`BRIEF.md\` no seu projeto
+3. Cole o conteúdo
+4. Abra o Chat do Copilot/Cursor
+5. Digite: \`@BRIEF Gere a Ficha de Implementação em 4 partes\`
+
+---
+
+## Para Desenvolvedores
+
+### O que fazer depois de receber as 4 partes:
+
+1. **Salve em arquivos separados:**
+   - \`doc-impl-parte1-[slug].md\`
+   - \`doc-impl-parte2-[slug].md\`
+   - \`doc-impl-parte3-[slug].md\`
+   - \`doc-impl-parte4-[slug].md\`
+
+2. **Clone o template Astro:**
+   \`\`\`bash
+   git clone https://github.com/adsgator/astro-landingai-template
+   cd landing-page
+   npm install
+   \`\`\`
+
+3. **Use com Roo Code:**
+   \`\`\`bash
+   roo --load-instructions BRIEF.md
+   # ou
+   roo --add-rules doc-impl-parte1-[slug].md
+   \`\`\`
+
+4. **Implemente cada parte em sequência:**
+   - Parte 1: Setup inicial, pastas, config
+   - Parte 2: Layout base, componentes reutilizáveis
+   - Parte 3: Seções da LP, estilização
+   - Parte 4: Integrações, animations, deploy
+
+5. **Build e teste:**
+   \`\`\`bash
+   npm run dev      # Desenvolvimento
+   npm run build    # Build final
+   npm run preview  # Preview produção
+   \`\`\`
+
+---
+
+## Checklist — Antes de Usar Este Documento
+
+- [ ] Todos os 8 steps foram preenchidos?
+- [ ] Direção de arte foi aprovada?
+- [ ] Estrutura da LP foi aprovada?
+- [ ] Stack de tecnologias faz sentido?
+- [ ] Cliente confirmou o briefing?
+
+Se sim para todos, este DOC-1 está 100% pronto para usar!
+
+---
+
+## Problema? Tente Isto
+
+**"Recebo erro ao copiar o documento"**
+- Use Ctrl+A (ou Cmd+A) para selecionar tudo
+- Copie novamente com Ctrl+C
+- Certifique-se de colar tudo em uma única mensagem
+
+**"Claude/Gemini não reconhece a estrutura"**
+- No início da conversa, diga: "Este é um briefing estruturado de landing page"
+- Peça para confirmar que entendeu os 8 steps
+
+**"As 4 partes têm nomes de arquivos diferentes"**
+- Padronize os nomes: \`doc-impl-parte[1-4]-[slug].md\`
+- Certifique-se que cada parte tem entre 20-60KB
+
+**"Código não roda depois de implementar"**
+- Confira o \`.clinerules\` na Parte 1
+- Verifique que \`astro.config.mjs\` bate com a config
+- Rode \`npm install\` novamente
+- Check logs de build: \`npm run build\`
+
+---
+
+## Suporte
+
+Dúvidas? Documentação completa em:
+- https://docs.astro.build — Astro Official Docs
+- https://tailwindcss.com/docs — Tailwind Docs
+- https://gsap.com/docs — GSAP Animations Docs
+
+---
+
+## Metadados
+
+| Campo | Valor |
+|-------|-------|
+| Formato | Markdown Estruturado |
+| Partes | 4 arquivos .md |
+| Tamanho Estimado | 100-150KB total |
+| Tempo de Implementação | 8-12 horas com Roo Code |
+| Stack | Astro + Tailwind CSS + GSAP + Vercel |
+| Gerado | ${new Date().toLocaleDateString('pt-BR')} |
 `.trim();
   }
 });

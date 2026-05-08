@@ -30,9 +30,9 @@ index.html         → Estrutura HTML principal (Sidebar, Topbar, Modais).
 
 assets/js/
   ├── app.js              → Entry point (Orquestrador do window.App).
-  ├── 00-config.js        → Constantes (STEPS, AI_MODELS, FIELD_TOOLTIPS, REQUIRED_FIELDS).
+  ├── 00-config.js        → Configuração central (App.config.models, App.config.providers, STEPS).
   ├── 01-state.js         → Gerenciamento de estado (App.state, App.P, App.B).
-  ├── 02-api.js           → Handlers de API (Gemini, Claude, OpenRouter, Grok, Mistral).
+  ├── 02-api.js           → API Unificada (callAI, getModelConfig, getAvailableModels). Padrão OpenAI.
   ├── 03-ui.js            → Renderização dinâmica, modais, topbar, sidebar, AI Log.
   ├── 04-handlers.js      → Event listeners, operações de IA (intake, arte, estrutura, docimpl).
   └── screens/            → Lógica específica de cada tela:
@@ -93,7 +93,7 @@ modules/           → Pasta de módulos futuros (Google Ads planejado)
 
 - index.html (ordem de scripts, IDs críticos)
 - 00-config.js (constantes globais — só adicionar, nunca remover)
-- 02-api.js (chamadas de API — só adicionar providers novos)
+- 02-api.js (API Unificada — NUNCA criar adapters específicos, usar callAI genérico)
 - 04-system.css (animações e lógica visual crítica)
 
 ### ✅ PODE EDITAR COM SEGURANÇA (risco baixo)
@@ -185,7 +185,10 @@ modules/           → Pasta de módulos futuros (Google Ads planejado)
 
 ### API
 
-- `App.callAI(prompt)` — dispatcher para IA
+- `App.callAI(options)` — dispatcher UNIFICADO para qualquer IA (padrão OpenAI)
+- `App.getModelConfig(modelId)` — resolve baseURL e apiKey do modelo
+- `App.getAvailableModels()` — lista modelos para a UI
+- `App.testModelConnection(modelId)` — testa conectividade
 - `App.openAILog(title, steps)` — abre modal de progresso
 - `App.aiLogStep(stepId, liveMsg?)` — marca step como ativo
 - `App.aiLogDone()` — marca todos como done
@@ -214,10 +217,10 @@ modules/           → Pasta de módulos futuros (Google Ads planejado)
 
 ### ADICIONAR NOVO PROVIDER DE IA:
 
-1. Adicionar entrada em `AI_MODELS` em `00-config.js`
-2. Se schema diferente: adicionar adapter em `02-api.js`
-3. Se OpenAI-compat (Grok, Mistral, OpenRouter): só adicionar a entrada, usar `_callOpenAICompat` existente
-4. Adicionar campo de API Key no `renderApiModal()` em `03-ui.js`
+1. Adicionar entrada em `App.config.models` em `00-config.js`
+2. Se o provedor for novo, adicionar em `App.config.providers`
+3. NUNCA criar funções `_callXXX` em `02-api.js`. O `callAI` já é universal.
+4. O seletor de modelos e modal de API se atualizam automaticamente.
 
 ### ADICIONAR CAMPO EM UM STEP:
 
@@ -296,8 +299,8 @@ O módulo google-ads está planejado mas **NÃO deve ser implementado ainda**.
 
 ### SINTOMA: IA não responde
 
-**CAUSA:** API key não configurada ou endpoint do modelo errado  
-**SOLUÇÃO:** Verificar `02-api.js` e se o modelo existe em `AI_MODELS`
+**CAUSA:** API key não configurada ou modelo não existe no config  
+**SOLUÇÃO:** Verificar `00-config.js` (`App.config.models`) e se a chave aparece como configurada na UI.
 
 ### SINTOMA: AI Log não avança
 
@@ -326,4 +329,4 @@ O módulo google-ads está planejado mas **NÃO deve ser implementado ainda**.
 ---
 
 **Status:** Pronto para produção  
-**Última atualização:** 2026-05-07
+**Última atualização:** 2026-05-08 (Unified API v2)

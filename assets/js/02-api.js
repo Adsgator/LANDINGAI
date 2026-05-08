@@ -1,167 +1,236 @@
 /* ============================================================
-   LandingAI v2 — Integração com APIs de IA
-   Padrão unificado OpenAI-compatible. Adicionar um provider novo
-   = adicionar uma entrada em AI_MODELS com endpoint + auth corretos.
+   LandingAI v2 — API Unificada (OpenAI/OpenRouter Pattern)
    ============================================================ */
 
 Object.assign(window.App, {
 
-  /* ----------------------------------------------------------
-     Dispatcher principal — escolhe o adapter pelo provider
-  ---------------------------------------------------------- */
-  async callAI(payload) {
-    let systemPrompt = '';
-    let userPrompt = '';
-
-    if (typeof payload === 'string') {
-      userPrompt = payload;
-    } else {
-      systemPrompt = payload.systemPrompt || '';
-      userPrompt = payload.userPrompt || '';
+  /**
+   * Fazer requisição genérica para qualquer modelo
+   * @param {object} options - Configurações
+   * @returns {Promise<string>} Conteúdo da resposta (para compatibilidade com chamadas existentes)
+   */
+  async callAI(options) {
+    // Se for string, converter para o novo formato
+    if (typeof options === 'string') {
+      options = { userPrompt: options };
     }
 
-    const model = AI_MODELS[this.state.selectedModel];
-    if (!model) throw new Error(`Modelo "${this.state.selectedModel}" não encontrado.`);
+    const {
+      model = this.state.selectedModel, // Pega do estado se não for passado
+      messages = [],
+      systemPrompt = '',
+      userPrompt = '',
+      temperature = 0.7,
+      maxTokens = 2000,
+    } = options;
 
-    const apiKey = this.state.apiKeys[model.provider];
-    if (!apiKey?.trim()) throw new Error(`Chave de API para ${model.provider} não configurada.`);
+    // 1. Validar modelo
+    if (!model) {
+      throw new Error('Modelo não especificado. Configure em Settings > API');
+    }
 
-    // Gemini tem schema próprio — mantém adapter dedicado
-    if (model.provider === 'gemini') return this._callGemini(userPrompt, systemPrompt, model, apiKey.trim());
+    const modelConfig = this.getModelConfig(model);
+    if (!modelConfig) {
+      throw new Error(`Modelo "${model}" não configurado em 00-config.js`);
+    }
 
-    // Claude tem schema próprio (messages + system separado)
-    if (model.provider === 'claude') return this._callClaude(userPrompt, systemPrompt, model, apiKey.trim());
+    // 2. Validar API Key
+    if (!modelConfig.apiKey || modelConfig.apiKey === '') {
+      throw new Error(`API Key não configurada para ${model}. Configure em Settings > API`);
+    }
 
-    // Todos os outros (grok, openrouter, mistral, github) são OpenAI-compat
-    return this._callOpenAICompat(userPrompt, systemPrompt, model, apiKey.trim());
-  },
+    // 3. Construir array de mensagens
+    let finalMessages = [];
 
-  /* ----------------------------------------------------------
-     Gemini (Google GenerativeLanguage API)
-  ---------------------------------------------------------- */
-  async _callGemini(userPrompt, systemPrompt, model, apiKey) {
-    const url = `${model.endpoint}?key=${apiKey}`;
-    
-    // Concatena system + user para Gemini se não houver campo system dedicado no endpoint v1/models
-    const fullText = systemPrompt ? `${systemPrompt}\n\n${userPrompt}` : userPrompt;
+    // Se passou systemPrompt, converter em primeira mensagem
+    // Nota: O padrão Anthropic usa campo 'system' separado, mas o padrão OpenAI/OpenRouter 
+    // aceita role: 'system'. Aqui seguimos o padrão de compatibilidade do doc.
+    if (systemPrompt && systemPrompt.trim()) {
+      finalMessages.push({
+        role: 'system',
+        content: systemPrompt
+      });
+    }
 
-    const body = {
-      contents: [{ parts: [{ text: fullText }] }],
-      generationConfig: {
-        maxOutputTokens: model.maxTokens,
-        temperature: model.temp,
-        topP: 0.95,
-      },
-      safetySettings: [
-        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-      ],
+    // Adicionar mensagens passadas
+    finalMessages = finalMessages.concat(messages);
+
+    // Se passou userPrompt, adicionar como última
+    if (userPrompt && userPrompt.trim()) {
+      finalMessages.push({
+        role: 'user',
+        content: userPrompt
+      });
+    }
+
+    // Sanidade: precisa ter pelo menos 1 mensagem
+    if (finalMessages.length === 0) {
+      throw new Error('Nenhuma mensagem fornecida');
+    }
+
+    // 4. Construir payload
+    const payload = {
+      model: modelConfig.model,
+      messages: finalMessages,
+      max_tokens: maxTokens,
+      temperature: temperature
     };
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Gemini HTTP ${response.status}`);
+    // Para Claude (Anthropic), o system prompt é um campo separado no root
+    if (modelConfig.provider === 'anthropic' && systemPrompt) {
+      payload.system = systemPrompt;
+      // Remove do array de mensagens se for Anthropic
+      payload.messages = payload.messages.filter(m => m.role !== 'system');
     }
 
-    const data = await response.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) throw new Error('Resposta vazia do Gemini.');
-    return text;
-  },
-
-  /* ----------------------------------------------------------
-     Claude / Anthropic Messages API
-  ---------------------------------------------------------- */
-  async _callClaude(userPrompt, systemPrompt, model, apiKey) {
-    // Mapa de IDs internos → IDs reais da API Anthropic
-    const MODEL_IDS = {
-      'claude-sonnet-4': 'claude-sonnet-4-5',
-      'claude-opus-4': 'claude-opus-4-5',
-      'claude-haiku-4': 'claude-haiku-4-5',
-    };
-    const realModelId = MODEL_IDS[this.state.selectedModel] || model.model || this.state.selectedModel;
-
-    const response = await fetch(model.endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true',
-      },
-      body: JSON.stringify({
-        model: realModelId,
-        max_tokens: model.maxTokens,
-        temperature: model.temp,
-        system: systemPrompt || 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro. Siga as instruções exatamente como especificadas.',
-        messages: [{ role: 'user', content: userPrompt }],
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      throw new Error(err.error?.message || `Claude HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    const text = data.content?.[0]?.text;
-    if (!text) throw new Error('Resposta vazia do Claude.');
-    return text;
-  },
-
-  /* ----------------------------------------------------------
-     OpenAI-compatible (Grok, OpenRouter, Mistral, GitHub Models)
-     Um único adapter para todos — só muda endpoint + auth header.
-  ---------------------------------------------------------- */
-  async _callOpenAICompat(userPrompt, systemPrompt, model, apiKey) {
+    // 5. Headers universais
     const headers = {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`,
+      'Authorization': `Bearer ${modelConfig.apiKey}`
     };
 
-    // Headers extras específicos do OpenRouter
-    if (model.provider === 'openrouter') {
+    // 6. Headers adicionais por provedor
+    if (modelConfig.provider === 'anthropic') {
+      headers['x-api-key'] = modelConfig.apiKey;
+      headers['anthropic-version'] = '2023-06-01';
+      headers['anthropic-dangerous-direct-browser-access'] = 'true';
+      delete headers['Authorization']; // Anthropic não usa Bearer
+    }
+
+    if (modelConfig.provider === 'openrouter') {
       headers['HTTP-Referer'] = 'https://adsgator.com.br';
       headers['X-Title'] = 'LandingAI — Adsgator';
     }
 
-    const body = {
-      model: model.model || model.id,
-      max_tokens: model.maxTokens,
-      temperature: model.temp,
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt || 'Você é um especialista em landing pages de alta conversão para a agência Adsgator. Responda sempre em português brasileiro. Siga as instruções exatamente como especificadas.',
-        },
-        { role: 'user', content: userPrompt },
-      ],
-    };
-
-    const response = await fetch(model.endpoint, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      const msg = err.error?.message || `HTTP ${response.status}`;
-      throw new Error(`[${model.label}] ${msg}`);
+    if (modelConfig.headers) {
+      Object.assign(headers, modelConfig.headers);
     }
 
-    const data = await response.json();
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) throw new Error(`Resposta vazia de ${model.label}.`);
-    return text;
+    // 7. Construir URL final
+    let url = `${modelConfig.baseURL}/v1/messages`;
+    
+    // Ajuste de endpoint para OpenAI/OpenRouter/Grok/Mistral
+    if (['openai', 'openrouter', 'grok', 'mistral', 'github'].includes(modelConfig.provider)) {
+      url = `${modelConfig.baseURL}/v1/chat/completions`;
+    }
+
+    // Ajuste para Gemini (Google) - usa ?key= na URL
+    if (modelConfig.provider === 'google') {
+      // O endpoint v1beta/openai suporta o formato OpenAI
+      url = `${modelConfig.baseURL}/v1beta/openai/chat/completions?key=${modelConfig.apiKey}`;
+      delete headers['Authorization'];
+    }
+
+    // 8. Fazer requisição
+    console.log(`📤 Chamando ${modelConfig.provider} (${modelConfig.model})...`);
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(payload)
+      });
+
+      // 9. Tratar resposta
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error?.message || `HTTP ${response.status}`;
+        throw new Error(`Erro da API ${modelConfig.provider}: ${errorMessage}`);
+      }
+
+      const data = await response.json();
+
+      // 10. Extrair conteúdo (padrão OpenAI/OpenRouter/Anthropic)
+      const content = data.content?.[0]?.text || data.choices?.[0]?.message?.content;
+
+      if (!content) {
+        console.error('Resposta da API:', data);
+        throw new Error('Resposta vazia da IA');
+      }
+
+      console.log(`✅ Resposta recebida de ${modelConfig.provider}`);
+
+      // Retorna apenas o conteúdo para manter compatibilidade com o resto do app
+      return content;
+
+    } catch (error) {
+      console.error(`❌ Erro ao chamar ${modelConfig.provider}:`, error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obter configuração do modelo (baseURL, apiKey, etc)
+   * @param {string} modelId - Ex: 'claude-sonnet-4'
+   * @returns {object} Configuração completa
+   */
+  getModelConfig(modelId) {
+    const modelMap = this.config.models;
+
+    if (!modelMap[modelId]) {
+      return null;
+    }
+
+    const config = modelMap[modelId];
+
+    // Tenta pegar a chave específica do modelo ou a chave geral do provedor (legado)
+    let apiKey = localStorage.getItem(`api_key_${modelId}`) || 
+                 this.state.apiKeys[config.provider] || 
+                 config.apiKey || '';
+
+    return {
+      model: config.model || modelId,
+      provider: config.provider,
+      baseURL: config.baseURL,
+      apiKey: apiKey,
+      headers: config.headers || {}
+    };
+  },
+
+  /**
+   * Listar todos os modelos disponíveis
+   * @returns {array} Lista de modelos com status
+   */
+  getAvailableModels() {
+    return Object.keys(this.config.models).map(modelId => {
+      const config = this.config.models[modelId];
+      const hasKey = !!(localStorage.getItem(`api_key_${modelId}`) || this.state.apiKeys[config.provider]);
+
+      return {
+        id: modelId,
+        name: config.name,
+        provider: config.provider,
+        configured: hasKey,
+        freeModel: config.freeModel || false,
+        info: config.info
+      };
+    });
+  },
+
+  /**
+   * Testar conexão com modelo
+   */
+  async testModelConnection(modelId) {
+    try {
+      const response = await this.callAI({
+        model: modelId,
+        systemPrompt: 'Você é um assistente. Responda com a palavra "OK".',
+        userPrompt: 'Teste',
+        maxTokens: 10
+      });
+
+      return {
+        ok: true,
+        message: `✅ ${modelId} funcionando`,
+        content: response
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        message: `❌ Erro com ${modelId}: ${error.message}`,
+        error: error
+      };
+    }
   },
 
   /* ----------------------------------------------------------

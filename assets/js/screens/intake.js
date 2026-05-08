@@ -55,7 +55,7 @@ A IA lê tudo e preenche os campos automaticamente. Quanto mais contexto, melhor
               ${this.fieldLabel('', 'Modelo para análise', false)}
               <div class="btn-model" style="width:fit-content;cursor:default">
                 <i data-lucide="cpu" style="width:14px;height:14px"></i>
-                <span id="intake-model-name">${AI_MODELS[this.state.selectedModel]?.label || 'Selecionar Modelo'}</span>
+                <span id="intake-model-name">${App.config.models[this.state.selectedModel]?.name || 'Selecionar Modelo'}</span>
               </div>
             </div>
             <button class="btn-primary" id="btn-analyze">

@@ -8,7 +8,7 @@ Object.assign(window.App, {
     activeId: null,
     screen: 'intake',
     currentStep: 1,           // número inteiro 1-8, sempre
-    selectedModel: 'gemini-2.5-flash',
+    selectedModel: 'gemini-2-flash',
     apiKeys: {},
     intakeFiles: [],
     isGenerating: false,
@@ -45,8 +45,8 @@ Object.assign(window.App, {
       }
 
       // Garante que o modelo salvo ainda existe no config
-      if (!AI_MODELS[this.state.selectedModel]) {
-        this.state.selectedModel = 'gemini-2.5-flash';
+      if (!App.config.models[this.state.selectedModel]) {
+        this.state.selectedModel = 'gemini-2-flash';
       }
     } catch (e) {
       console.error('[AIGator] Erro ao carregar localStorage:', e);
@@ -235,7 +235,7 @@ Object.assign(window.App, {
   },
 
   saveSelectedModel(modelId) {
-    if (!AI_MODELS[modelId]) return;
+    if (!App.config.models[modelId]) return;
     this.state.selectedModel = modelId;
     this.saveStorage();
   },

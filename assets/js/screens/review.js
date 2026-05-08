@@ -210,7 +210,7 @@ Object.assign(window.App, {
               </div>
               <div class="summary-item">
                 <span class="label">Modelo IA</span>
-                <span class="value">${AI_MODELS[this.state.selectedModel]?.label || '—'}</span>
+                <span class="value">${App.config.models[this.state.selectedModel]?.name || '—'}</span>
               </div>
               <div class="summary-item">
                 <span class="label">Direção de Arte</span>

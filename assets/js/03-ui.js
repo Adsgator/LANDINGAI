@@ -103,7 +103,7 @@ Object.assign(window.App, {
 
     // Label do modelo
     const modelLabel = document.getElementById('btn-model-label');
-    if (modelLabel) modelLabel.textContent = AI_MODELS[this.state.selectedModel]?.label || 'Selecionar Modelo';
+    if (modelLabel) modelLabel.textContent = App.config.models[this.state.selectedModel]?.name || 'Selecionar Modelo';
   },
 
   /* ----------------------------------------------------------
@@ -323,23 +323,31 @@ Object.assign(window.App, {
     const dropdown = document.getElementById('model-dropdown');
     if (!dropdown) return;
 
-    // Agrupa por group
+    // Agrupa por provedor (novo padrão)
     const groups = {};
-    Object.entries(AI_MODELS).forEach(([id, m]) => {
-      if (!groups[m.group]) groups[m.group] = [];
-      groups[m.group].push({ id, ...m });
+    Object.keys(this.config.models).forEach(id => {
+      const m = this.config.models[id];
+      const provider = this.config.providers.find(p => p.id === m.provider);
+      const groupName = provider ? provider.label : m.provider;
+      if (!groups[groupName]) groups[groupName] = [];
+      groups[groupName].push({ id, ...m });
     });
 
     dropdown.innerHTML = Object.entries(groups).map(([groupName, models]) => `
       <div class="model-group">
         <div class="model-group-label">${groupName}</div>
-        ${models.map(m => `
+        ${models.map(m => {
+          const hasKey = !!(localStorage.getItem(`api_key_${m.id}`) || this.state.apiKeys[m.provider]);
+          return `
           <button class="model-option ${this.state.selectedModel === m.id ? 'active' : ''}"
                   data-model="${m.id}">
-            <span class="model-option-label">${m.label}</span>
-            <span class="model-option-tier tier-${m.tier}">${m.tier === 'free' ? 'Free' : 'Paid'}</span>
+            <span class="model-option-label">
+              ${m.name}
+              ${hasKey ? '<span class="model-badge-ok">✓</span>' : ''}
+            </span>
+            <span class="model-option-tier ${m.freeModel ? 'tier-free' : 'tier-paid'}">${m.freeModel ? 'Grátis' : 'Pago'}</span>
           </button>
-        `).join('')}
+        `;}).join('')}
       </div>
     `).join('');
 
@@ -348,8 +356,7 @@ Object.assign(window.App, {
         this.saveSelectedModel(btn.dataset.model);
         this.updateTopbar();
         dropdown.style.display = 'none';
-        dropdown.classList.remove('open');
-        this.showToast(`Modelo: ${AI_MODELS[btn.dataset.model]?.label}`, 'success');
+        this.showToast(`Modelo: ${this.config.models[btn.dataset.model]?.name}`, 'success');
       });
     });
   },
@@ -361,38 +368,45 @@ Object.assign(window.App, {
     const body = document.getElementById('api-modal-body');
     if (!body) return;
 
-    body.innerHTML = API_PROVIDERS.map(p => {
-      const val = this.state.apiKeys[p.id] || '';
-      const hasVal = !!val;
-      return `
-        <div class="api-provider-row">
-          <div class="api-provider-header">
-            <span class="api-provider-label">
-              ${p.label}
-              ${hasVal ? '<span class="api-badge-ok">✓</span>' : ''}
-            </span>
-            <a href="${p.url}" target="_blank" rel="noopener" class="api-link">
-              ${p.urlLabel} <i data-lucide="external-link" style="width:11px;height:11px"></i>
-            </a>
+    body.innerHTML = `
+      <div class="api-modal-intro" style="margin-bottom:20px; font-size:13px; color:var(--text-secondary);">
+        Configure as chaves de API abaixo. Você pode configurar uma chave para cada provedor ou 
+        clicar em um modelo específico no seletor para configurar uma chave dedicada.
+      </div>
+      ${this.config.providers.map(p => {
+        const val = this.state.apiKeys[p.id] || '';
+        const hasVal = !!val;
+        return `
+          <div class="api-provider-row">
+            <div class="api-provider-header">
+              <span class="api-provider-label">
+                ${p.label}
+                ${hasVal ? '<span class="api-badge-ok">✓</span>' : ''}
+              </span>
+              <a href="${p.url}" target="_blank" rel="noopener" class="api-link">
+                ${p.urlLabel} <i data-lucide="external-link" style="width:11px;height:11px"></i>
+              </a>
+            </div>
+            <p class="api-provider-hint">${p.hint}</p>
+            <div class="api-input-wrap">
+              <input type="password" class="field-input" id="apikey-${p.id}"
+                placeholder="Cole sua API Key aqui"
+                value="${val}"
+                autocomplete="off"
+              >
+              <button class="btn-icon" onclick="App.toggleApiKeyVisibility('${p.id}')" title="Mostrar/ocultar">
+                <i data-lucide="eye" style="width:14px;height:14px"></i>
+              </button>
+            </div>
+            <div style="display:flex; gap:8px; margin-top:8px;">
+              <button class="btn-primary btn-sm" onclick="App.saveApiKeyFromInput('${p.id}')">
+                Salvar
+              </button>
+            </div>
           </div>
-          <p class="api-provider-hint">${p.hint}</p>
-          <div class="api-input-wrap">
-            <input type="password" class="field-input" id="apikey-${p.id}"
-              placeholder="Cole sua API Key aqui"
-              value="${val}"
-              autocomplete="off"
-            >
-            <button class="btn-icon" onclick="App.toggleApiKeyVisibility('${p.id}')" title="Mostrar/ocultar">
-              <i data-lucide="eye" style="width:14px;height:14px"></i>
-            </button>
-          </div>
-          <button class="btn-primary btn-sm" style="margin-top:8px"
-            onclick="App.saveApiKeyFromInput('${p.id}')">
-            Salvar
-          </button>
-        </div>
-      `;
-    }).join('<hr style="border-color:var(--border-subtle);margin:16px 0">');
+        `;
+      }).join('<hr style="border-color:var(--border-subtle);margin:16px 0">')}
+    `;
 
     lucide.createIcons({ nodes: [body] });
   },
@@ -469,7 +483,7 @@ Object.assign(window.App, {
     const badgeEl = document.getElementById('gen-model-badge');
 
     if (titleEl) titleEl.textContent = this.state.aiLog.title;
-    if (badgeEl) badgeEl.textContent = AI_MODELS[this.state.selectedModel]?.label || '';
+    if (badgeEl) badgeEl.textContent = App.config.models[this.state.selectedModel]?.name || '';
 
     const { steps, active, done, errors } = this.state.aiLog;
     const completedCount = done.length + errors.length;

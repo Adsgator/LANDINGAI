@@ -115,7 +115,7 @@ Object.assign(window.App, {
             Você precisa ${!estruturaRascunho ? 'gerar' : 'aprovar'} a Estrutura da Landing Page antes de gerar o DOC-IMPL.
           </p>
           <div class="alert-actions">
-            <button class="btn-primary btn-sm" onclick="App.goToScreen('estrutura')">
+            <button class="btn-primary btn-sm" onclick="App.goToScreen('structure')">
               <i data-lucide="layout" style="width:14px;height:14px;"></i> Ir para Estrutura
             </button>
           </div>
@@ -234,7 +234,7 @@ Object.assign(window.App, {
                     <strong>${this.contarBlocos(B.estrutura_rascunho)} blocos gerados</strong>
                     <p style="font-size:12px;color:var(--text-tertiary)">Narrativa em 1ª pessoa configurada</p>
                   </div>
-                  <button class="btn-ghost btn-sm" onclick="App.goToScreen('estrutura')" style="margin-left:auto;">
+                  <button class="btn-ghost btn-sm" onclick="App.goToScreen('structure')" style="margin-left:auto;">
                     <i data-lucide="edit-3" style="width:12px;height:12px"></i>
                     Ver Blocos
                   </button>
@@ -249,7 +249,7 @@ Object.assign(window.App, {
             <div class="review-pending-alert">
               <i data-lucide="alert-triangle" style="width:15px;height:15px;color:var(--warning)"></i>
               <span>Estrutura ainda não definida.</span>
-              <button class="btn-ghost btn-sm" onclick="App.goToScreen('estrutura')">
+              <button class="btn-ghost btn-sm" onclick="App.goToScreen('structure')">
                 Gerar Estrutura →
               </button>
             </div>

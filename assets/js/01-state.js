@@ -222,8 +222,16 @@ Object.assign(window.App, {
   },
 
   saveApiKey(provider, value) {
+    const validation = validateApiKey(provider, value);
+    if (!validation.valid) {
+      if (this.showToast) this.showToast(validation.message, 'error');
+      return false;
+    }
+
     this.state.apiKeys[provider] = value.trim();
     this.saveStorage();           // persiste apiKeys + selectedModel
+    if (this.showToast) this.showToast(`API Key de ${provider} salva com sucesso!`, 'success');
+    return true;
   },
 
   saveSelectedModel(modelId) {

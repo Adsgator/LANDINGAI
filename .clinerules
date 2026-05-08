@@ -14,7 +14,7 @@ Se a task disser "faça X" mas as regras dizem "não faça X", siga as regras.
 
 ## 1. PROJETO E ARQUITETURA
 
-### IDENTIDADE teste
+### IDENTIDADE
 
 - Nome: AIGator
 - Módulo ativo: LandingAI — Gerador de Fichas de Implementação para Landing Pages
@@ -40,9 +40,8 @@ assets/js/
       ├── step.js         → buildStep1() a buildStep8()
       ├── art.js          → buildArtScreen(), runArtAnalysis()
       ├── estrutura.js    → renderEstrutura(), gerarWireframeHTML()
-      ├── review.js       → buildReviewScreen(), buildDoc1(), generateDocImpl()
+      └── review.js       → buildReviewScreen(), buildDoc1(), generateDocImpl()
       ├── structure.js    → Delegador (SEM LÓGICA PRÓPRIA)
-      └── steps.js        → VAZIO (arquivo reservado, não usar)
 
 assets/css/        → Estilos modulares:
   ├── 00-vars.css  → Design tokens, reset, variáveis CSS

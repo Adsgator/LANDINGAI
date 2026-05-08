@@ -351,10 +351,19 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <!-- AIGator — LandingAI Module -->
-  <script src="https://unpkg.com/lucide@0.344.0/dist/umd/lucide.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
   <script>
     // Declarar App globalmente ANTES de qualquer módulo
     window.App = {};
+
+    // Renderizar todos os ícones Lucide na página
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+
+    // Re-renderizar quando conteúdo dinâmico é adicionado
+    // NOTA: Removido MutationObserver global para evitar loop infinito
+    // O sistema já chama lucide.createIcons() após renderizar telas.
   </script>
   <script src="assets/js/00-config.js"></script>
   <script src="assets/js/01-state.js"></script>

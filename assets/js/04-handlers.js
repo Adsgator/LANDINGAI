@@ -43,7 +43,7 @@ Object.assign(window.App, {
 
         // Campos estruturais que exigem re-render
         const structural = ['tipo', 'objetivo_conversao', 'modalidade', 'preco_exibir', 'depoimentos', 'google_business'];
-        if (structural.includes(field)) this.renderScreen();
+        if (structural.includes(field)) this.renderScreen(true);
       });
     });
 
@@ -60,7 +60,7 @@ Object.assign(window.App, {
         card.classList.add('on');
         card.setAttribute('aria-selected', 'true');
         const structural = ['tipo', 'objetivo_conversao', 'modalidade', 'preco_exibir', 'depoimentos', 'google_business'];
-        if (structural.includes(field)) this.renderScreen();
+        if (structural.includes(field)) this.renderScreen(true);
       });
     });
 
@@ -655,7 +655,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
     this.setField('arte_ficha_aprovada', this.B.ficha_direcao_arte || '');
     this.closeModal('modal-art-result');
     this.showToast('Direção de Arte aprovada!', 'success');
-    this.renderScreen();
+    this.renderScreen(true);
     this.renderStepsNav();
   },
 
@@ -875,7 +875,7 @@ REGRAS:
 
       this.aiLogDone();
       this.closeAILog();
-      this.renderScreen();
+      this.renderScreen(true);
       this.showToast('Estrutura refinada! Revise novamente.', 'success');
     } catch (err) {
       this.aiLogError(this.state.aiLog.active, err.message);
@@ -2084,7 +2084,7 @@ Sem placeholders, pronto para npm install + npm run dev.
     const all = [...(this.B.arte_arquivos || [])];
     all.splice(index, 1);
     this.setField('arte_arquivos', all);
-    this.renderScreen();
+    this.renderScreen(true);
   },
 
   addArtRef(type) {
@@ -2092,7 +2092,7 @@ Sem placeholders, pronto para npm install + npm run dev.
     const arr = [...(this.B[field] || [])];
     arr.push({ url: '', nota: '' });
     this.setField(field, arr);
-    this.renderScreen();
+    this.renderScreen(true);
   },
 
   removeArtRef(type, index) {
@@ -2100,7 +2100,7 @@ Sem placeholders, pronto para npm install + npm run dev.
     const arr = [...(this.B[field] || [])];
     arr.splice(index, 1);
     this.setField(field, arr);
-    this.renderScreen();
+    this.renderScreen(true);
   },
 
   updateArtRef(type, index, key, value) {

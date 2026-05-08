@@ -32,11 +32,13 @@ Object.assign(window.App, {
     `;
   },
 
-  renderScreen() {
+  renderScreen(preserveScroll = false) {
     // Scroll reset — ID correto é screen-content
     const content = document.getElementById('screen-content');
     if (!content) return;
-    content.scrollTop = 0;
+    
+    const scrollPos = content.scrollTop;
+    if (!preserveScroll) content.scrollTop = 0;
 
     if (!this.state.screen) return;
 
@@ -53,6 +55,10 @@ Object.assign(window.App, {
     this.bindScreenEvents(content);
     this.renderBottombar();
     this.updateTopbar();
+
+    if (preserveScroll) {
+      content.scrollTop = scrollPos;
+    }
   },
 
   /* ----------------------------------------------------------
@@ -394,9 +400,10 @@ Object.assign(window.App, {
   saveApiKeyFromInput(provider) {
     const input = document.getElementById(`apikey-${provider}`);
     if (!input) return;
-    this.saveApiKey(provider, input.value);
-    this.updateSidebar();
-    this.showToast(`API Key de ${provider} salva!`, 'success');
+    const success = this.saveApiKey(provider, input.value);
+    if (success) {
+      this.updateSidebar();
+    }
   },
 
   toggleApiKeyVisibility(provider) {

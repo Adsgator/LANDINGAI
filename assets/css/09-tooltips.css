@@ -1,0 +1,141 @@
+/* ================================================
+   LANDINGAI — Tooltips
+   ================================================ */
+
+.tooltip-trigger {
+  position: relative;
+  cursor: help;
+  border-bottom: 1px dotted var(--text-tertiary);
+  transition: all var(--t-fast);
+}
+
+.tooltip-trigger:hover {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+}
+
+.tooltip {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: var(--bg-default);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-sm);
+  font-size: 12px;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--t-fast);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 4px solid var(--text-primary);
+}
+
+.tooltip-trigger:hover .tooltip {
+  opacity: 1;
+}
+
+/* Tooltip Positions */
+.tooltip-right {
+  bottom: auto;
+  left: calc(100% + 8px);
+  transform: translateX(0);
+}
+
+.tooltip-right::after {
+  top: 50%;
+  left: auto;
+  right: 100%;
+  transform: translateY(-50%);
+  border: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-right: 4px solid var(--text-primary);
+}
+
+.tooltip-left {
+  bottom: auto;
+  left: auto;
+  right: calc(100% + 8px);
+  transform: translateX(0);
+}
+
+.tooltip-left::after {
+  top: 50%;
+  right: auto;
+  left: 100%;
+  transform: translateY(-50%);
+  border: 0;
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  border-left: 4px solid var(--text-primary);
+}
+
+.tooltip-top {
+  /* Default, já implementado acima */
+}
+
+.tooltip-bottom {
+  bottom: auto;
+  top: calc(100% + 8px);
+}
+
+.tooltip-bottom::after {
+  top: auto;
+  bottom: 100%;
+  border-top: 0;
+  border-bottom: 4px solid var(--text-primary);
+}
+
+/* Info icon */
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-size: 10px;
+  font-weight: 700;
+  cursor: help;
+  margin-left: var(--space-1);
+}
+
+/* Dark mode adjustments */
+body.dark-mode .tooltip {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-default);
+}
+
+body.dark-mode .tooltip::after {
+  border-top-color: var(--bg-surface);
+}
+
+body.dark-mode .tooltip-right::after {
+  border-right-color: var(--bg-surface);
+}
+
+body.dark-mode .tooltip-left::after {
+  border-left-color: var(--bg-surface);
+}
+
+body.dark-mode .tooltip-bottom::after {
+  border-bottom-color: var(--bg-surface);
+}

@@ -19,6 +19,15 @@
   <link rel="stylesheet" href="assets/css/02-components.css">
   <link rel="stylesheet" href="assets/css/03-screens.css">
   <link rel="stylesheet" href="assets/css/04-system.css">
+  <link rel="stylesheet" href="assets/css/05-loader.css">
+  <link rel="stylesheet" href="assets/css/06-error-modal.css">
+  <link rel="stylesheet" href="assets/css/07-form-validation.css">
+  <link rel="stylesheet" href="assets/css/08-empty-states.css">
+  <link rel="stylesheet" href="assets/css/09-tooltips.css">
+  <link rel="stylesheet" href="assets/css/10-animations.css">
+  <link rel="stylesheet" href="assets/css/11-dark-mode.css">
+  <link rel="stylesheet" href="assets/css/13-breadcrumb.css">
+  <link rel="stylesheet" href="assets/css/14-toast.css">
 </head>
 
 <body>
@@ -68,6 +77,13 @@
         <nav id="steps-nav" role="list"></nav>
       </div>
 
+      <div class="sidebar-section">
+        <button id="btn-google-ads" class="sidebar-btn" data-screen="google-ads" style="width:100%; justify-content: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: none; border: none; color: var(--text-secondary); font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: var(--r-md); transition: all var(--t-base); display: flex; align-items: center;">
+          <i data-lucide="trending-up" style="width:18px; height:18px;"></i>
+          <span>Google Ads</span>
+        </button>
+      </div>
+
       <!-- Footer -->
       <div class="sidebar-footer">
         <button class="sidebar-footer-btn" id="btn-open-api"
@@ -96,6 +112,7 @@
           <p class="topbar-subtitle" id="topbar-subtitle">—</p>
         </div>
         <div class="topbar-right">
+          <div class="header-controls"></div>
           <div id="topbar-score" style="display:none;">
             <span class="score-badge" id="topbar-score-label"></span>
           </div>
@@ -376,6 +393,15 @@
   <script src="assets/js/screens/review.js"></script>
   <script src="assets/js/03-ui.js"></script>
   <script src="assets/js/04-handlers.js"></script>
+  <script src="assets/js/05-loader.js"></script>
+  <script src="assets/js/06-error-modal.js"></script>
+  <script src="assets/js/07-form-validation.js"></script>
+  <script src="assets/js/08-empty-states.js"></script>
+  <script src="assets/js/09-tooltips.js"></script>
+  <script src="assets/js/11-keyboard-nav.js"></script>
+  <script src="assets/js/12-dark-mode.js"></script>
+  <script src="assets/js/13-breadcrumb.js"></script>
+  <script src="assets/js/14-toast.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 

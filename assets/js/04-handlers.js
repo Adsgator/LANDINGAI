@@ -201,6 +201,12 @@ Object.assign(window.App, {
       });
     }
 
+    // Botão Google Ads na Sidebar
+    const gaBtn = document.getElementById('btn-google-ads');
+    if (gaBtn) {
+      gaBtn.addEventListener('click', () => this.handleGoogleAdsClick());
+    }
+
     // Fechar modais clicando no overlay (exceto modal-gen que é bloqueante)
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
       if (overlay.id === 'modal-gen') return;

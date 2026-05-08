@@ -1,0 +1,123 @@
+/* ================================================
+   LANDINGAI — Dark Mode
+   ================================================ */
+
+/* Dark mode root vars */
+body.dark-mode {
+  --bg-default: #0f1419;
+  --bg-surface: #1a1f26;
+  --bg-overlay: #232a33;
+  --bg-raised: #2d3139;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #b0b8c1;
+  --text-tertiary: #7a8591;
+  
+  --border-default: #3a4249;
+  --border-strong: #5a6370;
+}
+
+/* Smooth transition between modes */
+body {
+  transition: background-color var(--t-base), color var(--t-base);
+}
+
+body * {
+  transition: background-color var(--t-fast), color var(--t-fast), border-color var(--t-fast);
+}
+
+/* Dark mode toggle button */
+.dark-mode-toggle {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--t-base);
+}
+
+.dark-mode-toggle:hover {
+  background: var(--bg-overlay);
+  border-color: var(--border-strong);
+}
+
+.dark-mode-toggle-icon {
+  font-size: 20px;
+  transition: transform var(--t-base);
+}
+
+.dark-mode-toggle:active .dark-mode-toggle-icon {
+  transform: rotate(180deg) scale(0.8);
+}
+
+/* Tooltip para toggle */
+.dark-mode-toggle::before {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--text-primary);
+  color: var(--bg-default);
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  opacity: 0;
+  transition: opacity var(--t-fast);
+  pointer-events: none;
+  z-index: 100;
+}
+
+.dark-mode-toggle:hover::before {
+  opacity: 1;
+}
+
+/* Image adjustments in dark mode */
+body.dark-mode img {
+  opacity: 0.9;
+}
+
+/* Syntax highlighting in dark mode */
+body.dark-mode code {
+  background: var(--bg-overlay);
+  color: #81c784;
+}
+
+body.dark-mode pre {
+  background: var(--bg-overlay);
+  border-color: var(--border-strong);
+}
+
+/* Form elements in dark mode */
+body.dark-mode input,
+body.dark-mode textarea,
+body.dark-mode select {
+  background: var(--bg-overlay);
+  color: var(--text-primary);
+  border-color: var(--border-default);
+}
+
+body.dark-mode input:focus,
+body.dark-mode textarea:focus,
+body.dark-mode select:focus {
+  border-color: var(--accent);
+  background: var(--bg-surface);
+}
+
+/* Buttons in dark mode */
+body.dark-mode .btn-primary {
+  background: var(--accent);
+  color: var(--bg-default);
+}
+
+body.dark-mode .btn-secondary {
+  background: var(--bg-overlay);
+  border-color: var(--border-strong);
+  color: var(--text-secondary);
+}

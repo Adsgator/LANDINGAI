@@ -1,0 +1,42 @@
+/* ================================================
+   LANDINGAI — Breadcrumb Navigation
+   ================================================ */
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.breadcrumb-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.breadcrumb-item.active {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.breadcrumb-item a {
+  color: var(--accent);
+  text-decoration: none;
+  transition: all var(--t-fast);
+}
+
+.breadcrumb-item a:hover {
+  color: var(--accent-dark);
+  text-decoration: underline;
+}
+
+.breadcrumb-separator {
+  color: var(--text-tertiary);
+}
+
+.breadcrumb-icon {
+  margin-right: var(--space-1);
+}

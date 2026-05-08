@@ -1,0 +1,105 @@
+/* ================================================
+   LANDINGAI — Form Validation Styles
+   ================================================ */
+
+/* ── Input States ────────────────────────────– */
+input.valid,
+textarea.valid,
+select.valid {
+  border-color: var(--success) !important;
+  background: var(--success-dim) !important;
+}
+
+input.valid:focus,
+textarea.valid:focus,
+select.valid:focus {
+  border-color: var(--success) !important;
+  box-shadow: 0 0 0 3px var(--success-dim) !important;
+}
+
+input.invalid,
+textarea.invalid,
+select.invalid {
+  border-color: var(--danger) !important;
+  background: var(--danger-dim) !important;
+}
+
+input.invalid:focus,
+textarea.invalid:focus,
+select.invalid:focus {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px var(--danger-dim) !important;
+}
+
+input.warning,
+textarea.warning,
+select.warning {
+  border-color: var(--warning) !important;
+  background: var(--warning-dim) !important;
+}
+
+/* ── Field Messages ────────────────────────– */
+.field-message {
+  font-size: 12px;
+  margin-top: var(--space-1);
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  line-height: 1.4;
+}
+
+.field-message.success {
+  color: var(--success);
+}
+
+.field-message.error {
+  color: var(--danger);
+}
+
+.field-message.warning {
+  color: var(--warning);
+}
+
+.field-message.info {
+  color: var(--accent);
+}
+
+/* ── Required Indicator ────────────────────– */
+.field-required {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+/* ── Form Group with Validation ────────── */
+.form-group.has-error {
+  position: relative;
+}
+
+.form-group.has-error input,
+.form-group.has-error textarea,
+.form-group.has-error select {
+  border-color: var(--danger) !important;
+}
+
+.form-group.has-success input,
+.form-group.has-success textarea,
+.form-group.has-success select {
+  border-color: var(--success) !important;
+}
+
+/* ── Character Counter ──────────────────── */
+.char-counter {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin-top: var(--space-1);
+}
+
+.char-counter.warning {
+  color: var(--warning);
+}
+
+.char-counter.error {
+  color: var(--danger);
+}

@@ -1,209 +1,227 @@
 /**
- * Puxa o contexto do projeto da Landing Page armazenado no localStorage.
- * @returns {Object} Objeto com os dados do projeto
+ * Google Ads API Integration
+ * Modo 1: Criação | Modo 2: Otimização
  */
-function pullContextFromLP() {
-  // 1. Puxa do localStorage
-  const briefing = JSON.parse(localStorage.getItem('briefing_bruto')) || {};
-  const lpUrl = localStorage.getItem('lp_url') || '';
-  
-  // 2. Retorna objeto
-  return {
-    cliente_nome: briefing.client_name || 'Cliente',
-    servico_descricao: briefing.service_description || '',
-    proposta_valor: briefing.value_proposition || '',
-    publico_alvo: briefing.target_audience || '',
-    restricoes: briefing.restrictions || '',
-    tom_identidade: briefing.tone_identity || '',
-    lp_url: lpUrl,
-    estrutura_blocos: JSON.parse(localStorage.getItem('generated_structure')) || []
-  };
-}
-
-// TODO: Implementar chamadas da IA para gerar a estratégia
 
 /**
- * SYSTEM PROMPT PARA GERAÇÃO DE ESTRATÉGIA
+ * MODO 1: Gerar Estratégia
  */
-const SYSTEM_PROMPT_GA_STRATEGY = `
-# LANDINGAI × GOOGLE ADS — Gerador de Estratégia
-
-Você é um especialista em Google Ads com 10+ anos criando campanhas para prestadores de serviço regional.
-
-## TAREFA
-Gerar uma estratégia Google Ads completa em formato JSON baseada no contexto da Landing Page.
-
-## REGRAS CRÍTICAS
-
-### Divisão de Orçamento
-- < R$1000: Search 100%
-- R$1000-3000: Search 70-80%, PMax 20-30%
-- > R$3000: Search 60%, PMax 40%
-SEMPRE justificar em "justificativa_estrategica"
-
-### Keywords
-✅ Comercial Alto Intento: "serviço + localização" (broad, phrase, exact)
-✅ Informacional: "como/quando/diferença" (awareness)
-❌ Negativas Obrigatórias: grátis, curso, faculdade, educação, emprego
-
-### Anúncios
-- Headlines: máx 30 chars, incluir serviço + diferencial
-- Descriptions: máx 90 chars, incluir credencial + experiência + garantia
-- CTA: "Agende Agora", "Marque Consulta", "Fale Conosco"
-- ❌ Evitar: claims vagas ("melhor", "único"), garantias falsas
-
-### Metas
-- CPA = Budget Total ÷ Meta Leads
-- ROAS mínimo 2:1 (ideal 3:1+)
-- CTR esperado: 3-8% para Search
-
-### Validação
-- [ ] Keywords alinhadas com proposta
-- [ ] Anúncios SEM claims vagas
-- [ ] Anúncios COM credenciais específicas
-- [ ] URL relevante
-- [ ] Budget viável
-- [ ] Personas definidas
-- [ ] Observações úteis
-
-## OUTPUT
-✅ APENAS JSON válido (sem markdown, sem explicação)
-✅ Nenhum placeholder
-✅ Todos os campos obrigatórios
-✅ Parseável sem erros
-`;
-
-/**
- * Gerar estratégia Google Ads com IA
- * @param {object} context - Contexto da LP
- * @param {object} parameters - Parâmetros da campanha (budget, goal, location, url)
- * @returns {Promise<object>} Estratégia em JSON
- */
-async function generateGAStrategy(context, parameters) {
-  // Validar inputs
-  if (!context || !parameters) {
-    throw new Error('Contexto ou parâmetros faltando');
-  }
-  
-  if (!parameters.budget || parameters.budget < 100) {
-    throw new Error('Budget deve ser mínimo R$100');
-  }
-  
-  // Construir prompt do usuário
-  const userPrompt = `
-GERAR ESTRATÉGIA GOOGLE ADS
-
-CLIENTE:
-- Nome: ${context.cliente_nome || 'Cliente'}
-- Serviço: ${context.servico_nome || ''}
-- Descrição: ${context.servico_descricao || ''}
-- Público-alvo: ${context.publico_alvo || ''}
-- Diferencial: ${context.proposta_valor || ''}
-
-PARÂMETROS DA CAMPANHA:
-- Budget Mensal: R$ ${parameters.budget}
-- Meta: ${parameters.goal} (${mapGoalToPortuguese(parameters.goal)})
-- Localização: ${parameters.location}
-- URL Landing Page: ${context.lp_url || parameters.lp_url}
-
-RESTRIÇÕES DO CLIENTE:
-${context.restricoes || 'Nenhuma restrição específica'}
-
-TOM E IDENTIDADE:
-${context.ton_identidade || 'Tom profissional e empático'}
-
-Gere a estratégia completa em JSON.
-RESPONDA APENAS COM JSON, SEM EXPLICAÇÕES.
-`;
-
+async function generateGAStrategy(inputs) {
   try {
-    console.log('📤 Chamando IA para gerar estratégia...');
-    
-    // Check if callAI exists (from main app), otherwise this will throw
-    if (typeof callAI === 'undefined') {
-      // Mock for now or we wait to use App's callAI if integrated
-      console.warn('callAI not found globally, please ensure App is loaded or mock it');
-    }
-    
-    const selectedModel = (window.App && window.App.state && window.App.state.selectedModel) || 'claude-haiku-4';
+    Loader.show('📊 Analisando contexto da LP...', 'Gerando estratégia de campanhas');
 
-    const response = await window.callAI({
-      model: selectedModel,
-      systemPrompt: SYSTEM_PROMPT_GA_STRATEGY,
-      userPrompt: userPrompt,
-      maxTokens: 5000,
-      temperature: 0.7
+    // 1. Puxar contexto
+    const context = pullContextFromLP();
+
+    // 2. Construir prompt
+    const prompt = `
+    Gerar estratégia completa de Google Ads para:
+
+    CLIENTE: ${inputs.clienteName || context.cliente_nome}
+    SERVIÇO: ${context.servico_descricao}
+    VERBA MENSAL: R$ ${inputs.budgetTotal}
+    GEOLOCALIZAÇÃO: ${inputs.location}
+    META PRINCIPAL: ${inputs.mainGoal}
+
+    Considere que ${inputs.budgetTotal < 1000 ? 'o orçamento é baixo, então foque em Rede de Pesquisa' : 'há bom orçamento, considere multi-canal'}.
+
+    Retorne EXCLUSIVAMENTE um JSON válido (sem markdown) com esta estrutura:
+    {
+      "id": "ga-strategy-${Date.now()}",
+      "analise": "Análise da situação",
+      "recomendacao": "Recomendação estratégica",
+      "justificativa": "Por que esta estratégia",
+      "campanhas": [
+        {
+          "nome": "Nome da Campanha",
+          "rede": "search|display|pmax|youtube",
+          "orcamento": 500,
+          "ad_groups": [
+            {
+              "nome": "Grupo de Anúncio",
+              "keywords_positivas": ["palavra1", "palavra2"],
+              "keywords_negativas": ["evitar1", "evitar2"],
+              "anuncios": [
+                {
+                  "headlines": [
+                    { "texto": "Headline 1" },
+                    { "texto": "Headline 2" },
+                    { "texto": "Headline 3" }
+                  ],
+                  "descriptions": [
+                    { "texto": "Description 1" },
+                    { "texto": "Description 2" }
+                  ],
+                  "final_url": "${inputs.lpUrl || context.lp_url}",
+                  "call_to_action": "Entre em contato"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+
+    Regras:
+    - Headlines: máximo 30 caracteres
+    - Descriptions: máximo 90 caracteres
+    - Mínimo 3 headlines e 2 descriptions por anúncio
+    - Mínimo 5 keywords positivas por grupo
+    - Keywords negativas mais relevantes possível
+    - Não inventar URLs, usar a fornecida
+    - JSON deve ser válido e completo
+    `;
+
+    const response = await callAI({
+      model: App.state.selectedModel,
+      userPrompt: prompt,
+      maxTokens: 3000
     });
 
-    console.log('✅ Resposta recebida da IA');
-    
-    // Extrair JSON da resposta
-    let jsonStr = response.content || response;
-    
-    // Limpar markdown se houver
-    jsonStr = jsonStr.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
-    
-    // Parse JSON
+    Loader.updateMessage('📊 Processando estratégia gerada...', 'Validando dados');
+
+    // 3. Parse JSON
     let strategy;
     try {
-      strategy = JSON.parse(jsonStr);
+      strategy = JSON.parse(response.content);
     } catch (e) {
-      console.error('Erro ao fazer parse do JSON:', e);
-      console.error('String recebida:', jsonStr.substring(0, 500));
-      throw new Error(`Resposta da IA não é JSON válido: ${e.message}`);
+      // Tentar extrair JSON se houver markdown
+      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        strategy = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('IA não retornou JSON válido');
+      }
     }
-    
-    // Validações básicas
-    if (!strategy.id) strategy.id = `ga-strategy-${Date.now()}`;
-    if (!strategy.timestamp) strategy.timestamp = new Date().toISOString();
-    if (!strategy.versao_formato) strategy.versao_formato = '1.0';
-    
-    // Garantir que campanhas é array
-    if (!Array.isArray(strategy.campanhas)) {
-      throw new Error('JSON inválido: "campanhas" deve ser array');
-    }
-    
-    if (strategy.campanhas.length === 0) {
-      throw new Error('Nenhuma campanha foi gerada');
-    }
-    
-    console.log(`✅ Estratégia gerada com ${strategy.campanhas.length} campanha(s)`);
-    
-    // Salvar no estado
-    if (!window.App) window.App = {};
-    window.App.ga = window.App.ga || {};
-    window.App.ga.lastStrategy = strategy;
-    window.App.ga.lastContext = context;
-    window.App.ga.lastParameters = parameters;
-    
+
+    Loader.hide();
+
+    // 4. Validar
+    validateGAStrategy(strategy);
+
+    // 5. Salvar em localStorage
+    localStorage.setItem('ga_strategy', JSON.stringify(strategy));
+
     return strategy;
-    
+
   } catch (error) {
-    console.error('❌ Erro ao gerar estratégia:', error);
+    Loader.hide();
     throw error;
   }
 }
 
 /**
- * Mapear goal em PT-BR
+ * MODO 2: Otimização de Campanha
  */
-function mapGoalToPortuguese(goal) {
-  const map = {
-    'leads': 'Gerar Leads',
-    'calls': 'Receber Chamadas',
-    'bookings': 'Agendar Consultas',
-    'sales': 'Vender Produtos/Serviços'
-  };
-  return map[goal] || goal;
+async function optimizeGACampaign(reportText) {
+  try {
+    Loader.show('📈 Analisando relatório...', 'Gerando recomendações de otimização');
+
+    const prompt = `
+    Analise este relatório bruto do Google Ads e gere um plano de ação:
+
+    RELATÓRIO:
+    ${reportText}
+
+    Retorne EXCLUSIVAMENTE um JSON válido (sem markdown) com:
+    {
+      "sumario": "Resumo da situação",
+      "score_saude": 0-100,
+      "acoes": [
+        {
+          "prioridade": "alta|media|baixa",
+          "tipo": "pausar|escalar|testar|ajustar",
+          "elemento": "Nome da campanha/grupo/keyword",
+          "problema": "Por que agir",
+          "acao": "O que fazer",
+          "impacto_esperado": "Resultado esperado",
+          "urgencia": "dias até agir"
+        }
+      ]
+    }
+
+    Classifique por:
+    - ALTA: Palavras com CPC alto mas baixa conversão = pausar
+    - MEDIA: Keywords com bom desempenho = escalar orçamento
+    - BAIXA: Testar novas variações de anúncio
+
+    JSON deve ser válido e completo.
+    `;
+
+    const response = await callAI({
+      model: App.state.selectedModel,
+      userPrompt: prompt,
+      maxTokens: 2000
+    });
+
+    Loader.hide();
+
+    // Parse JSON
+    let plan;
+    try {
+      plan = JSON.parse(response.content);
+    } catch (e) {
+      const jsonMatch = response.content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        plan = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('IA não retornou JSON válido');
+      }
+    }
+
+    // Salvar
+    localStorage.setItem('ga_optimization_plan', JSON.stringify(plan));
+
+    return plan;
+
+  } catch (error) {
+    Loader.hide();
+    throw error;
+  }
 }
 
 /**
- * Atualizar App.state.selectedModel com modelo selecionado
- * (chamar isso no form antes de generateGAStrategy)
+ * Validar estratégia
  */
-function setSelectedGAModel(modelId) {
-  if (!window.App) window.App = {};
-  window.App.state = window.App.state || {};
-  window.App.state.selectedModel = modelId;
-  console.log(`📍 Modelo selecionado: ${modelId}`);
+function validateGAStrategy(strategy) {
+  const errors = [];
+
+  if (!strategy.campanhas || strategy.campanhas.length === 0) {
+    errors.push('Nenhuma campanha definida');
+  }
+
+  strategy.campanhas?.forEach((camp, idx) => {
+    if (!camp.nome) errors.push(`Campanha ${idx}: sem nome`);
+    if (!camp.ad_groups || camp.ad_groups.length === 0) {
+      errors.push(`Campanha "${camp.nome}": sem ad groups`);
+    }
+
+    camp.ad_groups?.forEach((ag, agIdx) => {
+      if (!ag.keywords_positivas || ag.keywords_positivas.length === 0) {
+        errors.push(`Ad Group "${ag.nome}": sem keywords`);
+      }
+      if (!ag.anuncios || ag.anuncios.length === 0) {
+        errors.push(`Ad Group "${ag.nome}": sem anúncios`);
+      }
+    });
+  });
+
+  if (errors.length > 0) {
+    throw new Error(`Validação falhou:\n${errors.join('\n')}`);
+  }
 }
+
+/**
+ * Puxar contexto da LP
+ */
+function pullContextFromLP() {
+  return {
+    cliente_nome: JSON.parse(localStorage.getItem('briefing_bruto') || '{}').client_name || 'Cliente',
+    servico_descricao: JSON.parse(localStorage.getItem('briefing_bruto') || '{}').service_description || '',
+    lp_url: localStorage.getItem('lp_url') || 'https://exemplo.com'
+  };
+}
+
+// Exportar
+window.generateGAStrategy = generateGAStrategy;
+window.optimizeGACampaign = optimizeGACampaign;

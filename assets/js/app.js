@@ -61,6 +61,56 @@ Object.assign(window.App, {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
+  },
+
+  /**
+   * Navegar para o módulo Google Ads
+   */
+  handleGoogleAdsClick() {
+    // Verificar se tem estrutura gerada
+    const hasStructure = this.B && this.B.estrutura_lp;
+    
+    if (!hasStructure) {
+      ErrorModal.show(
+        '❌ Nenhuma Landing Page Criada',
+        'Crie uma landing page primeiro antes de usar o módulo Google Ads.',
+        [
+          'Vá para "Intake" e preencha as informações do cliente',
+          'Complete todos os 8 passos do briefing',
+          'Gere a landing page no passo "Estrutura"',
+          'Então use o Google Ads'
+        ],
+        null,
+        () => this.goToScreen('intake')
+      );
+      return;
+    }
+
+    // Preparar contexto para o módulo
+    this.prepareGAContext();
+
+    // Feedback visual
+    Loader.show('🚀 Carregando módulo Google Ads...');
+    
+    setTimeout(() => {
+      window.location.href = './modules/google-ads/index.html?lp=current';
+    }, 800);
+  },
+
+  /**
+   * Passar contexto da LP para GA via localStorage
+   */
+  prepareGAContext() {
+    const context = {
+      projectId: this.state.activeId,
+      projectName: this.P.name,
+      briefing: this.B,
+      structure: this.B.estrutura_lp,
+      lpUrl: this.B.slug ? `https://lp.adsgator.com.br/${this.B.slug}` : '',
+      timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('ga_context', JSON.stringify(context));
   }
 });
 

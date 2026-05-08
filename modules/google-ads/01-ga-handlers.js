@@ -3,14 +3,20 @@
 function initGaHandlers() {
     const btnPullContext = document.getElementById('btn-pull-context');
     const btnGenerateStrategy = document.getElementById('btn-generate-strategy');
+    const btnOptimizeReport = document.getElementById('btn-optimize-report');
 
     if (btnPullContext) {
         btnPullContext.addEventListener('click', () => {
             console.log('Pulling context from Landing Page...');
             if (typeof pullContextFromLP === 'function') {
-                const context = pullContextFromLP(); // Name used in 02-ga-api.js
+                const context = pullContextFromLP();
                 console.log('Context retrieved:', context);
-                alert('Contexto puxado com sucesso! Veja no console.');
+                
+                if (window.Toast) {
+                    Toast.success('Contexto puxado com sucesso!');
+                } else {
+                    alert('Contexto puxado com sucesso!');
+                }
                 
                 // Preencher a URL se existir no contexto
                 if (context.lp_url) {
@@ -25,90 +31,80 @@ function initGaHandlers() {
         btnGenerateStrategy.addEventListener('click', async function() {
           try {
             // 1. Validar inputs
-            const budget = parseFloat(document.getElementById('budget-total').value);
+            const budget = document.getElementById('budget-total').value;
             const goal = document.getElementById('main-goal').value;
-            const location = document.getElementById('location-value').value || 'Brasil';
+            const location = document.getElementById('location-value')?.value || document.getElementById('location')?.value || 'Brasil';
             const lpUrl = document.getElementById('lp-url').value;
             
             if (!budget || !goal || !lpUrl) {
-              showError('❌ Preencha todos os campos obrigatórios');
+              if (window.Toast) Toast.error('Preencha todos os campos obrigatórios');
+              else alert('Preencha todos os campos obrigatórios');
               return;
             }
             
-            // 2. Mostrar loading
-            showLoading('⚙️ Gerando estratégia com IA...');
-            
-            // 3. Puxar contexto
-            // Assuming pullContextFromLP is defined in 02-ga-api.js
-            const context = pullContextFromLP();
-            
-            // 4. Construir parâmetros
-            const parameters = {
-              budget: budget,
-              goal: goal,
+            // 2. Construir parâmetros
+            const inputs = {
+              budgetTotal: budget,
+              mainGoal: goal,
               location: location,
-              lp_url: lpUrl
+              lpUrl: lpUrl
             };
             
-            // 5. Gerar estratégia
-            const strategy = await generateGAStrategy(context, parameters);
+            // 3. Gerar estratégia (O Loader já é chamado dentro de generateGAStrategy)
+            const strategy = await generateGAStrategy(inputs);
             
-            // 6. Renderizar resultado
+            // 4. Renderizar resultado
             if (typeof renderGAStrategy === 'function') {
               renderGAStrategy(strategy);
             } else {
-              console.warn('renderGAStrategy não encontrada. Implemente a UI de renderização.');
               const outputSection = document.getElementById('ga-output-section');
               if (outputSection) {
                   outputSection.innerHTML = `<pre>${JSON.stringify(strategy, null, 2)}</pre>`;
               }
             }
             
-            // 7. Adicionar botão de export
-            if (typeof addExportButton === 'function') {
-              addExportButton(strategy);
-            }
-            
-            // 8. Feedback
-            showSuccess('✅ Estratégia gerada com sucesso!');
+            // 5. Feedback
+            if (window.Toast) Toast.success('Estratégia gerada com sucesso!');
             
           } catch (error) {
             console.error('Erro:', error);
-            showError(`❌ Erro: ${error.message}`);
+            if (window.ErrorModal) {
+                ErrorModal.show('Erro na Geração', error.message);
+            } else {
+                alert(`Erro: ${error.message}`);
+            }
           }
+        });
+    }
+
+    if (btnOptimizeReport) {
+        btnOptimizeReport.addEventListener('click', async function() {
+            const reportText = document.getElementById('raw-report-data')?.value;
+            if (!reportText) {
+                if (window.Toast) Toast.warning('Insira os dados do relatório para analisar');
+                return;
+            }
+
+            try {
+                const plan = await optimizeGACampaign(reportText);
+                if (typeof renderGAOptimization === 'function') {
+                    renderGAOptimization(plan);
+                } else {
+                    const outputSection = document.getElementById('ga-optimization-output');
+                    if (outputSection) {
+                        outputSection.innerHTML = `<pre>${JSON.stringify(plan, null, 2)}</pre>`;
+                    }
+                }
+                if (window.Toast) Toast.success('Análise concluída!');
+            } catch (error) {
+                console.error('Erro na otimização:', error);
+                if (window.ErrorModal) {
+                    ErrorModal.show('Erro na Otimização', error.message);
+                }
+            }
         });
     }
 }
 
-/**
- * Função auxiliar: mostrar loading
- */
-function showLoading(message) {
-  const loader = document.createElement('div');
-  loader.id = 'ga-loader';
-  loader.className = 'ga-loading';
-  loader.innerHTML = `<p>${message}</p>`;
-  document.body.appendChild(loader);
-}
-
-/**
- * Função auxiliar: mostrar erro
- */
-function showError(message) {
-  console.error(message);
-  alert(message);
-  const loader = document.getElementById('ga-loader');
-  if (loader) loader.remove();
-}
-
-/**
- * Função auxiliar: mostrar sucesso
- */
-function showSuccess(message) {
-  console.log(message);
-  const loader = document.getElementById('ga-loader');
-  if (loader) {
-    loader.innerHTML = `<p>${message}</p>`;
-    setTimeout(() => loader.remove(), 2000);
-  }
-}
+// Iniciar quando o DOM estiver pronto
+document.addEventListener('DOMContentLoaded', initGaHandlers);

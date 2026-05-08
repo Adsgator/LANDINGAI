@@ -1,5 +1,5 @@
 /* ============================================================
-   LandingAI v2 — Lógica da Tela de Estrutura
+   LandingAI v2 — Screen: Estrutura da LP
    ============================================================ */
 
 Object.assign(window.App, {
@@ -7,8 +7,7 @@ Object.assign(window.App, {
   renderEstrutura() {
     const B = this.B || {};
     const rascunho = B.estrutura_rascunho || '';
-    const aprovada = B.estrutura_aprovada;
-    const wireframe = B.estrutura_wireframe || '';
+    const aprovada = B.estrutura_aprovada || '';
 
     return `
     <div class="estrutura-screen">
@@ -17,7 +16,7 @@ Object.assign(window.App, {
       <div class="aprovado-banner">
         <i data-lucide="check-circle" style="width:16px;height:16px;color:var(--accent)"></i>
         <span>Estrutura aprovada</span>
-        <button class="btn-ghost btn-sm" onclick="App.setField('estrutura_aprovada', ''); App.renderScreen();">
+        <button class="btn-ghost btn-sm" onclick="App.setField('estrutura_aprovada','');App.renderScreen();">
           Reeditar
         </button>
       </div>
@@ -25,16 +24,17 @@ Object.assign(window.App, {
 
       <div class="estrutura-layout">
 
-        <!-- Coluna: controles -->
+        <!-- ── COLUNA ESQUERDA: controles ─────────────────────── -->
         <div class="estrutura-col-controls">
 
+          <!-- Card: Gerar com IA -->
           <div class="estrutura-section-card">
             <div class="estrutura-section-header">
               <i data-lucide="sparkles" style="width:15px;height:15px;color:var(--accent2)"></i>
               <span class="estrutura-section-title">Gerar com IA</span>
             </div>
             <p class="estrutura-section-desc">
-              A IA lê o briefing completo e define a sequência de blocos, copy de cada seção e ordem narrativa.
+              A IA lê o briefing completo e define blocos, copy em 1ª pessoa e ordem narrativa.
             </p>
             <button class="btn-primary" id="btn-run-estrutura" ${aprovada ? 'disabled' : ''}>
               <i data-lucide="cpu" style="width:15px;height:15px"></i>
@@ -46,12 +46,16 @@ Object.assign(window.App, {
             </button>
           </div>
 
+          <!-- Card: Rascunho em Markdown -->
           ${rascunho ? `
           <div class="estrutura-section-card">
             <div class="estrutura-section-header">
               <i data-lucide="file-text" style="width:15px;height:15px;color:var(--text-secondary)"></i>
               <span class="estrutura-section-title">Rascunho</span>
             </div>
+            <p class="estrutura-section-desc">
+              Edite diretamente se quiser ajustar algo pontual, ou use o campo de refinamento abaixo.
+            </p>
             <textarea
               class="field-textarea estrutura-textarea"
               data-field="estrutura_rascunho"
@@ -67,237 +71,256 @@ Object.assign(window.App, {
           </div>
           ` : ''}
 
+          <!-- Card: Refinar com IA -->
           ${rascunho && !aprovada ? `
-          <!-- Card de Refinamento com IA -->
           <div class="estrutura-section-card estrutura-feedback-card">
             <div class="estrutura-section-header">
               <i data-lucide="message-square" style="width:15px;height:15px;color:var(--accent)"></i>
               <span class="estrutura-section-title">Refinar com IA</span>
             </div>
             <p class="estrutura-section-desc">
-              Não gostou de algum ponto? Descreva o ajuste e a IA refina mantendo o briefing original.
-              Funciona como uma conversa — você pode pedir várias vezes.
+              Não gostou de algo? Descreva e a IA ajusta mantendo o briefing. Pode pedir várias vezes.
             </p>
             <textarea
-              class="field-textarea estrutura-textarea"
+              class="field-textarea"
               id="estrutura-feedback-input"
               rows="4"
-              placeholder="Ex: O tom ficou muito formal, quero mais direto e urgente. Também muda o CTA do Hero para algo mais específico ao problema do cliente..."
+              placeholder="Ex: O Hero ficou muito técnico, quero mais direto e urgente. O CTA deve citar o WhatsApp..."
             ></textarea>
             <button class="btn-primary" id="btn-refinar-estrutura" style="margin-top:10px;width:100%">
               <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
-              Refinar Estrutura com IA
+              Refinar com IA
             </button>
           </div>
           ` : ''}
 
         </div>
 
-        <!-- Coluna: wireframe -->
+        <!-- ── COLUNA DIREITA: visualização dos blocos ─────────── -->
         <div class="estrutura-col-preview">
           <div class="estrutura-section-card estrutura-preview-card">
             <div class="estrutura-section-header">
-              <i data-lucide="monitor" style="width:15px;height:15px;color:var(--text-secondary)"></i>
-              <span class="estrutura-section-title">Pré-visualização</span>
-              <span class="estrutura-preview-badge">Hero + Seção 2</span>
+              <i data-lucide="layout-template" style="width:15px;height:15px;color:var(--text-secondary)"></i>
+              <span class="estrutura-section-title">Visualização dos Blocos</span>
+              ${rascunho ? `<span class="estrutura-preview-badge">${this.contarBlocos(rascunho)} blocos</span>` : ''}
             </div>
 
-            ${rascunho ? this.renderVisualBlocks(rascunho) : `
+            ${rascunho ? `
+            <div class="estrutura-blocos-container">
+              ${this.renderBlocosVisuais(rascunho)}
+            </div>
+            ` : `
             <div class="estrutura-preview-empty">
               <i data-lucide="layout" style="width:32px;height:32px;color:var(--text-disabled)"></i>
-              <p>A pré-visualização aparece após gerar a estrutura</p>
+              <p>A visualização aparece após gerar a estrutura</p>
             </div>
             `}
           </div>
         </div>
 
       </div>
-
     </div>
     `;
   },
 
-  renderVisualBlocks(rascunho) {
+  /* ----------------------------------------------------------
+     contarBlocos — conta quantos blocos foram gerados
+  ---------------------------------------------------------- */
+  contarBlocos(rascunho) {
+    const matches = rascunho.match(/###\s*BLOCO\s*\d+/gi);
+    return matches ? matches.length : 0;
+  },
+
+  /* ----------------------------------------------------------
+     renderBlocosVisuais — converte markdown em cards visuais
+  ---------------------------------------------------------- */
+  renderBlocosVisuais(rascunho) {
     if (!rascunho) return '';
 
-    // Regex para capturar blocos: ### BLOCO N: Nome do Bloco
-    const blocoRegex = /###\s*BLOCO\s*(\d+)[:\-]?\s*([^\n]+)/gi;
+    const blocoRegex = /###\s*BLOCO\s*(\d+)[:\-–]?\s*(.+?)[\r\n]+([\s\S]*?)(?=###\s*BLOCO\s*\d+|###\s*SEQUÊNCIA|$)/gi;
     const blocos = [];
     let match;
 
     while ((match = blocoRegex.exec(rascunho)) !== null) {
-      const index = match[1];
-      const nome = match[2].trim();
-      
-      // Capturar o conteúdo até o próximo bloco ou fim da sequência
-      const startIdx = match.index + match[0].length;
-      let endIdx = rascunho.indexOf('### BLOCO', startIdx);
-      if (endIdx === -1) endIdx = rascunho.indexOf('### SEQUÊNCIA', startIdx);
-      if (endIdx === -1) endIdx = rascunho.length;
-      
-      const corpo = rascunho.substring(startIdx, endIdx).trim();
-
-      // Extrair campos chave
-      const extrair = (chave) => {
-        const r = new RegExp(`[\\*\\-]?\\s*${chave}[:\\s]+[""]?(.+?)[""]?(?:\\n|$)`, 'i');
-        return corpo.match(r)?.[1]?.trim() || '';
-      };
-
       blocos.push({
-        num: index,
-        nome: nome,
-        objetivo: extrair('Objetivo'),
-        titulo: extrair('Título') || extrair('H1') || extrair('Heading'),
-        copy: extrair('Copy') || extrair('Texto'),
-        cta: extrair('CTA') || extrair('Botão'),
-        condicional: extrair('Condicional') || extrair('Regra')
+        num:   parseInt(match[1]),
+        nome:  match[2].trim(),
+        corpo: match[3].trim(),
       });
     }
 
-    if (blocos.length === 0) return `<div class="estrutura-preview-empty">Formato de rascunho inválido.</div>`;
+    if (blocos.length === 0) {
+      // Fallback: exibir texto bruto em card único
+      return `
+        <div class="bloco-visual bloco-raw">
+          <p class="bloco-raw-hint">⚠️ Formato inesperado — exibindo texto bruto</p>
+          <pre style="font-size:12px;color:var(--text-secondary);white-space:pre-wrap;line-height:1.6;">${rascunho.substring(0, 3000)}</pre>
+        </div>
+      `;
+    }
 
-    return `
-      <div class="estrutura-visual-preview">
-        ${blocos.map(b => `
-          <div class="block-card">
-            <div class="block-header">
-              <span class="block-name">Bloco ${b.num}: ${b.nome}</span>
-              ${b.condicional ? `<span class="block-badge">Condicional</span>` : ''}
-            </div>
-            <div class="block-content">
-              ${b.objetivo ? `<div class="block-row"><span class="block-label">Objetivo:</span><span class="block-value">${b.objetivo}</span></div>` : ''}
-              ${b.titulo ? `<div class="block-row"><span class="block-label">Título:</span><span class="block-value"><strong>${b.titulo}</strong></span></div>` : ''}
-              ${b.copy ? `<div class="block-row"><span class="block-label">Copy:</span><span class="block-value block-copy">"${b.copy}"</span></div>` : ''}
-              ${b.cta ? `<div class="block-cta">${b.cta}</div>` : ''}
-            </div>
+    return blocos.map(b => {
+      const extrair = (chaves, fallback = '') => {
+        for (const chave of chaves) {
+          const rx = new RegExp(`(?:${chave})\\s*[:\\-]\\s*[""]?(.+?)[""]?(?:[\\r\\n]|$)`, 'i');
+          const r  = b.corpo.match(rx);
+          if (r?.[1]?.trim()) return r[1].replace(/\*\*/g, '').trim();
+        }
+        return fallback;
+      };
+
+      const extrairBody = (chaves) => {
+        for (const chave of chaves) {
+          const rx = new RegExp(`(?:${chave})\\s*[:\\-]\\s*([\\s\\S]+?)(?=\\n\\s*-\\s*\\*\\*|\\n\\*\\*|\\n###|$)`, 'i');
+          const r  = b.corpo.match(rx);
+          if (r?.[1]?.trim()) {
+            return r[1].trim()
+              .replace(/^[-*]\s+/gm, '')
+              .replace(/\*\*/g, '')
+              .replace(/\n+/g, ' ')
+              .substring(0, 280);
+          }
+        }
+        return '';
+      };
+
+      const objetivo    = extrair(['Objetivo narrativo', 'Objetivo', 'Propósito']);
+      const titulo      = extrair(['- Título \\(H1\\)', '- Título', 'Título', 'H1', 'Headline']);
+      const subtitulo   = extrair(['- Subtítulo', 'Subtítulo', 'Subtitle']);
+      const ctaPrinc    = extrair(['- CTA Principal', '- CTA', 'CTA Principal', 'CTA']);
+      const condicional = extrair(['Condicional', 'Justificativa']);
+      const layout      = extrair(['Layout sugerido', 'Layout']);
+      const body        = extrairBody(['- Body', 'Body', '- Copy principal', 'Copy sugerida']);
+
+      const tipo = this.detectarTipoBloco(b.nome);
+
+      return `
+        <div class="bloco-visual bloco-tipo-${tipo}">
+          <div class="bloco-visual-header">
+            <span class="bloco-visual-num">${b.num}</span>
+            <span class="bloco-visual-nome">${b.nome}</span>
+            <span class="bloco-tipo-badge bloco-badge-${tipo}">${this.labelTipoBloco(tipo)}</span>
           </div>
-        `).join('')}
-      </div>
-    `;
+          <div class="bloco-visual-body">
+            ${objetivo ? `
+            <div class="bloco-row bloco-objetivo">
+              <span class="bloco-label">Objetivo</span>
+              <span class="bloco-value">${objetivo}</span>
+            </div>` : ''}
+            ${titulo ? `
+            <div class="bloco-row bloco-titulo-row">
+              <span class="bloco-label">Título</span>
+              <strong class="bloco-titulo-text">${titulo}</strong>
+            </div>` : ''}
+            ${subtitulo ? `
+            <div class="bloco-row">
+              <span class="bloco-label">Subtítulo</span>
+              <span class="bloco-value">${subtitulo}</span>
+            </div>` : ''}
+            ${body && !subtitulo ? `
+            <div class="bloco-row">
+              <span class="bloco-label">Copy</span>
+              <span class="bloco-value">${body}</span>
+            </div>` : ''}
+            ${ctaPrinc ? `
+            <div class="bloco-row bloco-cta-row">
+              <span class="bloco-label">CTA</span>
+              <span class="bloco-cta-pill">${ctaPrinc}</span>
+            </div>` : ''}
+            ${layout ? `
+            <div class="bloco-row bloco-layout-row">
+              <span class="bloco-label">Layout</span>
+              <span class="bloco-value bloco-layout-text">${layout}</span>
+            </div>` : ''}
+            ${condicional ? `
+            <div class="bloco-row bloco-condicional">
+              <span class="bloco-label">Por quê</span>
+              <span class="bloco-value">${condicional}</span>
+            </div>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
   },
 
-  // ─── Refinamento de Estrutura com IA (loop de feedback) ──────────────────
-  async refinarEstrutura() {
-    const feedbackInput = document.getElementById('estrutura-feedback-input');
-    const feedback = feedbackInput?.value?.trim();
-
-    if (!feedback) {
-      this.showToast('Descreva o que deseja ajustar antes de refinar.', 'warning');
-      feedbackInput?.focus();
-      return;
-    }
-
-    const rascunhoAtual = this.B.estrutura_rascunho || '';
-    if (!rascunhoAtual) {
-      this.showToast('Gere a estrutura primeiro antes de refinar.', 'warning');
-      return;
-    }
-
-    this.openAILog('Refinando Estrutura', [
-      { id: 1, label: 'Analisando seu feedback...' },
-      { id: 2, label: 'Ajustando estrutura e copy...' },
-      { id: 3, label: 'Atualizando pré-visualização...' },
-    ]);
-
-    this.aiLogStep(1);
-    await this.aiLogDelay(500);
-
-    const resumoBriefing = this.buildResumoBriefing();
-
-    const prompt = `Você é especialista em copywriting e estrutura de landing pages de alta conversão.
-
-## CONTEXTO
-Você gerou anteriormente a seguinte estrutura de landing page para um cliente:
-
-${rascunhoAtual}
-
-## FEEDBACK DO CLIENTE (APLICAR OBRIGATORIAMENTE)
-${feedback}
-
-## SUA TAREFA
-1. Revise a estrutura acima aplicando EXATAMENTE o que foi pedido no feedback.
-2. Mantenha a mesma formatação: ### BLOCO N: NOME DO BLOCO
-3. Mantenha todos os blocos existentes — apenas ajuste o conteúdo pedido.
-4. Não invente dados que não estão no briefing abaixo.
-5. Retorne SOMENTE a estrutura revisada, sem explicações antes ou depois.
-6. Se o feedback pedir mudança de tom, ajuste TODA a copy de acordo.
-
-## BRIEFING DO CLIENTE (referência)
-${resumoBriefing}`;
-
-    this.aiLogStep(2, 'Isso pode levar alguns segundos...');
-
-    try {
-      const res = await this.callAI(prompt);
-
-      this.aiLogStep(3);
-      await this.aiLogDelay(400);
-
-      this.setField('estrutura_rascunho', res);
-
-      this.aiLogDone();
-      await this.aiLogDelay(500);
-      this.closeAILog();
-      this.renderScreen();
-      this.showToast('Estrutura refinada! Confira o resultado.', 'success');
-    } catch (err) {
-      this.aiLogError(2, err.message || 'Erro ao refinar. Tente novamente.');
-    }
+  detectarTipoBloco(nome) {
+    const n = nome.toLowerCase();
+    if (/cabeçalho|header|nav/.test(n))             return 'header';
+    if (/hero|destaque|capa/.test(n))               return 'hero';
+    if (/como funciona|passo|etapa|processo/.test(n)) return 'steps';
+    if (/diferencial|benefício|vantagem/.test(n))   return 'features';
+    if (/plano|preço|investimento|pacote/.test(n))  return 'pricing';
+    if (/depoimento|prova|testimon/.test(n))        return 'testimonial';
+    if (/avaliação|google|review/.test(n))          return 'reviews';
+    if (/faq|pergunta|dúvida/.test(n))              return 'faq';
+    if (/localização|mapa|endereço/.test(n))        return 'map';
+    if (/instagram|feed|social/.test(n))            return 'instagram';
+    if (/contato|formulário|form/.test(n))          return 'contact';
+    if (/cta|chamada|ação final|whatsapp/.test(n))  return 'cta';
+    if (/rodapé|footer/.test(n))                    return 'footer';
+    if (/sobre|about|história/.test(n))             return 'about';
+    return 'generic';
   },
 
-  // ─── Resumo compacto do briefing para uso no prompt de refinamento ────────
-  buildResumoBriefing() {
-    const B = this.B || {};
-    return [
-      `Cliente: ${B.nome_cliente || '—'}`,
-      `Segmento: ${B.segmento || '—'}`,
-      `Serviço principal: ${B.servico_principal || '—'}`,
-      `Público-alvo: ${B.publico_alvo || '—'}`,
-      `Dor principal: ${B.dor_principal || '—'}`,
-      `Desejo principal: ${B.desejo_principal || '—'}`,
-      `Tom de comunicação: ${B.tom_comunicacao || '—'}`,
-      `Diferencial 1: ${B.diferencial1_titulo || '—'} — ${B.diferencial1_descricao || '—'}`,
-      `Diferencial 2: ${B.diferencial2_titulo || '—'} — ${B.diferencial2_descricao || '—'}`,
-      `Garantia: ${B.garantia || '—'}`,
-      `WhatsApp / CTA: ${B.whatsapp || '—'}`,
-    ].join('\n');
+  labelTipoBloco(tipo) {
+    const labels = {
+      header:      'Nav',
+      hero:        'Hero',
+      steps:       'Processo',
+      features:    'Diferenciais',
+      pricing:     'Preços',
+      testimonial: 'Prova Social',
+      reviews:     'Avaliações',
+      faq:         'FAQ',
+      map:         'Localização',
+      instagram:   'Instagram',
+      contact:     'Contato',
+      cta:         'CTA',
+      footer:      'Rodapé',
+      about:       'Sobre',
+      generic:     'Seção',
+    };
+    return labels[tipo] || 'Seção';
   },
-
-  reabrirEstrutura() {
-    this.setField('estrutura_aprovada', '');
-    this.renderScreen();
-    this.showToast('Estrutura reaberta para edição.', 'info');
-  },
-
 
   abrirEstruturaManual() {
     const template = `### BLOCO 1: Cabeçalho
-**Objetivo narrativo:** Âncora de marca e CTA sempre visível
+**Objetivo narrativo:** Âncora de marca e CTA sempre visível no scroll
 **Copy sugerida:**
-- Logo: [Nome da marca]
-- CTA: "[Falar no WhatsApp]"
+- Logo/Nome: "[Nome da marca]"
+- Menu: Serviço | Como Funciona | Depoimentos | Contato
+- CTA Header: "Agendar consulta"
+**Layout sugerido:** Logo à esquerda, nav central, CTA à direita. Sticky.
+**Condicional:** Sempre presente
 
 ---
 ### BLOCO 2: Hero — Impacto Inicial
 **Objetivo narrativo:** Capturar atenção e justificar o clique do anúncio em 3 segundos
 **Copy sugerida:**
-- Título: "[H1 focada na dor de busca]"
-- Subtítulo: "[Ampliar o benefício]"
-- CTA: "[Quero resolver isso agora]"
+- Título (H1): "[FRASE QUE ESPELHA A DOR DE BUSCA]"
+- Subtítulo: "[Ampliar o benefício em 1-2 linhas, 1ª pessoa]"
+- CTA Principal: "[Ação específica com verbo forte]"
+**Layout sugerido:** Texto à esquerda, imagem à direita. Full-width em mobile.
+**Condicional:** Sempre presente
 
 ---
-### BLOCO 3: O Serviço
-...
+### BLOCO 3: [Nome do Bloco]
+**Objetivo narrativo:** [objetivo]
+**Copy sugerida:**
+- Título: "[texto]"
+- Body: "[copy em 1ª pessoa]"
+- CTA: "[texto do botão]"
+**Layout sugerido:** [layout]
+**Condicional:** [justificativa]
 
+---
 ### SEQUÊNCIA FINAL
 1. Cabeçalho
 2. Hero
-3. O Serviço
+3. [próximos blocos]
 `;
     this.setField('estrutura_rascunho', template);
     this.renderScreen();
   },
 
 });
-
-

@@ -68,14 +68,6 @@ Object.assign(window.App, {
     const analyzeBtn = container.querySelector('#btn-analyze');
     if (analyzeBtn) analyzeBtn.addEventListener('click', () => this.runIntakeAnalysis());
 
-    // ── Botão de Teste Gerar Estrutura ────────────────────────────
-    const btnRunEstrutura = container.querySelector('#btn-run-estrutura');
-    if (btnRunEstrutura) btnRunEstrutura.addEventListener('click', () => this.runEstruturaAnalysis());
-
-    // Refinar estrutura com IA (feedback loop)
-    const btnRefinar = container.querySelector('#btn-refinar-estrutura');
-    if (btnRefinar) btnRefinar.addEventListener('click', () => this.refinarEstrutura());
-
     // Gerar protótipo visual na Review
     const btnPrototipo = container.querySelector('#btn-gerar-prototipo');
     if (btnPrototipo) btnPrototipo.addEventListener('click', () => this.gerarPrototipoVisual());
@@ -157,9 +149,17 @@ Object.assign(window.App, {
       document.getElementById('btn-approve-art');
     if (approveArtBtn) approveArtBtn.addEventListener('click', () => this.aprovarArte());
 
-    // ── Aprovar Estrutura ────────────────────────────────────
+    // ── Estrutura: Gerar ─────────────────────────────────────────
+    const runEstruturaBtn = container.querySelector('#btn-run-estrutura');
+    if (runEstruturaBtn) runEstruturaBtn.addEventListener('click', () => this.runEstruturaAnalysis());
+
+    // ── Estrutura: Aprovar ────────────────────────────────────────
     const approveEstruturaBtn = container.querySelector('#btn-approve-estrutura');
     if (approveEstruturaBtn) approveEstruturaBtn.addEventListener('click', () => this.aprovarEstrutura());
+
+    // ── Estrutura: Refinar ────────────────────────────────────────
+    const refinarEstruturaBtn = container.querySelector('#btn-refinar-estrutura');
+    if (refinarEstruturaBtn) refinarEstruturaBtn.addEventListener('click', () => this.refinarEstrutura());
   },
 
   /* ----------------------------------------------------------
@@ -670,7 +670,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       { id: 1, icon: 'file-text', label: 'Lendo briefing completo...' },
       { id: 2, icon: 'layout', label: 'Definindo blocos e ordem narrativa...' },
       { id: 3, icon: 'sparkles', label: 'Gerando copy de cada bloco...' },
-      { id: 4, icon: 'check-circle', label: 'Finalizando estrutura...' },
+      { id: 4, icon: 'check-circle', label: 'Estrutura pronta!' },
     ]);
 
     try {
@@ -687,7 +687,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
 
       this.aiLogStep(4);
       this.setField('estrutura_rascunho', resultado);
-      this.setField('estrutura_wireframe', ''); // Limpar wireframe antigo se existir
+      this.setField('estrutura_wireframe', '');
       await this.aiLogDelay(400);
 
       this.aiLogDone();
@@ -704,10 +704,12 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
   },
 
   buildEstruturaPrompt(doc1) {
-    return `
-Você é um Copywriter Sênior e Arquiteto de Conversão especializado em landing pages de alta conversão para prestadores de serviço.
+    const B = this.B || {};
 
-## DADOS DO CLIENTE — USE EXATAMENTE ESTES, NÃO INVENTE NADA
+    return `
+Você é um Copywriter Sênior e Estrategista de Conversão especializado em landing pages para prestadores de serviço no Brasil.
+
+## DADOS DO CLIENTE — USE APENAS ESTES, NUNCA INVENTE
 
 ${doc1.substring(0, 10000)}
 
@@ -715,66 +717,85 @@ ${doc1.substring(0, 10000)}
 
 ## SUA TAREFA
 
-Leia os dados acima e gere a estrutura narrativa completa da landing page.
+Gere a estrutura narrativa COMPLETA da landing page com entre 6 e 9 blocos.
 
 ---
 
-## REGRAS OBRIGATÓRIAS
+## REGRAS ABSOLUTAS — VIOLAÇÃO = RESPOSTA INVÁLIDA
 
-1. **PRIMEIRA PESSOA DO SINGULAR EM TODA A COPY** — "Eu ajudo...", "Meu método...", "Atendo...", nunca "Ela atende...", "O profissional oferece..."
-2. **H1 DO HERO = DOR DE BUSCA** — Não use o nome do serviço como H1. Use a dor ou o desejo do cliente.
-3. **CTAs ESPECÍFICOS** — Nunca "Saiba mais" ou "Entre em contato". Use "Agendar minha consulta", "Quero começar agora", etc.
-4. **APENAS BLOCOS COM DADOS REAIS** — Se não há depoimentos no briefing, não inclua bloco de depoimentos. Se não há endereço, não inclua mapa.
-5. **NARRATIVA CONECTADA** — Cada bloco prepara psicologicamente o próximo.
-6. **MÁXIMO 9 BLOCOS** incluindo cabeçalho e rodapé.
+1. **PRIMEIRA PESSOA DO SINGULAR EM TODA A COPY** — sem exceção
+   - ✅ "Eu ajudo...", "Meu método...", "Atendo...", "Transformei..."
+   - ❌ "Ela atende...", "O profissional oferece...", "Nossa equipe..."
 
----
+2. **H1 DO HERO = DOR DE BUSCA** — não o nome do serviço
+   - ✅ "Cansada de dietas que não funcionam?"
+   - ❌ "Consulta Nutricional Personalizada"
 
-## BLOCOS DISPONÍVEIS
+3. **CTAs ESPECÍFICOS** — nunca genéricos
+   - ✅ "Quero agendar minha avaliação", "Falar com a nutricionista"
+   - ❌ "Saiba mais", "Clique aqui", "Entre em contato"
 
-Use apenas os que fazem sentido com os dados disponíveis:
+4. **SÓ INCLUA BLOCOS COM DADOS REAIS**
+   - Sem depoimentos no briefing → não inclua bloco de depoimentos
+   - Sem endereço → não inclua mapa
+   - Sem Instagram confirmado → não inclua feed
 
-- Cabeçalho (sempre inclua)
-- Hero
-- Serviço Principal
-- Como Funciona
-- Diferenciais
-- Planos e Preços
-- Prova Social — Depoimentos (só se há depoimentos reais)
-- Avaliações Google (só se há perfil Google confirmado)
-- Feed Instagram (só se há @ confirmado)
-- FAQ
-- Localização + Mapa (só se há endereço autorizado)
-- CTA Final (sempre inclua antes do rodapé)
-- Rodapé (sempre inclua)
+5. **MÍNIMO 6 BLOCOS, MÁXIMO 9** — sempre incluir:
+   - Bloco 1: Cabeçalho (sempre)
+   - Bloco 2: Hero (sempre)
+   - Último bloco antes do rodapé: CTA Final (sempre)
+   - Último bloco: Rodapé (sempre)
+
+6. **NARRATIVA CONECTADA** — cada bloco prepara o próximo psicologicamente
 
 ---
 
-## FORMATO DE SAÍDA — SIGA EXATAMENTE
+## FORMATO DE SAÍDA — SIGA EXATAMENTE, SEM DESVIOS
 
-Responda APENAS com os blocos no formato abaixo. Nenhum texto antes ou depois.
+Responda APENAS com os blocos no formato abaixo. Nada antes, nada depois.
 
 ---
-### BLOCO 1: [Nome do Bloco]
-**Objetivo narrativo:** [O que este bloco faz psicologicamente e como prepara o próximo]
+### BLOCO 1: Cabeçalho
+**Objetivo narrativo:** Âncora de marca + CTA sempre visível
 **Copy sugerida:**
-- Título: "[texto exato em 1ª pessoa ou focado na dor]"
-- Subtítulo: "[texto de apoio, máx 2 linhas]"
-- CTA: "[texto do botão — específico e com verbo de ação]"
-- Body (se houver): "[copy adicional, sempre 1ª pessoa]"
-**Layout sugerido:** [o que fica à esquerda, à direita, full-width, onde vai imagem]
-**Condicional:** [qual dado do briefing justifica este bloco]
+- Logo/Nome: "[nome da marca]"
+- Menu: [itens de navegação baseados nos blocos]
+- CTA Header: "[texto do botão]"
+**Layout sugerido:** Logo à esquerda, nav central, CTA à direita. Sticky no topo.
+**Condicional:** Sempre presente
 
 ---
-### BLOCO 2: [Nome do Bloco]
-...
+### BLOCO 2: Hero — [subtítulo descritivo]
+**Objetivo narrativo:** Capturar atenção em 3 segundos e justificar o clique do anúncio
+**Copy sugerida:**
+- Título (H1): "[FRASE QUE ESPELHA A DOR DE BUSCA DO CLIENTE IDEAL]"
+- Subtítulo: "[ampliar o benefício em 1-2 linhas, 1ª pessoa]"
+- CTA Principal: "[ação específica com verbo forte]"
+- CTA Secundário (opcional): "[alternativa mais suave]"
+**Layout sugerido:** [texto à esquerda ou centralizado, onde vai a imagem]
+**Condicional:** Sempre presente
+
+---
+### BLOCO [N]: [Nome do Bloco]
+**Objetivo narrativo:** [o que este bloco alcança psicologicamente]
+**Copy sugerida:**
+- Título: "[texto]"
+- Subtítulo: "[texto, se houver]"
+- Body: "[copy principal em 1ª pessoa]"
+- CTA (se aplicável): "[texto específico]"
+**Layout sugerido:** [descrição do layout]
+**Condicional:** [por que este bloco foi incluído — qual dado do briefing justifica]
+
+---
+[CONTINUAR ATÉ O CTA FINAL E RODAPÉ]
 
 ---
 ### SEQUÊNCIA FINAL
-1. [Bloco 1]
-2. [Bloco 2]
+1. Cabeçalho
+2. Hero
+3. [próximos blocos em ordem]
 ...
-
+[último]: Rodapé
     `.trim();
   },
 
@@ -807,7 +828,7 @@ Responda APENAS com os blocos no formato abaixo. Nenhum texto antes ou depois.
 
     this.openAILog('Refinando Estrutura com IA', [
       { id: 1, icon: 'message-square', label: 'Analisando seu feedback...' },
-      { id: 2, icon: 'refresh-cw', label: 'Aplicando ajustes na copy...' },
+      { id: 2, icon: 'refresh-cw', label: 'Aplicando ajustes...' },
       { id: 3, icon: 'check-circle', label: 'Estrutura refinada!' },
     ]);
 
@@ -832,24 +853,22 @@ ${rascunhoAtual}
 
 ## SUA TAREFA
 
-Analise o feedback acima e refine a estrutura.
+Analise o feedback e refine a estrutura mantendo o formato original.
 
 REGRAS:
-1. Aplique APENAS as mudanças que o feedback pede
-2. Mantenha os blocos não mencionados EXATAMENTE como estão
+1. Aplique EXATAMENTE as mudanças pedidas no feedback
+2. Mantenha os blocos não mencionados IDÊNTICOS al original
 3. SEMPRE use 1ª pessoa do singular em toda a copy
 4. Mantenha o mesmo formato de saída (### BLOCO N: Nome)
-5. Não adicione nem remova blocos a menos que o feedback peça explicitamente
+5. Retorne a estrutura COMPLETA — todos os blocos, não só os alterados
 6. CTAs sempre específicos, nunca genéricos
-
-Retorne a estrutura COMPLETA com os ajustes aplicados, no mesmo formato.
       `.trim();
 
       this.aiLogStep(2);
       const resultado = await this.callAI(prompt);
 
       this.setField('estrutura_rascunho', resultado);
-      this.setField('estrutura_wireframe', ''); // Limpar wireframe legado
+      this.setField('estrutura_wireframe', '');
 
       if (feedbackInput) feedbackInput.value = '';
 

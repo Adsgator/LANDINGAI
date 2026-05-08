@@ -1056,95 +1056,183 @@
   background: rgba(239, 68, 68, 0.08);
 }
 
-/* ═══════════════════════════════════════════════════════════════
-   ESTRUTURA — Visualização de Blocos (New)
-   ═══════════════════════════════════════════════════════════════ */
+/* ============================================================
+   Visualização de Blocos — Estrutura LP
+   ============================================================ */
 
-.estrutura-visual-preview {
+.estrutura-blocos-container {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  padding: 12px;
-  background: var(--bg-raised);
-  border-radius: var(--r-md);
+  gap: 0.625rem;
+  max-height: 68vh;
+  overflow-y: auto;
+  padding: 0.125rem 0.25rem 0.5rem;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
+.estrutura-blocos-container::-webkit-scrollbar { width: 4px; }
+.estrutura-blocos-container::-webkit-scrollbar-track { background: transparent; }
+.estrutura-blocos-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
-.block-card {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-default);
-  border-radius: var(--r-md);
-  padding: 16px;
-  position: relative;
-  transition: transform 0.2s ease;
+/* Card de bloco */
+.bloco-visual {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: 8px;
+  padding: 0.875rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
-
-.block-card:hover {
+.bloco-visual:hover {
   border-color: var(--accent);
-  transform: translateX(4px);
+  box-shadow: 0 0 0 1px rgba(0,229,160,0.08);
 }
 
-.block-header {
+/* Cores por tipo */
+.bloco-tipo-hero        { border-left-color: var(--accent2, #a78bfa); }
+.bloco-tipo-cta         { border-left-color: var(--accent, #00e5a0); }
+.bloco-tipo-testimonial { border-left-color: #f59e0b; }
+.bloco-tipo-pricing     { border-left-color: #10b981; }
+.bloco-tipo-steps       { border-left-color: #3b82f6; }
+.bloco-tipo-features    { border-left-color: #8b5cf6; }
+.bloco-tipo-faq         { border-left-color: #6366f1; }
+.bloco-tipo-header,
+.bloco-tipo-footer      { border-left-color: var(--text-disabled); }
+
+/* Header do bloco */
+.bloco-visual-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 12px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 0.5rem;
+  margin-bottom: 0.625rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border);
 }
-
-.block-name {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-}
-
-.block-badge {
+.bloco-visual-num {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #031a10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 10px;
-  padding: 2px 6px;
-  background: var(--bg-overlay);
-  border-radius: var(--r-xs);
-  color: var(--text-tertiary);
-}
-
-.block-content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.block-row {
-  display: flex;
-  gap: 8px;
-  font-size: 12px;
-}
-
-.block-label {
   font-weight: 700;
-  color: var(--text-secondary);
-  min-width: 60px;
+  flex-shrink: 0;
 }
-
-.block-value {
+.bloco-visual-nome {
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text-primary);
   flex: 1;
+  line-height: 1.3;
 }
-
-.block-copy {
-  font-style: italic;
-  color: var(--accent2);
+.bloco-tipo-badge {
+  font-size: 9.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 2px 7px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.05);
+  color: var(--text-disabled);
+  border: 1px solid var(--border);
+  flex-shrink: 0;
 }
+.bloco-badge-hero        { color: var(--accent2); border-color: var(--accent2); background: rgba(167,139,250,0.08); }
+.bloco-badge-cta         { color: var(--accent);  border-color: var(--accent);  background: rgba(0,229,160,0.08); }
+.bloco-badge-testimonial { color: #f59e0b; border-color: #f59e0b; background: rgba(245,158,11,0.08); }
+.bloco-badge-pricing     { color: #10b981; border-color: #10b981; background: rgba(16,185,129,0.08); }
+.bloco-badge-steps       { color: #3b82f6; border-color: #3b82f6; background: rgba(59,130,246,0.08); }
+.bloco-badge-features    { color: #8b5cf6; border-color: #8b5cf6; background: rgba(139,92,246,0.08); }
 
-.block-cta {
-  display: inline-block;
-  margin-top: 8px;
-  padding: 4px 10px;
-  background: var(--accent);
-  color: white;
-  border-radius: var(--r-sm);
-  font-size: 11px;
+/* Body do bloco */
+.bloco-visual-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.bloco-row {
+  display: grid;
+  grid-template-columns: 68px 1fr;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+.bloco-label {
+  font-size: 9.5px;
   font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-disabled);
+  padding-top: 2px;
+  flex-shrink: 0;
+}
+.bloco-value {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.bloco-objetivo .bloco-value {
+  font-style: italic;
+  font-size: 12px;
+  color: var(--text-disabled);
+}
+.bloco-titulo-text {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+.bloco-cta-row { align-items: center; }
+.bloco-cta-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  background: rgba(0,229,160,0.1);
+  border: 1px solid rgba(0,229,160,0.25);
+  border-radius: 99px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.bloco-layout-text {
+  font-size: 11.5px;
+  font-style: italic;
+}
+.bloco-condicional .bloco-value { font-size: 11.5px; color: var(--text-disabled); }
+
+/* Fallback raw */
+.bloco-raw { border-style: dashed; }
+.bloco-raw-hint {
+  font-size: 11px;
+  color: var(--warning);
+  margin-bottom: 0.5rem;
+}
+
+/* Preview empty */
+.estrutura-preview-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 3rem 1rem;
+  text-align: center;
+  color: var(--text-disabled);
+  font-size: 13px;
+}
+
+/* Badge de contagem de blocos */
+.estrutura-preview-badge {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(0,229,160,0.1);
+  color: var(--accent);
+  border: 1px solid rgba(0,229,160,0.2);
 }
 
 /* Animação de spin para ícone de loading */

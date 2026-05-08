@@ -11,6 +11,10 @@ Object.assign(window.App, {
 
     return `
     <div class="estrutura-screen">
+      <div class="estrutura-header">
+        <h2 class="estrutura-title">Estrutura da Landing Page</h2>
+        <p class="estrutura-subtitle">Defina a narrativa e os blocos de conteúdo da sua página.</p>
+      </div>
 
       ${aprovada ? `
       <div class="aprovado-banner">
@@ -22,102 +26,94 @@ Object.assign(window.App, {
       </div>
       ` : ''}
 
-      <div class="estrutura-layout">
+      <div class="estrutura-main">
+        <!-- 1. Card: Gerar com IA -->
+        <div class="estrutura-section-card">
+          <div class="estrutura-section-header">
+            <i data-lucide="sparkles" style="width:15px;height:15px;color:var(--accent2)"></i>
+            <span class="estrutura-section-title">Gerar com IA</span>
+          </div>
+          <p class="estrutura-section-desc">
+            A IA lê o briefing completo e define blocos, copy em 1ª pessoa e ordem narrativa.
+          </p>
+          <button class="btn-primary" id="btn-run-estrutura" ${aprovada ? 'disabled' : ''}>
+            <i data-lucide="cpu" style="width:15px;height:15px"></i>
+            ${rascunho && !aprovada ? 'Gerar Novamente' : 'Gerar Estrutura'}
+          </button>
+          <button class="btn-ghost btn-sm" style="margin-top:8px" onclick="App.abrirEstruturaManual()" ${aprovada ? 'disabled' : ''}>
+            <i data-lucide="edit-3" style="width:13px;height:13px"></i>
+            Preencher manualmente
+          </button>
+        </div>
 
-        <!-- ── COLUNA ESQUERDA: controles ─────────────────────── -->
-        <div class="estrutura-col-controls">
+        <!-- 2. Card: Rascunho em Markdown -->
+        ${rascunho ? `
+        <div class="estrutura-section-card">
+          <div class="estrutura-section-header">
+            <i data-lucide="file-text" style="width:15px;height:15px;color:var(--text-secondary)"></i>
+            <span class="estrutura-section-title">Rascunho Markdown</span>
+          </div>
+          <p class="estrutura-section-desc">
+            Edite diretamente se quiser ajustar algo pontual.
+          </p>
+          <textarea
+            class="field-textarea estrutura-textarea"
+            data-field="estrutura_rascunho"
+            rows="10"
+            style="min-height: 200px;"
+            ${aprovada ? 'disabled' : ''}
+          >${rascunho}</textarea>
+          ${!aprovada ? `
+          <button class="btn-primary" style="margin-top:12px;width:100%" id="btn-approve-estrutura">
+            <i data-lucide="check" style="width:15px;height:15px"></i>
+            Aprovar Estrutura
+          </button>
+          ` : ''}
+        </div>
+        ` : ''}
 
-          <!-- Card: Gerar com IA -->
-          <div class="estrutura-section-card">
-            <div class="estrutura-section-header">
-              <i data-lucide="sparkles" style="width:15px;height:15px;color:var(--accent2)"></i>
-              <span class="estrutura-section-title">Gerar com IA</span>
-            </div>
-            <p class="estrutura-section-desc">
-              A IA lê o briefing completo e define blocos, copy em 1ª pessoa e ordem narrativa.
-            </p>
-            <button class="btn-primary" id="btn-run-estrutura" ${aprovada ? 'disabled' : ''}>
-              <i data-lucide="cpu" style="width:15px;height:15px"></i>
-              ${rascunho && !aprovada ? 'Gerar Novamente' : 'Gerar Estrutura'}
-            </button>
-            <button class="btn-ghost btn-sm" style="margin-top:8px" onclick="App.abrirEstruturaManual()" ${aprovada ? 'disabled' : ''}>
-              <i data-lucide="edit-3" style="width:13px;height:13px"></i>
-              Preencher manualmente
-            </button>
+        <!-- 3. Card: Visualização dos Blocos -->
+        <div class="estrutura-section-card estrutura-preview-card">
+          <div class="estrutura-section-header">
+            <i data-lucide="layout-template" style="width:15px;height:15px;color:var(--text-secondary)"></i>
+            <span class="estrutura-section-title">Visualização dos Blocos</span>
+            ${rascunho ? `<span class="estrutura-preview-badge">${this.contarBlocos(rascunho)} blocos</span>` : ''}
           </div>
 
-          <!-- Card: Rascunho em Markdown -->
           ${rascunho ? `
-          <div class="estrutura-section-card">
-            <div class="estrutura-section-header">
-              <i data-lucide="file-text" style="width:15px;height:15px;color:var(--text-secondary)"></i>
-              <span class="estrutura-section-title">Rascunho</span>
-            </div>
-            <p class="estrutura-section-desc">
-              Edite diretamente se quiser ajustar algo pontual, ou use o campo de refinamento abaixo.
-            </p>
-            <textarea
-              class="field-textarea estrutura-textarea"
-              data-field="estrutura_rascunho"
-              rows="14"
-              ${aprovada ? 'disabled' : ''}
-            >${rascunho}</textarea>
-            ${!aprovada ? `
-            <button class="btn-primary" style="margin-top:12px;width:100%" id="btn-approve-estrutura">
-              <i data-lucide="check" style="width:15px;height:15px"></i>
-              Aprovar Estrutura
-            </button>
-            ` : ''}
+          <div class="estrutura-blocos-container">
+            ${this.renderBlocosVisuais(rascunho)}
           </div>
-          ` : ''}
-
-          <!-- Card: Refinar com IA -->
-          ${rascunho && !aprovada ? `
-          <div class="estrutura-section-card estrutura-feedback-card">
-            <div class="estrutura-section-header">
-              <i data-lucide="message-square" style="width:15px;height:15px;color:var(--accent)"></i>
-              <span class="estrutura-section-title">Refinar com IA</span>
-            </div>
-            <p class="estrutura-section-desc">
-              Não gostou de algo? Descreva e a IA ajusta mantendo o briefing. Pode pedir várias vezes.
-            </p>
-            <textarea
-              class="field-textarea"
-              id="estrutura-feedback-input"
-              rows="4"
-              placeholder="Ex: O Hero ficou muito técnico, quero mais direto e urgente. O CTA deve citar o WhatsApp..."
-            ></textarea>
-            <button class="btn-primary" id="btn-refinar-estrutura" style="margin-top:10px;width:100%">
-              <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
-              Refinar com IA
-            </button>
+          ` : `
+          <div class="estrutura-preview-empty">
+            <i data-lucide="layout" style="width:32px;height:32px;color:var(--text-disabled)"></i>
+            <p>A visualização aparece após gerar a estrutura</p>
           </div>
-          ` : ''}
-
+          `}
         </div>
 
-        <!-- ── COLUNA DIREITA: visualização dos blocos ─────────── -->
-        <div class="estrutura-col-preview">
-          <div class="estrutura-section-card estrutura-preview-card">
-            <div class="estrutura-section-header">
-              <i data-lucide="layout-template" style="width:15px;height:15px;color:var(--text-secondary)"></i>
-              <span class="estrutura-section-title">Visualização dos Blocos</span>
-              ${rascunho ? `<span class="estrutura-preview-badge">${this.contarBlocos(rascunho)} blocos</span>` : ''}
-            </div>
-
-            ${rascunho ? `
-            <div class="estrutura-blocos-container">
-              ${this.renderBlocosVisuais(rascunho)}
-            </div>
-            ` : `
-            <div class="estrutura-preview-empty">
-              <i data-lucide="layout" style="width:32px;height:32px;color:var(--text-disabled)"></i>
-              <p>A visualização aparece após gerar a estrutura</p>
-            </div>
-            `}
+        <!-- 4. Card: Refinar com IA -->
+        ${rascunho && !aprovada ? `
+        <div class="estrutura-section-card estrutura-feedback-card">
+          <div class="estrutura-section-header">
+            <i data-lucide="message-square" style="width:15px;height:15px;color:var(--accent)"></i>
+            <span class="estrutura-section-title">Refinar com IA</span>
           </div>
+          <p class="estrutura-section-desc">
+            Descreva os ajustes e a IA atualizará os blocos acima.
+          </p>
+          <textarea
+            class="field-textarea"
+            id="estrutura-feedback-input"
+            rows="4"
+            placeholder="Ex: O Hero ficou muito técnico, quero mais direto e urgente..."
+          ></textarea>
+          <button class="btn-primary" id="btn-refinar-estrutura" style="margin-top:10px;width:100%">
+            <i data-lucide="refresh-cw" style="width:14px;height:14px"></i>
+            Refinar com IA
+          </button>
         </div>
-
+        ` : ''}
       </div>
     </div>
     `;

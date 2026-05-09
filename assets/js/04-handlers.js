@@ -1982,7 +1982,7 @@ Sem placeholders, pronto para npm install + npm run dev.
         }
       }
 
-      throw new Error('Não foi possível parsear JSON. Formato inválido.');
+      throw new Error('Não foi possível parsear JSON. Formato inválido. Conteúdo: ' + jsonString.substring(0, 500) + '...');
     }
   },
 });

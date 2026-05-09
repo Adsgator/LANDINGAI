@@ -1958,31 +1958,55 @@ Sem placeholders, pronto para npm install + npm run dev.
   },
 
   robustParseJSON(jsonString) {
+    // Primeira tentativa: parsear diretamente
     try {
-      // 1. Tenta parsear diretamente
       return JSON.parse(jsonString);
     } catch (e) {
-      // 2. Tenta extrair de bloco de código markdown
-      const markdownMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
-      if (markdownMatch && markdownMatch[1]) {
-        try {
-          return JSON.parse(markdownMatch[1]);
-        } catch (e2) {
-          // Ignora, tenta a próxima abordagem
-        }
-      }
-
-      // 3. Tenta extrair o primeiro objeto JSON
-      const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
-      if (jsonMatch && jsonMatch[0]) {
-        try {
-          return JSON.parse(jsonMatch[0]);
-        } catch (e3) {
-          // Ignora, lança erro no final
-        }
-      }
-
-      throw new Error('Não foi possível parsear JSON. Formato inválido. Conteúdo: ' + jsonString.substring(0, 500) + '...');
+      // Ignorar, tentar abordagens mais robustas
     }
+
+    // Tenta extrair de bloco de código markdown
+    const markdownMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
+    if (markdownMatch && markdownMatch[1]) {
+      try {
+        return JSON.parse(markdownMatch[1]);
+      } catch (e2) {
+        // Ignorar, tentar a próxima abordagem
+      }
+    }
+
+    // Limpeza agressiva: tenta encontrar o primeiro { e o último }
+    let cleanedString = jsonString;
+    const firstBrace = cleanedString.indexOf('{');
+    const lastBrace = cleanedString.lastIndexOf('}');
+
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      cleanedString = cleanedString.substring(firstBrace, lastBrace + 1);
+
+      // Tenta remover comentários de linha (//) e comentários de bloco (/* */)
+      cleanedString = cleanedString.replace(/\/\/[^\n\r]*/g, ''); // Remove // comments
+      cleanedString = cleanedString.replace(/\/\*[\s\S]*?\*\//g, ''); // Remove /* */ comments
+
+      // Tenta remover trailing commas (vírgulas no final de objetos ou arrays)
+      cleanedString = cleanedString.replace(/,(\s*[}\]])/g, '$1');
+
+      try {
+        return JSON.parse(cleanedString);
+      } catch (e3) {
+        // Ignorar, lançar erro no final
+      }
+    }
+
+    // Fallback: tentar extrair o primeiro objeto JSON (abordagem original)
+    const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
+    if (jsonMatch && jsonMatch[0]) {
+      try {
+        return JSON.parse(jsonMatch[0]);
+      } catch (e3) {
+        // Ignora, lança erro no final
+      }
+    }
+
+    throw new Error('Não foi possível parsear JSON. Formato inválido. Conteúdo: ' + jsonString.substring(0, 500) + '...');
   },
 });

@@ -64,7 +64,7 @@ Object.assign(window.App, {
   },
 
   /**
-   * Navegar para o módulo Google Ads
+   * Navegar para o módulo Google Ads (integrado ao sistema)
    */
   handleGoogleAdsClick() {
     // Verificar se tem estrutura gerada
@@ -75,31 +75,9 @@ Object.assign(window.App, {
       return;
     }
 
-    // Preparar contexto para o módulo
-    this.prepareGAContext();
-
-    // Feedback visual
-    Loader.show('🚀 Carregando módulo Google Ads...');
-    
-    setTimeout(() => {
-      window.location.href = './modules/google-ads/index.html?lp=current';
-    }, 800);
-  },
-
-  /**
-   * Passar contexto da LP para GA via localStorage
-   */
-  prepareGAContext() {
-    const context = {
-      projectId: this.state.activeId,
-      projectName: this.P.name,
-      briefing: this.B,
-      structure: this.B.estrutura_lp,
-      lpUrl: this.B.slug ? `https://lp.adsgator.com.br/${this.B.slug}` : '',
-      timestamp: new Date().toISOString()
-    };
-    
-    localStorage.setItem('ga_context', JSON.stringify(context));
+    // Navegar para tela Google Ads dentro do sistema
+    this.gaState.isManualMode = false;
+    this.goToScreen('google-ads');
   },
 
   /**
@@ -107,10 +85,8 @@ Object.assign(window.App, {
    */
   confirmManualMode() {
     this.closeModal('modal-manual-mode');
-    Loader.show('🚀 Abrindo Modo Manual...');
-    setTimeout(() => {
-      window.location.href = './modules/google-ads/index.html?mode=manual';
-    }, 800);
+    this.gaState.isManualMode = true;
+    this.goToScreen('google-ads');
   }
 });
 

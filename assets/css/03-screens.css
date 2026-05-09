@@ -1939,3 +1939,417 @@ button:disabled:hover {
   border-radius: var(--r-pill);
   border: 1px solid var(--border-subtle);
 }
+
+/* ── Google Ads Screen ─────────────────────────────────────── */
+.ga-screen {
+  max-width: 860px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.ga-screen-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ga-screen-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ga-screen-desc {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.ga-context-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--r-pill);
+  font-size: 12px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.ga-context-ok {
+  background: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  color: var(--accent);
+}
+
+.ga-context-pending {
+  background: var(--bg-overlay);
+  border: 1px solid var(--border-default);
+  color: var(--text-tertiary);
+}
+
+.ga-manual-banner {
+  background: var(--accent2-dim, rgba(99, 102, 241, 0.05));
+  border: 1px solid var(--accent2-border, rgba(99, 102, 241, 0.2));
+  border-radius: var(--r-md);
+  padding: 16px 20px;
+}
+
+.ga-manual-banner-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent2);
+}
+
+.ga-form-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.ga-form-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.ga-form-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ga-form-card-body {
+  padding: 20px;
+}
+
+.ga-generate-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 20px;
+  background: var(--bg-raised);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  text-align: center;
+}
+
+.btn-xl {
+  font-size: 15px;
+  padding: 14px 32px;
+  gap: 10px;
+}
+
+.btn-xl i {
+  width: 18px;
+  height: 18px;
+}
+
+.ga-action-hint {
+  font-size: 12px;
+  color: var(--text-tertiary);
+  max-width: 400px;
+}
+
+/* Result Screen */
+.ga-result-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.ga-analysis-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.ga-analysis-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ga-analysis-header h3 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.ga-analysis-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ga-analysis-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ga-analysis-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+}
+
+.ga-analysis-item p {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Campaigns */
+.ga-campaigns-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ga-campaigns-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.ga-campaigns-count {
+  margin-left: auto;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  background: var(--bg-overlay);
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+}
+
+.ga-campaign-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.ga-campaign-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.ga-campaign-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ga-campaign-info h3 {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+}
+
+.ga-badge {
+  display: inline-flex;
+  padding: 2px 10px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.ga-campaign-budget {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent2);
+}
+
+.ga-campaign-budget span {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.ga-campaign-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ga-adgroup-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.ga-adgroup-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ga-adgroup-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ga-kw-title, .ga-ads-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.ga-kw-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ga-kw-chip {
+  display: inline-flex;
+  padding: 3px 10px;
+  border-radius: var(--r-pill);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.ga-kw-pos {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+
+.ga-kw-neg {
+  background: rgba(239, 68, 68, 0.08);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Ad Preview (Google-style) */
+.ga-ad-preview {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ga-ad-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 4px;
+}
+
+.ga-ad-url {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.ga-ad-headline {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a0dab;
+  line-height: 1.3;
+}
+
+.ga-ad-description {
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.ga-ad-cta {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 4px;
+}
+
+/* Sidebar GA button active state */
+.sidebar-btn.active {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+
+.sidebar-btn.active i {
+  color: var(--accent);
+}
+
+/* Back to LandingAI button */
+.btn-back-lp {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-tertiary);
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  transition: all var(--t-base);
+  margin-bottom: 4px;
+}
+
+.btn-back-lp:hover {
+  color: var(--accent);
+  background: var(--accent-dim);
+}

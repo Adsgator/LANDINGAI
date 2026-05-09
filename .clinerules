@@ -18,7 +18,7 @@ Se a task disser "faça X" mas as regras dizem "não faça X", siga as regras.
 
 - Nome: AIGator
 - Módulo ativo: LandingAI — Gerador de Fichas de Implementação para Landing Pages
-- Módulo planejado (NÃO IMPLEMENTADO): google-ads
+- Módulo ativo: Google Ads — Gerador de Campanhas (integrado ao SPA)
 - Stack: Vanilla JS Modular (Browser-only, sem Node.js runtime)
 - Abre como: arquivo local — index.html no Chrome/Edge. Sem servidor.
 - Frameworks: Nenhum. Bibliotecas: Lucide, Canvas-confetti.
@@ -40,8 +40,9 @@ assets/js/
       ├── step.js         → buildStep1() a buildStep8()
       ├── art.js          → buildArtScreen(), runArtAnalysis()
       ├── estrutura.js    → renderEstrutura(), gerarWireframeHTML()
-      └── review.js       → buildReviewScreen(), buildDoc1(), generateDocImpl()
-      ├── structure.js    → Delegador (SEM LÓGICA PRÓPRIA)
+      ├── review.js       → buildReviewScreen(), buildDoc1(), generateDocImpl()
+      ├── google-ads.js   → buildGoogleAdsScreen(), generateGAStrategy(), exportGAtoCSV()
+      └── structure.js    → Delegador (SEM LÓGICA PRÓPRIA)
 
 assets/css/        → Estilos modulares:
   ├── 00-vars.css  → Design tokens, reset, variáveis CSS
@@ -50,7 +51,7 @@ assets/css/        → Estilos modulares:
   ├── 03-screens.css → Estilos por tela (intake, steps, arte, estrutura, review)
   └── 04-system.css → AI Log, toasts, animações
 
-modules/           → Pasta de módulos futuros (Google Ads planejado)
+modules/           → Módulo Google Ads legado (referência, NÃO MAIS USADO)
 ```
 
 ---
@@ -67,7 +68,7 @@ modules/           → Pasta de módulos futuros (Google Ads planejado)
 3. **MODULARIDADE:** NUNCA unifique os módulos. Mantenha a separação de responsabilidades.
 4. **ORDEM DE DEPENDÊNCIA:** Scripts no index.html seguem ordem rígida:
    ```
-   window.App = {} → 00-config → 01-state → 02-api → screens/ → 03-ui → 04-handlers → app.js
+   window.App = {} → 00-config → 01-state → 02-api → screens/ (incluindo google-ads.js) → 03-ui → 04-handlers → app.js
    ```
    Se alterar, tudo quebra.
 5. **SEM BUNDLERS:** Não utilize "require" ou "import". Use script tags e window.App.
@@ -252,26 +253,27 @@ modules/           → Pasta de módulos futuros (Google Ads planejado)
 
 ---
 
-## 10. MÓDULO GOOGLE ADS — QUANDO CHEGAR A HORA
+## 10. MÓDULO GOOGLE ADS — INTEGRADO AO SPA
 
-O módulo google-ads está planejado mas **NÃO deve ser implementado ainda**.
+O módulo Google Ads agora é uma **tela integrada** ao SPA principal.
 
-### QUANDO FOR HORA DE IMPLEMENTAR:
+### ARQUITETURA ATUAL:
 
-1. Criar estrutura SEPARADA:
-   ```
-   modules/google-ads/
-   ├── index.html (página separada do LandingAI)
-   ├── assets/css/ (00-vars.css + google-ads.css)
-   └── assets/js/ (00-config, screens/, app.js)
-   ```
+1. A tela é renderizada por `buildGoogleAdsScreen()` em `screens/google-ads.js`
+2. O estado vive em `App.gaState` (não usa localStorage separado)
+3. A navegação é via `App.goToScreen('google-ads')`
+4. A geração usa `App.callAI()` (API unificada)
+5. Export CSV usa `App.exportGAtoCSV()`
+6. Botão "Voltar para LandingAI" no header retorna ao briefing
 
-2. NUNCA TOCAR no LandingAI durante implementação do Google Ads:
-   - ✅ Pode: adicionar campos em `google-ads/`
-   - ✅ Pode: usar mesmas APIs (`00-config.js` compartilhado)
-   - 🚫 Não pode: alterar `assets/js/` do LandingAI
-   - 🚫 Não pode: alterar `index.html` do LandingAI
-   - 🚫 Não pode: mover código entre módulos
+### REGRAS:
+
+- ✅ SEMPRE navegar via goToScreen (nunca redirect)
+- ✅ SEMPRE usar App.callAI para chamadas de IA
+- ✅ SEMPRE usar App.showToast para feedback
+- 🚫 NUNCA redirecionar para modules/google-ads/index.html
+- 🚫 NUNCA usar Toast.success(), Loader.show() globais (não existem)
+- 🚫 NUNCA acessar localStorage diretamente para dados do GA
 
 ---
 
@@ -329,4 +331,4 @@ O módulo google-ads está planejado mas **NÃO deve ser implementado ainda**.
 ---
 
 **Status:** Pronto para produção  
-**Última atualização:** 2026-05-08 (Unified API v2)
+**Última atualização:** 2026-05-09 (Google Ads integrado ao SPA + Auditoria completa)

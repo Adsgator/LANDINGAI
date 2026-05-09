@@ -48,11 +48,13 @@ Object.assign(window.App, {
       case 'art': content.innerHTML = this.buildArtScreen(); break;
       case 'structure': content.innerHTML = this.buildStructureScreen(); break;
       case 'review': content.innerHTML = this.buildReviewScreen(); break;
+      case 'google-ads': content.innerHTML = this.buildGoogleAdsScreen(); break;
       default: content.innerHTML = ''; break;
     }
 
     lucide.createIcons({ nodes: [content] });
     this.bindScreenEvents(content);
+    if (this.state.screen === 'google-ads') this.bindGAEvents(content);
     this.renderBottombar();
     this.updateTopbar();
 
@@ -87,6 +89,9 @@ Object.assign(window.App, {
     } else if (this.state.screen === 'review') {
       title.textContent = 'Revisão Final';
       subtitle.textContent = 'Pronto para gerar documentação';
+    } else if (this.state.screen === 'google-ads') {
+      title.textContent = 'Google Ads';
+      subtitle.textContent = 'Gerador de campanhas inteligente';
     }
 
     // Barra de progresso
@@ -130,6 +135,12 @@ Object.assign(window.App, {
     if (apiLabel) apiLabel.textContent = hasKey
       ? `${keys.length} API${keys.length > 1 ? 's' : ''} ativa${keys.length > 1 ? 's' : ''}`
       : 'Sem API';
+
+    // Google Ads button active state
+    const gaBtn = document.getElementById('btn-google-ads');
+    if (gaBtn) {
+      gaBtn.classList.toggle('active', this.state.screen === 'google-ads');
+    }
   },
 
   calcGlobalScore() {
@@ -248,11 +259,11 @@ Object.assign(window.App, {
     const { screen, currentStep } = this.state;
 
     if (prev) {
-      prev.style.visibility = screen === 'intake' ? 'hidden' : 'visible';
+      prev.style.visibility = (screen === 'intake' || screen === 'google-ads') ? 'hidden' : 'visible';
       prev.onclick = () => this.goPrev();
     }
     if (next) {
-      if (screen === 'review') {
+      if (screen === 'review' || screen === 'google-ads') {
         next.style.display = 'none';
       } else {
         next.style.display = '';

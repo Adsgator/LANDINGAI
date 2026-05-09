@@ -762,6 +762,18 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
     this.showToast('Direção de Arte gerada! Revise e aprove.', 'success');
   },
 
+  aprovarArte() {
+    const B = this.B || {};
+    if (!B.ficha_direcao_arte) {
+      this.showToast('Gere a direção de arte primeiro.', 'warning');
+      return;
+    }
+    this.setField('arte_ficha_aprovada', B.ficha_direcao_arte);
+    this.showToast('Direção de Arte aprovada!', 'success');
+    this.closeModal('modal-art-result');
+    this.renderScreen();
+  },
+
   async runEstruturaAnalysis() {
     return this.gerarEstrutura();
   },

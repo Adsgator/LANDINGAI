@@ -291,13 +291,13 @@ Object.assign(window.App, {
               Gerar com IA
             </button>
             <button id="btn-approve-art-manual" class="btn-secondary"
-              style="display:${(B.arte_cor_principal && B.arte_fonte_principal) ? '' : 'none'}">
+              style="display:${(B.arte_cor_principal || B.arte_fonte_principal) ? '' : 'none'}">
               <i data-lucide="check" style="width:16px;height:16px"></i>
               Aprovar Direção Manualmente
             </button>
           </div>
           <p class="art-manual-hint" style="font-size:11.5px;color:var(--text-tertiary);margin-top:8px;text-align:center;">
-            ${!(B.arte_cor_principal && B.arte_fonte_principal) ? 'Preencha Cor Principal e Fonte Título para aprovar sem IA.' : 'Campos preenchidos — você pode aprovar sem usar a IA.'}
+            ${!(B.arte_cor_principal || B.arte_fonte_principal) ? 'Preencha Cor Principal ou Fonte Título para aprovar sem IA.' : 'Campos detectados — você pode aprovar sem usar a IA.'}
           </p>
 
         </div>

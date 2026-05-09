@@ -13,14 +13,21 @@ Object.assign(window.App, {
     // ── Inputs de texto e textarea ──────────────────────────
     container.querySelectorAll('input[data-field], textarea[data-field]').forEach(el => {
       el.addEventListener('input', () => {
-        this.setField(el.dataset.field, el.value);
+        const field = el.dataset.field;
+        this.setField(field, el.value);
+        
         // Atualiza preview do WhatsApp em tempo real
-        if (el.dataset.field === 'whatsapp') {
+        if (field === 'whatsapp') {
           const preview = container.querySelector('#wa-preview');
           if (preview) {
             preview.style.display = el.value ? '' : 'none';
             preview.textContent = el.value ? `wa.me/${el.value}` : '';
           }
+        }
+
+        // Se for campo de arte, forçar re-render para mostrar botão de aprovação manual
+        if (['arte_cor_principal', 'arte_fonte_principal'].includes(field)) {
+          this.renderScreen(true);
         }
       });
     });
@@ -138,9 +145,15 @@ Object.assign(window.App, {
     // ── Color pickers ────────────────────────────────────────
     container.querySelectorAll('input[type="color"][data-field]').forEach(picker => {
       picker.addEventListener('input', () => {
-        const textInput = container.querySelector(`input[type="text"][data-field="${picker.dataset.field}"]`);
+        const field = picker.dataset.field;
+        const textInput = container.querySelector(`input[type="text"][data-field="${field}"]`);
         if (textInput) textInput.value = picker.value;
-        this.setField(picker.dataset.field, picker.value);
+        this.setField(field, picker.value);
+
+        // Se for cor principal, forçar re-render para o botão manual aparecer
+        if (field === 'arte_cor_principal') {
+          this.renderScreen(true);
+        }
       });
     });
 

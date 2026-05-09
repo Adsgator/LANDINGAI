@@ -123,6 +123,18 @@ Object.assign(window.App, {
       `;
     }
 
+    if (!this.hasArteMinima()) {
+      alertaHTML += `
+        <div class="review-pending-alert" style="border-color:var(--accent2-border);background:var(--accent2-dim);margin-top:12px;">
+          <i data-lucide="palette" style="width:15px;height:15px;color:var(--accent2)"></i>
+          <span style="color:var(--accent2)">Identidade visual não definida. Preencha cores e fonte na <strong>Direção de Arte</strong> para exportar o DOC-1.</span>
+          <button class="btn-ghost btn-sm" onclick="App.goToScreen('art')">
+            Ir para Arte →
+          </button>
+        </div>
+      `;
+    }
+
     return `
     ${alertaHTML}
     <div class="review-screen">
@@ -141,6 +153,43 @@ Object.assign(window.App, {
           </div>
           <div class="review-score-sub">${score < 100 ? 'Preencha os campos obrigatórios para atingir 100%.' : 'Briefing completo e pronto para geração!'}</div>
         </div>
+      </div>
+
+      <div class="review-score-breakdown" style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;">
+        ${[
+          {
+            label: 'Identidade Visual',
+            fields: ['arte_cor_principal', 'arte_fonte_principal', 'arte_tema', 'arte_intensidade'],
+            icon: 'palette',
+          },
+          {
+            label: 'Autoridade',
+            fields: ['anos_experiencia', 'formacao'],
+            icon: 'award',
+          },
+          {
+            label: 'Prova Social',
+            fields: ['depoimento_1_nome', 'depoimento_1_texto', 'instagram'],
+            icon: 'star',
+          },
+          {
+            label: 'Rastreamento',
+            fields: ['gtm_id'],
+            icon: 'bar-chart-2',
+          },
+        ].map(cat => {
+          const filled = cat.fields.filter(f => !!(this.B || {})[f]).length;
+          const total = cat.fields.length;
+          const pct = Math.round((filled / total) * 100);
+          const color = pct === 100 ? 'var(--accent)' : pct === 0 ? 'var(--danger)' : 'var(--warning)';
+          return `
+            <div style="display:flex;align-items:center;gap:6px;font-size:11px;padding:4px 10px;border-radius:var(--r-pill);border:1px solid var(--border-default);background:var(--bg-raised);">
+              <i data-lucide="${cat.icon}" style="width:12px;height:12px;color:${color}"></i>
+              <span style="color:var(--text-secondary)">${cat.label}</span>
+              <span style="font-family:var(--font-mono);font-size:10px;color:${color};font-weight:600">${filled}/${total}</span>
+            </div>
+          `;
+        }).join('')}
       </div>
 
       ${checklist}
@@ -285,7 +334,7 @@ Object.assign(window.App, {
              </div>
              <div class="doc1-body">
                 <p>O DOC-1 é a versão textual organizada de tudo que foi coletado. Útil para documentação e aprovação do cliente.</p>
-                <button id="btn-download-doc1" class="btn-primary btn-sm" title="Baixe este documento e copie para Claude, Gemini ou sua IA preferida">
+                <button id="btn-download-doc1" class="btn-primary btn-sm" title="Baixe este documento e copie para Claude, Gemini ou sua IA preferida" ${!this.hasArteMinima() ? 'disabled' : ''}>
                   <i data-lucide="download"></i>
                   Baixar DOC-1 (Para IA Externa)
                 </button>
@@ -363,6 +412,32 @@ Object.assign(window.App, {
     const stepsResumo = stepsInfo
       .map(s => `Step ${s.num} (${s.titulo}): ${s.campos}/${s.total} campos`)
       .join('\n');
+
+    // Lógica de fallback para Direção de Arte
+    let arteInfo = '';
+    if (B.ficha_direcao_arte) {
+      const f = typeof B.ficha_direcao_arte === 'object' ? B.ficha_direcao_arte : JSON.parse(B.ficha_direcao_arte);
+      arteInfo = `
+DIREÇÃO DE ARTE (IA):
+- Tema: ${f.tema || '—'}
+- Tom Visual: ${f.tom_visual || '—'}
+- Tipografia: Display: ${f.tipografia?.display || '—'}, Body: ${f.tipografia?.body || '—'}
+- Paleta: ${ (f.paleta || []).map(c => `${c.nome} (${c.hex})`).join(', ') }
+- Decisões: ${ (f.decisoes || []).join('; ') }
+      `.trim();
+    } else {
+      arteInfo = `
+IDENTIDADE VISUAL (MANUAL):
+- Cor Primária: ${B.arte_cor_principal || '—'}
+- Cor Secundária: ${B.arte_cor_secundaria || '—'}
+- Cor de Fundo: ${B.arte_cor_fundo || '—'}
+- Fonte Títulos: ${B.arte_fonte_principal || '—'}
+- Fonte Corpo: ${B.arte_fonte_secundaria || '—'}
+- Tema: ${B.arte_tema || '—'}
+- Estilo: ${B.arte_intensidade || '—'}
+- Descrição da Logo: ${B.arte_logo_descricao || '—'}
+      `.trim();
+    }
 
     return `
 # DOC-1 — ${projeto}
@@ -552,9 +627,10 @@ ${stepsResumo}
 ## AVATAR E DOR
 
 - **Nome do Avatar:** ${B.avatar_nome || '—'}
-- **Faixa Etária:** ${B.avatar_idade || '—'}
-- **Gênero:** ${B.avatar_genero || '—'}
-- **Profissão:** ${B.avatar_profissao || '—'}
+- **Perfil do Avatar:** ${B.avatar_nome || '—'}
+- **Faixa Etária:** ${B.publico_faixa_etaria || B.avatar_idade || '—'}
+- **Gênero:** ${B.publico_genero || B.avatar_genero || '—'}
+- **Profissão:** ${B.publico_profissao || B.avatar_profissao || '—'}
 - **Renda:** ${B.avatar_renda || '—'}
 - **Dor Principal:** ${B.dor_principal || '—'}
 - **Dores Secundárias:** ${B.dores_secundarias || '—'}
@@ -587,19 +663,16 @@ ${stepsResumo}
 
 ## PROVA SOCIAL
 
-- **Depoimento 1 — Nome:** ${B.depoimento1_nome || '—'}
-- **Depoimento 1 — Texto:** ${B.depoimento1_texto || '—'}
-- **Depoimento 1 — Resultado:** ${B.depoimento1_resultado || '—'}
-- **Depoimento 2 — Nome:** ${B.depoimento2_nome || '—'}
-- **Depoimento 2 — Texto:** ${B.depoimento2_texto || '—'}
-- **Depoimento 2 — Resultado:** ${B.depoimento2_resultado || '—'}
-- **Depoimento 3 — Nome:** ${B.depoimento3_nome || '—'}
-- **Depoimento 3 — Texto:** ${B.depoimento3_texto || '—'}
-- **Depoimento 3 — Resultado:** ${B.depoimento3_resultado || '—'}
-- **Casos de Sucesso:** ${B.casos_de_sucesso || '—'}
-- **Perfil Google:** ${B.perfil_google || '—'}
-- **Nota Google:** ${B.nota_google || '—'}
-- **Qtd. Avaliações:** ${B.quantidade_avaliacoes || '—'}
+- **Depoimento 1 — Nome:** ${B.depoimento_1_nome || B.depoimento1_nome || '—'}
+- **Depoimento 1 — Texto:** ${B.depoimento_1_texto || B.depoimento1_texto || '—'}
+- **Depoimento 2 — Nome:** ${B.depoimento_2_nome || B.depoimento2_nome || '—'}
+- **Depoimento 2 — Texto:** ${B.depoimento_2_texto || B.depoimento2_texto || '—'}
+- **Depoimento 3 — Nome:** ${B.depoimento_3_nome || B.depoimento3_nome || '—'}
+- **Depoimento 3 — Texto:** ${B.depoimento_3_texto || B.depoimento3_texto || '—'}
+- **Casos de Sucesso:** ${B.casos_de_sucesso || B.casos_resultados || '—'}
+- **Perfil Google:** ${B.perfil_google || B.google_business || '—'}
+- **Nota Google:** ${B.nota_google || B.google_nota || '—'}
+- **Qtd. Avaliações:** ${B.quantidade_avaliacoes || B.google_qtd || '—'}
 - **Instagram:** ${B.instagram || '—'}
 - **Seguidores:** ${B.seguidores || '—'}
 - **Mídia / Aparições:** ${B.midia_aparicoes || '—'}
@@ -636,18 +709,7 @@ ${stepsResumo}
 
 ## IDENTIDADE VISUAL
 
-- **Cor Primária:** ${B.cor_primaria || '—'}
-- **Cor Secundária:** ${B.cor_secundaria || '—'}
-- **Cor de Acento:** ${B.cor_acento || '—'}
-- **Cor de Fundo:** ${B.cor_fundo || '—'}
-- **Estilo Visual:** ${B.estilo_visual || '—'}
-- **Fonte Título:** ${B.fonte_titulo || '—'}
-- **Fonte Corpo:** ${B.fonte_corpo || '—'}
-- **Tom de Comunicação:** ${B.tom_comunicacao || '—'}
-- **Referências Visuais:** ${B.referencias_visuais || '—'}
-- **Logo (descrição):** ${B.logo_descricao || '—'}
-- **Imagens Disponíveis:** ${B.imagens_disponiveis || '—'}
-- **Vídeo Disponível:** ${B.video_disponivel || '—'}
+${arteInfo}
 
 ---
 
@@ -861,5 +923,14 @@ Dúvidas? Documentação completa em:
 | Stack | Astro + Tailwind CSS + GSAP + Vercel |
 | Gerado | ${new Date().toLocaleDateString('pt-BR')} |
 `.trim();
+  },
+
+  hasArteMinima() {
+    const B = this.B || {};
+    // Aprovada via IA
+    if (B.arte_ficha_aprovada) return true;
+    // Aprovada manualmente (campos mínimos preenchidos)
+    if (B.arte_cor_principal && B.arte_fonte_principal) return true;
+    return false;
   }
 });

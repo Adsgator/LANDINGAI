@@ -43,6 +43,15 @@ Object.assign(window.App, {
       `<button class="chip ${B.arte_logo === o.v ? 'on' : ''}" data-field="arte_logo" data-chip="${o.v}">${o.l}</button>`
     ).join('')}
               </div>
+              ${B.arte_logo && B.arte_logo !== 'nao' ? `
+              <div class="field-group" style="margin-top:12px;">
+                ${this.fieldLabel('arte_logo_descricao', 'Descrição da logo', false, true)}
+                <input type="text" class="field-input" data-field="arte_logo_descricao"
+                  placeholder="Ex: Nome em fonte serifada + ícone de folha verde à esquerda"
+                  value="${B.arte_logo_descricao || ''}">
+                <span class="field-hint">Descreva em palavras para o gerador saber como representar.</span>
+              </div>
+              ` : ''}
             </div>
             <div class="field-group">
               ${this.fieldLabel('arte_fotos', 'Fotos do profissional/produto', true)}
@@ -268,12 +277,28 @@ Object.assign(window.App, {
             </div>
           </div>
 
+          <div style="margin:16px 0;padding:12px 16px;background:var(--bg-raised);border-radius:var(--r-md);border:1px solid var(--border-default);">
+            <p style="font-size:12px;color:var(--text-secondary);line-height:1.6;margin:0;">
+              <strong style="color:var(--text-primary);">Dois caminhos:</strong>
+              Preencha os campos acima (cores + fontes) e clique em <strong>Aprovar Manualmente</strong> — rápido e sem IA.
+              Ou adicione referências de sites e clique em <strong>Gerar com IA</strong> para uma ficha completa com paleta e tipografia automáticas.
+            </p>
+          </div>
+
           <div class="art-actions">
             <button id="btn-analyze-art" class="btn-primary">
-              <i data-lucide="palette" style="width:16px;height:16px"></i>
-              Gerar Ficha de Direção de Arte
+              <i data-lucide="sparkles" style="width:16px;height:16px"></i>
+              Gerar com IA
+            </button>
+            <button id="btn-approve-art-manual" class="btn-secondary"
+              style="display:${(B.arte_cor_principal && B.arte_fonte_principal) ? '' : 'none'}">
+              <i data-lucide="check" style="width:16px;height:16px"></i>
+              Aprovar Direção Manualmente
             </button>
           </div>
+          <p class="art-manual-hint" style="font-size:11.5px;color:var(--text-tertiary);margin-top:8px;text-align:center;">
+            ${!(B.arte_cor_principal && B.arte_fonte_principal) ? 'Preencha Cor Principal e Fonte Título para aprovar sem IA.' : 'Campos preenchidos — você pode aprovar sem usar a IA.'}
+          </p>
 
         </div>
       </div>
@@ -360,5 +385,45 @@ Object.assign(window.App, {
       
       this.showToast('Combinação de fontes aplicada com sucesso.', 'success');
     }
+  },
+
+  aprovarArteManual() {
+    const B = this.B;
+    if (!B.arte_cor_principal || !B.arte_fonte_principal) {
+      this.showToast('Preencha ao menos Cor Principal e Fonte Título para aprovar.', 'warning');
+      return;
+    }
+
+    // Montar ficha de arte com dados manuais no mesmo formato da ficha gerada por IA
+    const fichaManual = {
+      tema: B.arte_tema || 'claro',
+      intensidade: B.arte_intensidade || 'contido',
+      paleta: {
+        primaria: B.arte_cor_principal || '',
+        secundaria: B.arte_cor_secundaria || '',
+        acento: B.arte_cor_acento || '',
+        fundo: B.arte_cor_fundo || '#ffffff',
+        texto: B.arte_cor_texto || '#1a1a1a',
+        suporte: B.arte_cor_suporte || '',
+      },
+      tipografia: {
+        display: B.arte_fonte_principal || '',
+        body: B.arte_fonte_secundaria || 'Inter',
+        escala: 'Definida manualmente',
+      },
+      tom_visual: `${B.estilo_desejado || ''} · ${B.sensacao_visitante || ''}`.trim().replace(/^·\s*|·\s*$/, '') || 'Definido manualmente',
+      elementos_visuais: '',
+      fotografia: B.arte_fotos === 'boa' ? 'Fotos de boa qualidade disponíveis.' : B.arte_fotos === 'media' ? 'Fotos de qualidade média disponíveis.' : 'Sem fotos disponíveis.',
+      decisoes_criativas: [
+        B.arte_logo !== 'nao' ? `Logo disponível (${B.arte_logo?.toUpperCase() || 'arquivo fornecido'}).` : 'Sem logo — usar tipografia como identidade.',
+        B.arte_menu_mobile ? `Menu mobile: ${B.arte_menu_mobile}.` : '',
+      ].filter(Boolean),
+      fonte_manual: true,
+    };
+
+    this.setField('arte_ficha_aprovada', JSON.stringify(fichaManual));
+    this.autosave();
+    this.showToast('Direção de Arte aprovada!', 'success');
+    this.renderAll();
   }
 });

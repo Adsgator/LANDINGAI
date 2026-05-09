@@ -149,6 +149,10 @@ Object.assign(window.App, {
       document.getElementById('btn-approve-art');
     if (approveArtBtn) approveArtBtn.addEventListener('click', () => this.aprovarArte());
 
+    const approveArtManualBtn = container.querySelector('#btn-approve-art-manual') ||
+      document.getElementById('btn-approve-art-manual');
+    if (approveArtManualBtn) approveArtManualBtn.addEventListener('click', () => this.aprovarArteManual());
+
     // ── Estrutura: Gerar ─────────────────────────────────────────
     const runEstruturaBtn = container.querySelector('#btn-run-estrutura');
     if (runEstruturaBtn) runEstruturaBtn.addEventListener('click', () => this.runEstruturaAnalysis());

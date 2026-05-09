@@ -80,6 +80,33 @@ Object.assign(window.App, {
         ${this.fieldLabel('aviso_legal', 'Aviso legal / registro profissional', false, true)}
         <input type="text" class="field-input" data-field="aviso_legal" placeholder="Ex: CRM 12345-SP · CRP 06/12345 · OAB/SP 123456" value="${B.aviso_legal || ''}">
       </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Autoridade Profissional</p>
+      <p class="form-section-title" style="font-size:12px;font-family:var(--font-body);font-weight:400;color:var(--text-secondary);border:none;padding:0;margin-top:-16px">
+        Esses dados aparecem no schema JSON-LD e podem ser usados no copy de autoridade.
+      </p>
+
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('anos_experiencia', 'Anos de experiência', false, true)}
+          <input type="text" class="field-input" data-field="anos_experiencia"
+            placeholder="Ex: 8 anos" value="${B.anos_experiencia || ''}">
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('formacao', 'Formação', false, true)}
+          <input type="text" class="field-input" data-field="formacao"
+            placeholder="Ex: Nutricionista — CRN-3 12345" value="${B.formacao || ''}">
+        </div>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('certificacoes', 'Certificações e especializações', false, true)}
+        <input type="text" class="field-input" data-field="certificacoes"
+          placeholder="Ex: Especialização em Nutrição Esportiva, Mestra em Nutrição Clínica"
+          value="${B.certificacoes || ''}">
+        <span class="field-hint">Separe por vírgula. Opcional — mas aumenta autoridade no copy.</span>
+      </div>
     `;
   },
 
@@ -348,6 +375,32 @@ Object.assign(window.App, {
         ${this.fieldLabel('publico_resultado', 'Resultado esperado', true)}
         <textarea class="field-textarea" data-field="publico_resultado" placeholder="Como ele se sente após contratar?">${B.publico_resultado || ''}</textarea>
       </div>
+
+      <div class="form-divider"></div>
+      <p class="form-section-title">Avatar do Cliente Ideal</p>
+      
+      <div class="form-row">
+        <div class="field-group">
+          ${this.fieldLabel('publico_profissao', 'Profissão', false, true)}
+          <input type="text" class="field-input" data-field="publico_profissao" 
+            placeholder="Ex: Professora, Advogada, Dona de casa, Empreendedora"
+            value="${B.publico_profissao || ''}">
+          <span class="field-hint">Profissão do seu cliente ideal — não a sua.</span>
+        </div>
+        <div class="field-group">
+          ${this.fieldLabel('publico_faixa_etaria', 'Faixa Etária', false, true)}
+          <input type="text" class="field-input" data-field="publico_faixa_etaria" 
+            placeholder="Ex: 28–45 anos" value="${B.publico_faixa_etaria || ''}">
+          <span class="field-hint">Ex: 28–45 anos. Ajuda a calibrar o tom do copy.</span>
+        </div>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('publico_genero', 'Gênero predominante', false, true)}
+        <input type="text" class="field-input" data-field="publico_genero" 
+          placeholder="Ex: Majoritariamente feminino" value="${B.publico_genero || ''}">
+        <span class="field-hint">Ex: Majoritariamente feminino. Usado para pronomes no copy.</span>
+      </div>
     `;
   },
 
@@ -412,6 +465,24 @@ Ex: 120 cães atendidos nos últimos 2 anos. 97% dos tutores relataram melhora e
             </div>
           </div>
         </div>
+
+        <div class="form-section-title" style="margin-top:16px;font-size:13px">Conteúdo dos Depoimentos</div>
+        ${[1, 2, 3].map(i => `
+          <div class="testimonial-field-group" style="margin-bottom:16px;padding:12px;background:var(--bg-raised);border-radius:var(--r-md);border:1px solid var(--border-default);">
+            <div class="field-group">
+              ${this.fieldLabel(`depoimento_${i}_nome`, `Nome do Cliente ${i}`, false)}
+              <input type="text" class="field-input" data-field="depoimento_${i}_nome"
+                placeholder="Ex: Mariana R., 34 anos" value="${B[`depoimento_${i}_nome`] || ''}">
+              <span class="field-hint">Nome real ou primeiro nome + idade. Ex: Mariana R., 34 anos</span>
+            </div>
+            <div class="field-group" style="margin-top:8px">
+              ${this.fieldLabel(`depoimento_${i}_texto`, `Texto do Depoimento ${i}`, false)}
+              <textarea class="field-textarea" data-field="depoimento_${i}_texto"
+                placeholder="Escreva na voz do paciente. Ex: Finalmente encontrei alguém que me escuta de verdade. Perdi 8kg sem passar fome. — Mariana, 34 anos">${B[`depoimento_${i}_texto`] || ''}</textarea>
+              <span class="field-hint">Escreva o que o paciente diria, não o que você diria sobre ele. Depoimento sem nome não será incluído na página.</span>
+            </div>
+          </div>
+        `).join('')}
       ` : ''}
 
       <div class="form-divider"></div>

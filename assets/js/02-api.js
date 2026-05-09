@@ -136,7 +136,10 @@ Object.assign(window.App, {
         contents: contents,
         generationConfig: {
           temperature: temperature,
-          maxOutputTokens: maxTokens
+          maxOutputTokens: maxTokens,
+          // Força JSON se o prompt pedir (ajuda na estabilidade)
+          responseMimeType: (userPrompt.toLowerCase().includes('json') || systemPrompt.toLowerCase().includes('json')) 
+                             ? "application/json" : "text/plain"
         }
       };
       
@@ -175,8 +178,20 @@ Object.assign(window.App, {
       }
 
       if (!content) {
-        console.error('Resposta da API:', data);
-        throw new Error('Resposta vazia da IA');
+        console.error('Resposta da API sem texto:', data);
+        
+        // Verificar se houve bloqueio por segurança
+        const safety = data.candidates?.[0]?.safetyRatings;
+        if (safety) {
+          console.warn('Filtro de segurança do Gemini:', safety);
+        }
+
+        const finishReason = data.candidates?.[0]?.finishReason;
+        if (finishReason && finishReason !== 'STOP') {
+          throw new Error(`A IA interrompeu a resposta prematuramente (Motivo: ${finishReason}). Tente um modelo mais potente ou reduza o briefing.`);
+        }
+
+        throw new Error('Resposta vazia da IA (conteúdo não encontrado no JSON da API)');
       }
 
       console.log(`✅ Resposta recebida de ${modelConfig.provider}`);
@@ -319,7 +334,8 @@ Object.assign(window.App, {
       // Gerar
       const response = await this.callAI({
         systemPrompt: systemPrompt + (tentativa > 1 ? `\n\n⚠️ REGENERAÇÃO: Na tentativa anterior, você violou as restrições. POR FAVOR, seja extremamente rigoroso agora.` : ''),
-        userPrompt: userPrompt
+        userPrompt: userPrompt,
+        maxTokens: 3000
       });
 
       // Extrair JSON do response

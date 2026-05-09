@@ -259,7 +259,10 @@ Object.assign(window.App, {
       await this.aiLogDelay(300);
 
       this.aiLogStep(2);
-      const resultado = await this.callAI(prompt);
+      const resultado = await this.callAI({ 
+        userPrompt: prompt, 
+        maxTokens: 4000 // Aumentado para garantir que o JSON longo caiba
+      });
       await this.aiLogDelay(300);
 
       this.aiLogStep(3);
@@ -457,12 +460,36 @@ ${briefing}
   async applyIntakeJSON(jsonString) {
     let data;
     try {
-      const clean = jsonString.replace(/```json|```/g, '').trim();
-      // Extrai o JSON se vier com texto antes/depois
-      const match = clean.match(/\{[\s\S]*\}/);
-      data = JSON.parse(match ? match[0] : clean);
+      // 1. Limpeza agressiva
+      let clean = jsonString.replace(/```json|```/g, '').trim();
+      
+      // 2. Tentar extrair o maior bloco de chaves { }
+      const firstBrace = clean.indexOf('{');
+      const lastBrace = clean.lastIndexOf('}');
+      
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        clean = clean.substring(firstBrace, lastBrace + 1);
+      }
+
+      data = JSON.parse(clean);
     } catch (e) {
-      throw new Error('Resposta da IA inválida — não foi possível interpretar o JSON.');
+      console.error('[Intake] Erro ao parsear JSON da IA:', e);
+      console.log('[Intake] Conteúdo bruto recebido:', jsonString);
+      
+      // Tentar recuperação se for apenas aspas não escapadas ou quebras de linha
+      try {
+        const fixed = jsonString
+          .replace(/\n/g, ' ')
+          .match(/\{[\s\S]*\}/)?.[0];
+        if (fixed) {
+          data = JSON.parse(fixed);
+          console.log('[Intake] Recuperado com sucesso após limpeza extra');
+        } else {
+          throw new Error('Não foi possível localizar um objeto JSON válido');
+        }
+      } catch (e2) {
+        throw new Error('Resposta da IA inválida — o formato retornado não é um JSON válido. Verifique o console para detalhes.');
+      }
     }
 
     const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8'];

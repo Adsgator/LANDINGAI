@@ -542,66 +542,123 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
   },
 
   _showArtResultModal(ficha, avisoHTML = '') {
-    const body = document.getElementById('art-result-body');
-    if (body) {
-      const swatches = (ficha.paleta || []).map(c => `
-        <div class="palette-swatch">
-          <div class="palette-swatch-color" style="background:${c.hex}"></div>
-          <span class="palette-swatch-label">${c.hex}</span>
-          <span style="font-size:10px;color:var(--text-tertiary)">${c.nome}</span>
-        </div>
-      `).join('');
+    const modal = document.getElementById('modal-direcao-arte');
+    if (!modal) {
+      this.showToast('Erro: modal-direcao-arte não encontrado', 'error');
+      return;
+    }
 
+    // Aba 1: Direção Geral
+    const contentDirecao = document.getElementById('content-direcao-geral');
+    if (contentDirecao) {
       const decisoes = (ficha.decisoes || []).map(d => `
-        <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px">
+        <div style="display:flex;gap:8px;align-items:flex-start;margin-bottom:8px;padding:8px;background:var(--bg-default);border-radius:var(--r-sm);">
           <i data-lucide="check" style="width:14px;height:14px;color:var(--accent);flex-shrink:0;margin-top:2px"></i>
           <span style="font-size:13px;color:var(--text-primary);line-height:1.5">${d}</span>
         </div>
       `).join('');
 
-      body.innerHTML = `
+      contentDirecao.innerHTML = `
         ${avisoHTML}
-        <div class="art-result-card">
-          <div class="art-result-section">
-            <div class="art-result-section-title">Paleta de Cores</div>
-            <div class="palette-swatches">${swatches}</div>
+        <div class="art-result-section" style="margin-bottom:20px;">
+          <div class="art-result-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px;">Tema e Tom</div>
+          <div class="art-result-text" style="font-size:14px;background:var(--bg-raised);padding:12px;border-radius:var(--r-md);border:1px solid var(--border-subtle);">
+            <div style="margin-bottom:8px;"><strong>Tema:</strong> ${ficha.tema === 'escuro' ? '🌙 Escuro (Dark Mode)' : '☀️ Claro (Light Mode)'}</div>
+            <div><strong>Tom Visual:</strong> ${ficha.tom_visual || '—'}</div>
           </div>
-          <div class="art-result-section">
-            <div class="art-result-section-title">Tipografia</div>
-            <div class="art-result-text">
-              <strong>Display:</strong> ${ficha.tipografia?.display || '—'}<br>
-              <strong>Corpo:</strong> ${ficha.tipografia?.body || '—'}<br>
-              ${ficha.tipografia?.mono ? `<strong>Mono:</strong> ${ficha.tipografia.mono}<br>` : ''}
-              <em style="color:var(--text-secondary)">${ficha.tipografia?.escala || ''}</em>
-            </div>
-          </div>
-          <div class="art-result-section">
-            <div class="art-result-section-title">Tom Visual</div>
-            <div class="art-result-text">${ficha.tom_visual || '—'}</div>
-          </div>
-          ${ficha.elementos_visuais ? `
-          <div class="art-result-section">
-            <div class="art-result-section-title">Elementos Visuais</div>
-            <div class="art-result-text">${ficha.elementos_visuais}</div>
-          </div>` : ''}
-          ${ficha.fotografia ? `
-          <div class="art-result-section">
-            <div class="art-result-section-title">Direção de Fotografia</div>
-            <div class="art-result-text">${ficha.fotografia}</div>
-          </div>` : ''}
-          <div class="art-result-section">
-            <div class="art-result-section-title">Decisões Criativas</div>
-            ${decisoes}
+        </div>
+        <div class="art-result-section">
+          <div class="art-result-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px;">Decisões Criativas</div>
+          <div class="art-result-text" style="background:var(--bg-raised);padding:12px;border-radius:var(--r-md);border:1px solid var(--border-subtle);">
+            ${decisoes || '<p>Nenhuma decisão específica listada.</p>'}
           </div>
         </div>
       `;
-      lucide.createIcons({ nodes: [body] });
-
-      // Bind do botão de aprovar no modal
-      const approveBtn = document.getElementById('btn-approve-art');
-      if (approveBtn) approveBtn.onclick = () => this.aprovarArte();
     }
-    this.openModal('modal-art-result');
+
+    // Aba 2: Referências
+    const contentReferencias = document.getElementById('content-referencias');
+    if (contentReferencias) {
+      contentReferencias.innerHTML = `
+        <div class="art-result-section">
+          <div class="art-result-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px;">Inspiração Extraída</div>
+          <div class="art-result-text" style="font-size:13px;line-height:1.6;background:var(--bg-raised);padding:12px;border-radius:var(--r-md);border:1px solid var(--border-subtle);">
+            ${ficha.referencias_inspiracao || 'Nenhuma nota de inspiração extraída das referências.'}
+          </div>
+        </div>
+      `;
+    }
+
+    // Aba 3: Cores
+    const contentCores = document.getElementById('content-cores');
+    if (contentCores) {
+      const swatches = (ficha.paleta || []).map(c => `
+        <div class="palette-swatch" style="display:flex;flex-direction:column;align-items:center;gap:8px;background:var(--bg-default);padding:12px;border-radius:var(--r-md);border:1px solid var(--border-subtle);flex:1;min-width:100px;">
+          <div class="palette-swatch-color" style="background:${c.hex};width:50px;height:50px;border-radius:50%;border:2px solid var(--border-subtle);box-shadow:var(--shadow-sm);"></div>
+          <div style="text-align:center;">
+            <span class="palette-swatch-label" style="display:block;font-weight:700;font-family:monospace;font-size:13px;color:var(--text-primary);">${c.hex}</span>
+            <span style="font-size:11px;font-weight:600;color:var(--text-secondary);display:block;margin-top:2px;">${c.nome}</span>
+            <span style="font-size:10px;color:var(--text-tertiary);display:block;margin-top:4px;line-height:1.2;">${c.uso || ''}</span>
+          </div>
+        </div>
+      `).join('');
+
+      contentCores.innerHTML = `
+        <div class="art-result-section" style="margin-bottom:20px;">
+          <div class="art-result-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px;">Paleta de Cores Recomendada</div>
+          <div class="palette-swatches" style="display:flex;gap:12px;flex-wrap:wrap;background:var(--bg-raised);padding:16px;border-radius:var(--r-md);border:1px solid var(--border-subtle);">
+            ${swatches}
+          </div>
+        </div>
+        ${ficha.elementos_visuais ? `
+        <div class="art-result-section">
+          <div class="art-result-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px;">Elementos Gráficos e Texturas</div>
+          <div class="art-result-text" style="font-size:13px;line-height:1.6;background:var(--bg-raised);padding:12px;border-radius:var(--r-md);border:1px solid var(--border-subtle);">
+            ${ficha.elementos_visuais}
+          </div>
+        </div>` : ''}
+      `;
+    }
+
+    // Aba 4: Detalhes
+    const contentDetalhes = document.getElementById('content-detalhes');
+    if (contentDetalhes) {
+      contentDetalhes.innerHTML = `
+        <div class="art-result-section" style="margin-bottom:20px;">
+          <div class="art-result-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px;">Tipografia</div>
+          <div class="art-result-text" style="background:var(--bg-raised);padding:16px;border-radius:var(--r-md);border:1px solid var(--border-subtle);font-size:14px;display:flex;flex-direction:column;gap:8px;">
+            <div><strong>Títulos (Display):</strong> <span style="color:var(--accent2);">${ficha.tipografia?.display || '—'}</span></div>
+            <div><strong>Textos (Body):</strong> <span style="color:var(--accent2);">${ficha.tipografia?.body || '—'}</span></div>
+            ${ficha.tipografia?.mono ? `<div><strong>Detalhes (Mono):</strong> <span style="color:var(--accent2);">${ficha.tipografia.mono}</span></div>` : ''}
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:8px;padding-top:8px;border-top:1px dashed var(--border-default);"><em>${ficha.tipografia?.escala || ''}</em></div>
+          </div>
+        </div>
+        ${ficha.fotografia ? `
+        <div class="art-result-section">
+          <div class="art-result-section-title" style="font-size:11px;font-weight:700;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:8px;">Direção de Fotografia</div>
+          <div class="art-result-text" style="font-size:13px;line-height:1.6;background:var(--bg-raised);padding:12px;border-radius:var(--r-md);border:1px solid var(--border-subtle);">
+            ${ficha.fotografia}
+          </div>
+        </div>` : ''}
+      `;
+    }
+
+    // Atualizar ícones Lucide
+    if (window.lucide) {
+      lucide.createIcons({ nodes: [modal] });
+    }
+
+    // Exibir modal (usando lógica direta para evitar falhas)
+    modal.classList.add('visible');
+    modal.style.display = 'block';
+    
+    // Garantir que a primeira aba está ativa
+    if (this.selecionarAbaModal) {
+      this.selecionarAbaModal('direacao');
+    } else if (window.App && window.App.selecionarAbaModal) {
+      window.App.selecionarAbaModal('direacao');
+    }
+
     this.showToast('Direção de Arte gerada! Revise e aprove.', 'success');
   },
 

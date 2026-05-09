@@ -595,6 +595,11 @@ Object.assign(window.App, {
      Modal de renomear projeto
   ---------------------------------------------------------- */
   openRenameModal() {
+    const input = document.getElementById('rename-input');
+    if (input) {
+      input.value = this.P?.name || 'Novo Projeto';
+    }
+    this.openModal('modal-rename');
     setTimeout(() => input?.focus(), 100);
   },
 

@@ -4,34 +4,67 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Google Ads Project - LandingAI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,400;0,500;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@400..800&display=swap" rel="stylesheet">
+    
+    <!-- Core App Styles -->
+    <link rel="stylesheet" href="../../assets/css/00-vars.css">
+    <link rel="stylesheet" href="../../assets/css/01-layout.css">
+    <link rel="stylesheet" href="../../assets/css/02-components.css">
+    <link rel="stylesheet" href="../../assets/css/04-system.css">
+    <link rel="stylesheet" href="../../assets/css/05-loader.css">
+    <link rel="stylesheet" href="../../assets/css/06-error-modal.css">
+    <link rel="stylesheet" href="../../assets/css/14-toast.css">
+    
+    <!-- Module Specific Style -->
     <link rel="stylesheet" href="styles/google-ads.css">
 </head>
-<body>
-    <div id="google-ads-app">
+<body style="background: var(--bg-surface); padding: 2rem;">
+    <div class="screen-content" style="max-width: 800px; margin: 0 auto; padding: 2rem; background: var(--bg-raised); border-radius: var(--r-xl); border: 1px solid var(--border-subtle);">
+        <div style="margin-bottom: 2rem; border-bottom: 1px solid var(--border-subtle); padding-bottom: 1rem;">
+            <h2 style="font-family: var(--font-display); font-size: 24px; font-weight: 700; color: var(--text-primary); margin:0;">
+                Configuração do Google Ads
+            </h2>
+            <p style="color: var(--text-secondary); font-size: 14px; margin-top: 4px;">Configure sua estratégia de campanhas e inteligência.</p>
+        </div>
+        <div id="google-ads-app">
         <!-- Input Section -->
         <div class="ga-input-section">
-          <button id="btn-pull-context">
+          <!-- Manual Mode Banner -->
+          <div id="manual-mode-banner" style="display: none; background: var(--accent2-dim); padding: 16px; border-radius: var(--r-md); margin-bottom: 24px; border: 1px solid var(--accent2-border);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="font-size: 16px;">📂</span>
+              <h4 style="color: var(--accent2); margin: 0; font-size: 14px; font-weight: 700;">Modo Manual (Upload de Briefing)</h4>
+            </div>
+            <div class="ga-form-group" style="margin:0;">
+              <label style="color: var(--text-secondary);">Selecione o arquivo DOC-1 ou Briefing (.md)</label>
+              <input type="file" id="manual-briefing-file" accept=".md" class="field-input" style="background: var(--bg-surface); cursor: pointer;" />
+            </div>
+          </div>
+
+          <button id="btn-pull-context" class="btn btn-secondary" style="margin-bottom: 24px; width: 100%; justify-content: center;">
             📥 Puxar Contexto da Landing Page
           </button>
           
-          <div class="ga-form-group">
-            <label>Verba Mensal Total (R$)</label>
-            <input type="number" id="budget-total" min="100" step="100" placeholder="1000">
+          <div class="ga-form-group" style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Verba Mensal Total (R$)</label>
+            <input type="number" id="budget-total" min="100" step="100" placeholder="1000" class="field-input">
           </div>
           
-          <div class="ga-form-group">
-            <label>Geolocalização</label>
-            <select id="location">
+          <div class="ga-form-group" style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Geolocalização</label>
+            <select id="location" class="field-input" style="margin-bottom: 8px;">
               <option>Brasil Inteiro</option>
               <option>Região específica</option>
               <option>Cidade específica</option>
             </select>
-            <input type="text" id="location-value" placeholder="Ex: São Paulo, SP">
+            <input type="text" id="location-value" placeholder="Ex: São Paulo, SP" class="field-input">
           </div>
           
-          <div class="ga-form-group">
-            <label>Meta Principal</label>
-            <select id="main-goal">
+          <div class="ga-form-group" style="margin-bottom: 16px;">
+            <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">Meta Principal</label>
+            <select id="main-goal" class="field-input">
               <option value="leads">Gerar Leads</option>
               <option value="calls">Receber Chamadas</option>
               <option value="bookings">Agendar Consultas</option>
@@ -39,20 +72,21 @@
             </select>
           </div>
           
-          <div class="ga-form-group">
-            <label>URL da Landing Page (ou Print/Screenshot)</label>
-            <input type="text" id="lp-url" placeholder="https://exemplo.com">
-            <input type="file" id="lp-screenshot" accept="image/*">
-            <small>Cole a URL OU faça upload de um print da página</small>
+          <div class="ga-form-group" style="margin-bottom: 24px;">
+            <label style="display: block; font-size: 12.5px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px;">URL da Landing Page (ou Print/Screenshot)</label>
+            <input type="text" id="lp-url" placeholder="https://exemplo.com" class="field-input" style="margin-bottom: 8px;">
+            <input type="file" id="lp-screenshot" accept="image/*" class="field-input">
+            <small style="display: block; margin-top: 4px; font-size: 11px; color: var(--text-tertiary);">Cole a URL OU faça upload de um print da página</small>
           </div>
           
-          <button id="btn-generate-strategy" class="btn-primary">
+          <button id="btn-generate-strategy" class="btn btn-primary" style="width: 100%; justify-content: center;">
             ⚙️ Gerar Estratégia com IA
           </button>
         </div>
         
         <!-- Output Section will be rendered here -->
         <div id="ga-output-section"></div>
+        </div>
     </div>
 
     <!-- Dependências do App Principal -->
@@ -61,6 +95,9 @@
     </script>
     <script src="../../assets/js/00-config.js"></script>
     <script src="../../assets/js/02-api.js"></script>
+    <script src="../../assets/js/05-loader.js"></script>
+    <script src="../../assets/js/06-error-modal.js"></script>
+    <script src="../../assets/js/14-toast.js"></script>
 
     <!-- Scripts do GA -->
     <script src="02-ga-api.js"></script>
@@ -68,5 +105,23 @@
     <script src="04-ga-export.js"></script>
     <script src="01-ga-handlers.js"></script>
     <script src="google-ads.js"></script>
+    <script>
+        // Setup initial UI state based on mode
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isManualMode = urlParams.get('mode') === 'manual';
+            
+            if (isManualMode) {
+                document.getElementById('manual-mode-banner').style.display = 'block';
+                document.getElementById('btn-pull-context').style.display = 'none';
+                
+                // Allow generating strategy even without LP URL if we have a file uploaded
+                const lpUrlInput = document.getElementById('lp-url');
+                if (lpUrlInput) {
+                    lpUrlInput.placeholder = 'https://exemplo.com (Opcional no Modo Manual)';
+                }
+            }
+        });
+    </script>
 </body>
 </html>

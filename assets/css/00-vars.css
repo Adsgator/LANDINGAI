@@ -104,6 +104,7 @@ img {
     --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.45);
     --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.55);
     --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.65);
+    --shadow-xl: 0 16px 48px rgba(0, 0, 0, 0.75);
     --shadow-glow: 0 0 28px rgba(0, 229, 160, 0.14);
 
     /* Transições */
@@ -122,4 +123,14 @@ img {
     --topbar-h: 58px;
     --bottom-h: 68px;
     --content-max: 860px;
+
+    /* Espaçamento */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-7: 28px;
+    --space-8: 32px;
 }

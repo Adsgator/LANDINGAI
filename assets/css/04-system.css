@@ -781,29 +781,7 @@
   background: var(--bg-overlay);
 }
 
-/* ── Model Selector ─────────────────────────────────────────── */
-.model-selector {
-  position: relative;
-}
 
-.btn-model-selector {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  background: var(--bg-raised);
-  border: 1px solid var(--border-default);
-  border-radius: var(--r-pill);
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  transition: all var(--t-base);
-}
-
-.btn-model-selector:hover {
-  border-color: var(--border-strong);
-  color: var(--text-primary);
-}
 
 .model-dropdown {
   position: absolute;
@@ -934,26 +912,6 @@
 }
 
 /* ── AI Log Modal Animation ────────────────────────────────── */
-.ai-log-overlay {
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
-
-.ai-log-overlay.is-visible {
-  opacity: 1;
-}
-
-.ai-log-modal {
-  transform: scale(0.95) translateY(8px);
-  transition: transform 0.25s ease, opacity 0.25s ease;
-  opacity: 0;
-}
-
-.ai-log-overlay.is-visible .ai-log-modal {
-  transform: scale(1) translateY(0);
-  opacity: 1;
-}
-
 .ai-log-overlay {
   opacity: 0;
   transition: opacity 0.2s ease;

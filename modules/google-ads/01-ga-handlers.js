@@ -30,16 +30,32 @@ function initGaHandlers() {
     if (btnGenerateStrategy) {
         btnGenerateStrategy.addEventListener('click', async function() {
           try {
-            // 1. Validar inputs
+            const urlParams = new URLSearchParams(window.location.search);
+            const isManualMode = urlParams.get('mode') === 'manual';
+
             const budget = document.getElementById('budget-total').value;
             const goal = document.getElementById('main-goal').value;
             const location = document.getElementById('location-value')?.value || document.getElementById('location')?.value || 'Brasil';
             const lpUrl = document.getElementById('lp-url').value;
             
-            if (!budget || !goal || !lpUrl) {
-              if (window.Toast) Toast.error('Preencha todos os campos obrigatórios');
-              else alert('Preencha todos os campos obrigatórios');
-              return;
+            let manualFileContent = null;
+            if (isManualMode) {
+              const fileInput = document.getElementById('manual-briefing-file');
+              if (fileInput && fileInput.files.length > 0) {
+                manualFileContent = await fileInput.files[0].text();
+              }
+              
+              if (!budget || !goal || (!lpUrl && !manualFileContent)) {
+                if (window.Toast) Toast.error('Preencha a verba, meta e selecione seu arquivo .md');
+                else alert('Preencha a verba, meta e selecione seu arquivo .md');
+                return;
+              }
+            } else {
+              if (!budget || !goal || !lpUrl) {
+                if (window.Toast) Toast.error('Preencha todos os campos obrigatórios');
+                else alert('Preencha todos os campos obrigatórios');
+                return;
+              }
             }
             
             // 2. Construir parâmetros
@@ -47,7 +63,8 @@ function initGaHandlers() {
               budgetTotal: budget,
               mainGoal: goal,
               location: location,
-              lpUrl: lpUrl
+              lpUrl: lpUrl,
+              manualBriefing: manualFileContent
             };
             
             // 3. Gerar estratégia (O Loader já é chamado dentro de generateGAStrategy)

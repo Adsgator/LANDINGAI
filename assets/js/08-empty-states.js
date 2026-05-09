@@ -16,7 +16,7 @@ class EmptyStateManager {
         <div class="empty-icon">📋</div>
         <h3>Nenhum projeto ainda</h3>
         <p>Comece criando uma nova landing page para seu cliente. Preencha as informações e deixe a IA gerar a página.</p>
-        <button class="btn btn-primary" onclick="switchScreen('intake')">
+        <button class="btn btn-primary" onclick="App.goToScreen('intake')">
           Criar Novo Projeto
         </button>
       </div>
@@ -37,7 +37,7 @@ class EmptyStateManager {
         <div class="empty-icon">🔍</div>
         <h3>Nenhum resultado encontrado</h3>
         <p>Não encontramos nada para "<strong>${searchTerm}</strong>". Tente outro termo de busca.</p>
-        <button class="btn btn-secondary" onclick="clearSearch()">
+        <button class="btn btn-secondary" onclick="App.openModal('modal-projects')">
           Limpar Busca
         </button>
       </div>
@@ -58,7 +58,7 @@ class EmptyStateManager {
         <div class="empty-icon">❌</div>
         <h3>${title}</h3>
         <p>${message}</p>
-        <button class="btn btn-primary" onclick="emptyStateRetry()">
+        <button class="btn btn-primary" onclick="window.emptyStateRetry?.()">
           Tentar Novamente
         </button>
       </div>

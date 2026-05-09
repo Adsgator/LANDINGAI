@@ -77,7 +77,7 @@
       </div>
 
       <div class="sidebar-section">
-        <button id="btn-google-ads" class="sidebar-btn" data-screen="google-ads" style="width:100%; justify-content: flex-start; gap: var(--space-3); padding: var(--space-3) var(--space-4); background: none; border: none; color: var(--text-secondary); font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; border-radius: var(--r-md); transition: all var(--t-base); display: flex; align-items: center;">
+        <button id="btn-google-ads" class="sidebar-btn" data-screen="google-ads">
           <i data-lucide="trending-up" style="width:18px; height:18px;"></i>
           <span>Google Ads</span>
         </button>
@@ -259,6 +259,37 @@
     </div>
   </div>
 
+  <!-- Modal Manual Mode (Google Ads) -->
+  <div class="modal-overlay" id="modal-manual-mode">
+    <div class="modal modal--sm">
+      <div class="modal-header">
+        <i data-lucide="layout-template" class="modal-header-icon" style="width:20px;height:20px;color:var(--accent2);"></i>
+        <span class="modal-title">Modo Independente</span>
+        <div class="modal-header-actions">
+          <button class="modal-close" onclick="App.closeModal('modal-manual-mode')">
+            <i data-lucide="x" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 8px;">
+          Este projeto ainda não tem uma Landing Page finalizada.
+        </div>
+        <div style="font-size: 13.5px; color: var(--text-secondary); line-height: 1.5;">
+          Deseja acessar o <strong>Modo Manual</strong> do Google Ads para importar o seu próprio briefing (.md)?
+        </div>
+        <div class="error-actions" style="margin-top: 24px;">
+          <button class="btn-primary" onclick="App.confirmManualMode()">
+            <i data-lucide="play" style="width:14px;height:14px;"></i> Acessar Modo Manual
+          </button>
+          <button class="btn-ghost" onclick="App.closeModal('modal-manual-mode')">
+            Cancelar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Modal Preview DOC-IMPL -->
   <div class="modal-overlay" id="modal-preview">
     <div class="modal modal--preview" style="height:85dvh;display:flex;flex-direction:column;">
@@ -328,6 +359,11 @@
       <div class="modal-header">
         <i data-lucide="edit-3" style="width:18px;height:18px;color:var(--accent2);"></i>
         <span class="modal-title">Nome do Projeto</span>
+        <div class="modal-header-actions">
+          <button class="modal-close" onclick="App.closeModal('modal-rename')">
+            <i data-lucide="x" style="width:18px;height:18px;"></i>
+          </button>
+        </div>
       </div>
       <div class="modal-body" style="padding-top:8px">
         <div class="field-group">
@@ -376,9 +412,7 @@
       lucide.createIcons();
     });
 
-    // Re-renderizar quando conteúdo dinâmico é adicionado
-    // NOTA: Removido MutationObserver global para evitar loop infinito
-    // O sistema já chama lucide.createIcons() após renderizar telas.
+    // lucide.createIcons() é chamado explicitamente após cada renderização de tela.
   </script>
   <script src="assets/js/00-config.js"></script>
   <script src="assets/js/01-state.js"></script>

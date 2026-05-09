@@ -11,14 +11,22 @@ async function generateGAStrategy(inputs) {
     Loader.show('📊 Analisando contexto da LP...', 'Gerando estratégia de campanhas');
 
     // 1. Puxar contexto
-    const context = pullContextFromLP();
+    let contextoCliente = '';
+    let urlParaUsar = inputs.lpUrl;
+    
+    if (inputs.manualBriefing) {
+        contextoCliente = `DADOS DO BRIEFING MANUAL (USE ESTAS INFORMAÇÕES PRINCIPALMENTE):\n${inputs.manualBriefing}\n\n`;
+    } else {
+        const context = pullContextFromLP();
+        contextoCliente = `CLIENTE: ${context.cliente_nome}\nSERVIÇO: ${context.servico_descricao}\n`;
+        if (!urlParaUsar) urlParaUsar = context.lp_url;
+    }
 
     // 2. Construir prompt
     const prompt = `
     Gerar estratégia completa de Google Ads para:
 
-    CLIENTE: ${inputs.clienteName || context.cliente_nome}
-    SERVIÇO: ${context.servico_descricao}
+    ${contextoCliente}
     VERBA MENSAL: R$ ${inputs.budgetTotal}
     GEOLOCALIZAÇÃO: ${inputs.location}
     META PRINCIPAL: ${inputs.mainGoal}
@@ -52,7 +60,7 @@ async function generateGAStrategy(inputs) {
                     { "texto": "Description 1" },
                     { "texto": "Description 2" }
                   ],
-                  "final_url": "${inputs.lpUrl || context.lp_url}",
+                  "final_url": "${urlParaUsar}",
                   "call_to_action": "Entre em contato"
                 }
               ]

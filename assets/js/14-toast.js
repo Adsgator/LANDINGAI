@@ -91,4 +91,6 @@ class ToastManager {
 }
 
 // Instância global
-window.Toast = new ToastManager();
+// window.Toast = new ToastManager();
+// Sistema de toast principal é App.showToast() que usa #toast no HTML.
+// ToastManager disponível para uso futuro via: window.Toast = new ToastManager();

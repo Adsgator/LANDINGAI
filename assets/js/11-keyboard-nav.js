@@ -101,17 +101,19 @@ class KeyboardNav {
   static setupShortcuts() {
     const shortcuts = {
       'Ctrl+K': () => {
-        const search = document.getElementById('search');
-        if (search) search.focus();
+        if (window.App) {
+          App.renderProjectsList();
+          App.openModal('modal-projects');
+        }
       },
       'Ctrl+N': () => {
-        if (window.switchScreen) switchScreen('intake');
+        if (window.App) App.createProject();
       },
       'Ctrl+S': () => {
-        if (window.saveProject) saveProject();
+        if (window.App) App.autosave();
       },
       'Ctrl+G': () => {
-        if (window.switchScreen) switchScreen('google-ads');
+        if (window.App) App.handleGoogleAdsClick();
       }
     };
 

@@ -1033,14 +1033,14 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       }, 600);
 
     } catch (err) {
-      console.error('[AIGator] generateDocImpl:', err);
+      console.error('[AIGator] Erro na geração:', err);
       const errorMsg = err.message || 'Erro desconhecido';
+      this.aiLogError(null, errorMsg);
       this.state.isGenerating = false;
-      this.aiLogError(this.state.aiLog.active, errorMsg);
 
       setTimeout(() => {
-        this.closeAILog();
-        this.showToast(`❌ Erro ao gerar: ${errorMsg}`, 'error');
+        this.closeModal('modal-gen');
+        this.showToast('Falha na geração. Verifique sua API Key e tente novamente.', 'error', 7000);
 
         // Mostrar modal de erro com opções e dicas
         this.openModal('modal-error');
@@ -1056,6 +1056,8 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
           </ul>
         `;
       }, 1200);
+    } finally {
+      this.state.isGenerating = false;
     }
   },
 

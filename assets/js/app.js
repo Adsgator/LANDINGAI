@@ -57,10 +57,10 @@ Object.assign(window.App, {
     // 4. Renderizar tudo
     this.renderAll();
 
-    // 5. Permissão de notificação (silencioso)
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
+    // Notificações nativas: descomentar se implementado no futuro
+    // if ('Notification' in window && Notification.permission === 'default') {
+    //   Notification.requestPermission();
+    // }
   },
 
   /**
@@ -71,18 +71,7 @@ Object.assign(window.App, {
     const hasStructure = this.B && this.B.estrutura_lp;
     
     if (!hasStructure) {
-      ErrorModal.show(
-        '❌ Nenhuma Landing Page Criada',
-        'Crie uma landing page primeiro antes de usar o módulo Google Ads.',
-        [
-          'Vá para "Intake" e preencha as informações do cliente',
-          'Complete todos os 8 passos do briefing',
-          'Gere a landing page no passo "Estrutura"',
-          'Então use o Google Ads'
-        ],
-        null,
-        () => this.goToScreen('intake')
-      );
+      this.openModal('modal-manual-mode');
       return;
     }
 
@@ -111,6 +100,17 @@ Object.assign(window.App, {
     };
     
     localStorage.setItem('ga_context', JSON.stringify(context));
+  },
+
+  /**
+   * Navegar para o GA em Modo Manual (chamado pelo modal)
+   */
+  confirmManualMode() {
+    this.closeModal('modal-manual-mode');
+    Loader.show('🚀 Abrindo Modo Manual...');
+    setTimeout(() => {
+      window.location.href = './modules/google-ads/index.html?mode=manual';
+    }, 800);
   }
 });
 

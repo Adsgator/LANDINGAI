@@ -482,7 +482,7 @@ Regras:
 
       const response = await this.callAI({
         userPrompt: prompt,
-        maxTokens: 4000
+        maxTokens: 8192
       });
 
       this.aiLogStep(3);
@@ -497,7 +497,7 @@ Regras:
         if (firstBrace !== -1 && lastBrace > firstBrace) {
           clean = clean.substring(firstBrace, lastBrace + 1);
         }
-        strategy = JSON.parse(clean);
+        strategy = this.robustParseJSON ? this.robustParseJSON(clean) : JSON.parse(clean);
       } catch (e) {
         throw new Error('A IA não retornou JSON válido. Tente novamente.');
       }

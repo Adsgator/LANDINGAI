@@ -335,14 +335,20 @@ Object.assign(window.App, {
       const response = await this.callAI({
         systemPrompt: systemPrompt + (tentativa > 1 ? `\n\n⚠️ REGENERAÇÃO: Na tentativa anterior, você violou as restrições. POR FAVOR, seja extremamente rigoroso agora.` : ''),
         userPrompt: userPrompt,
-        maxTokens: 3000
+        maxTokens: 8192
       });
 
       // Extrair JSON do response
       let jsonText = response.trim();
       const match = jsonText.match(/\{[\s\S]*\}/);
       if (match) jsonText = match[0];
-      resultado = JSON.parse(jsonText);
+      
+      try {
+        resultado = this.robustParseJSON ? this.robustParseJSON(jsonText) : JSON.parse(jsonText);
+      } catch (e) {
+        console.error('Erro no parse do JSON da estrutura:', e);
+        throw e;
+      }
       
       // Validar
       const textoCompleto = this.extrairTextoJson(resultado);

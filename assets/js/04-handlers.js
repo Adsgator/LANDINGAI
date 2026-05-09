@@ -142,6 +142,10 @@ Object.assign(window.App, {
       btn.addEventListener('click', () => this.removeArtRef(btn.dataset.removeRef, parseInt(btn.dataset.refIdx, 10)));
     });
 
+    if (this.renderizarReferenciasList && container.querySelector('#referencia-visual-list')) {
+      this.renderizarReferenciasList();
+    }
+
     // ── Color pickers ────────────────────────────────────────
     container.querySelectorAll('input[type="color"][data-field]').forEach(picker => {
       picker.addEventListener('input', () => {
@@ -732,6 +736,17 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
   },
 
   async generateDocImpl() {
+    // Verificar alertas primeiro (se não ignorados)
+    if (!this.alertasIgnorados) {
+      const alertas = this.gerarAlertas ? this.gerarAlertas() : [];
+      if (alertas.length > 0) {
+        if (this.mostrarAlertas) {
+          this.mostrarAlertas();
+        }
+        return;
+      }
+    }
+
     // Validar estrutura
     const validation = this.validateStructure();
 
@@ -2030,4 +2045,23 @@ Sem placeholders, pronto para npm install + npm run dev.
       throw new Error('Não foi possível parsear JSON. Formato inválido. Conteúdo: ' + jsonString.substring(0, 500) + '...');
     }
   },
+
+  /* ----------------------------------------------------------
+     Handlers para Estrutura e Copy
+  ---------------------------------------------------------- */
+  abrirModalImportarOutput() {
+    this.openModal('modal-importar-output');
+    setTimeout(() => document.getElementById('textarea-output-ia')?.focus(), 100);
+  },
+
+  confirmarImportarOutput() {
+    const texto = document.getElementById('textarea-output-ia')?.value || '';
+    const ok = this.processarOutputColado(texto);
+    if (ok) {
+      this.closeModal('modal-importar-output');
+      document.getElementById('textarea-output-ia').value = '';
+      this.renderScreen();
+    }
+  }
 });
+

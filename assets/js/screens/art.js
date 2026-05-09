@@ -66,34 +66,66 @@ Object.assign(window.App, {
           <!-- Grupo: Cores da Marca -->
           <div class="form-section-title" style="margin-top: 16px;">Cores da Marca</div>
           <div class="form-row-3">
-            <div class="field-group">
-              ${this.fieldLabel('arte_cor_principal', 'Cor Principal', false)}
-              <div class="color-picker-wrap">
-                <div class="color-picker-swatch">
-                  <input type="color" data-field="arte_cor_principal" value="${B.arte_cor_principal || '#000000'}">
-                </div>
-                <input type="text" class="field-input color-picker-input" data-field="arte_cor_principal"
-                  placeholder="#HEX" value="${B.arte_cor_principal || ''}">
+            <div class="color-input-row">
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; display: block;">Cor Principal</label>
+              <div class="color-input-wrapper">
+                <input 
+                  type="color" 
+                  id="cor-principal-picker"
+                  class="color-picker-square"
+                  value="${B.arte_cor_principal || '#000000'}"
+                  onchange="App.atualizarCorPrincipal()">
+                
+                <input 
+                  type="text" 
+                  id="cor-principal-hex"
+                  class="color-hex-input"
+                  placeholder="#000000"
+                  maxlength="7"
+                  value="${B.arte_cor_principal || ''}"
+                  oninput="App.validarEAtualizarHex('principal', this.value)">
               </div>
             </div>
-            <div class="field-group">
-              ${this.fieldLabel('arte_cor_secundaria', 'Cor Secundária', false)}
-              <div class="color-picker-wrap">
-                <div class="color-picker-swatch">
-                  <input type="color" data-field="arte_cor_secundaria" value="${B.arte_cor_secundaria || '#000000'}">
-                </div>
-                <input type="text" class="field-input color-picker-input" data-field="arte_cor_secundaria"
-                  placeholder="#HEX" value="${B.arte_cor_secundaria || ''}">
+
+            <div class="color-input-row">
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; display: block;">Cor Secundária (opcional)</label>
+              <div class="color-input-wrapper">
+                <input 
+                  type="color" 
+                  id="cor-secundaria-picker"
+                  class="color-picker-square"
+                  value="${B.arte_cor_secundaria || '#FFFFFF'}"
+                  onchange="App.atualizarCorSecundaria()">
+                
+                <input 
+                  type="text" 
+                  id="cor-secundaria-hex"
+                  class="color-hex-input"
+                  placeholder="#FFFFFF"
+                  maxlength="7"
+                  value="${B.arte_cor_secundaria || ''}"
+                  oninput="App.validarEAtualizarHex('secundaria', this.value)">
               </div>
             </div>
-            <div class="field-group">
-              ${this.fieldLabel('arte_cor_complementar', 'Cor Auxiliar/Complementar', false)}
-              <div class="color-picker-wrap">
-                <div class="color-picker-swatch">
-                  <input type="color" data-field="arte_cor_complementar" value="${B.arte_cor_complementar || '#000000'}">
-                </div>
-                <input type="text" class="field-input color-picker-input" data-field="arte_cor_complementar"
-                  placeholder="#HEX" value="${B.arte_cor_complementar || ''}">
+
+            <div class="color-input-row">
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; display: block;">Cor Auxiliar/Complementar</label>
+              <div class="color-input-wrapper">
+                <input 
+                  type="color" 
+                  id="cor-complementar-picker"
+                  class="color-picker-square"
+                  value="${B.arte_cor_complementar || '#000000'}"
+                  onchange="App.atualizarCorComplementar()">
+                
+                <input 
+                  type="text" 
+                  id="cor-complementar-hex"
+                  class="color-hex-input"
+                  placeholder="#000000"
+                  maxlength="7"
+                  value="${B.arte_cor_complementar || ''}"
+                  oninput="App.validarEAtualizarHex('complementar', this.value)">
               </div>
             </div>
           </div>
@@ -188,41 +220,64 @@ Object.assign(window.App, {
       </div>
 
 
-      <!-- Referências Pessoais -->
+      <!-- Referências Visuais -->
       <div class="art-section">
         <div class="art-section-header">
-          <i data-lucide="heart" class="art-section-icon" style="color:var(--warning)"></i>
-          <span class="art-section-title">Referências Pessoais</span>
+          <i data-lucide="image" class="art-section-icon" style="color:var(--accent)"></i>
+          <span class="art-section-title">Referências Visuais</span>
         </div>
         <div class="art-section-body">
-          <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:4px">
-            Sites, marcas ou projetos que você admira visualmente. A IA vai acessar os links e "ver" o que te atraiu neles.
-            Coloque o que te inspirou <em>e</em> o que adaptar para o nicho do cliente.
-          </p>
-          ${pessoais.map((ref, i) => this.buildRefItem('pessoais', i, ref)).join('')}
-          <button class="btn-ghost btn-sm" data-add-ref="pessoais">
-            <i data-lucide="plus" style="width:14px;height:14px"></i>
-            Adicionar referência pessoal
-          </button>
-        </div>
-      </div>
+          <div class="form-group" style="display: flex; flex-direction: column; gap: 16px;">
+            <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; display: block;">Referências Visuais — Arquivos e Links</label>
+            
+            <!-- Upload de Arquivos -->
+            <div id="art-upload-zone" class="upload-zone" onclick="document.getElementById('upload-referencia-visual').click()">
+              <input 
+                type="file" 
+                id="upload-referencia-visual"
+                accept="image/*,.pdf"
+                class="file-input-hidden" style="display:none;"
+                onchange="App.adicionarReferenciaVisual(event)">
+              <i data-lucide="upload-cloud" class="upload-zone-icon"></i>
+              <p class="upload-zone-label">Clique ou arraste imagens e PDFs aqui</p>
+              <p class="upload-zone-hint">PNG, JPG, WEBP, PDF — até 5MB</p>
+            </div>
 
-      <!-- Referências do Nicho -->
-      <div class="art-section">
-        <div class="art-section-header">
-          <i data-lucide="search" class="art-section-icon" style="color:var(--accent)"></i>
-          <span class="art-section-title">Referências do Nicho</span>
-        </div>
-        <div class="art-section-body">
-          <p style="font-size:12.5px;color:var(--text-secondary);line-height:1.6;margin-bottom:4px">
-            Sites de concorrentes ou do mesmo segmento. Ajuda a IA a entender o que o público espera ver
-            — e o que evitar para se diferenciar.
-          </p>
-          ${nicho.map((ref, i) => this.buildRefItem('nicho', i, ref)).join('')}
-          <button class="btn-ghost btn-sm" data-add-ref="nicho">
-            <i data-lucide="plus" style="width:14px;height:14px"></i>
-            Adicionar referência do nicho
-          </button>
+            <!-- Lista de arquivos adicionados -->
+            <div id="referencia-visual-list" class="referencia-list" style="margin-top: 8px;">
+              <div class="placeholder">
+                <p>Nenhum arquivo adicionado ainda</p>
+              </div>
+            </div>
+
+            <div class="form-divider" style="margin: 16px 0; border-top: 1px dashed var(--border-default);"></div>
+
+            <!-- Inputs de link + descrição -->
+            <div class="referencia-manual" style="display: flex; flex-direction: column; gap: 12px;">
+              <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-tertiary); display: block;">Adicionar Referência via Link</label>
+              <input 
+                type="text"
+                id="referencia-link"
+                placeholder="Ex: https://linear.app"
+                class="field-input">
+              
+              <textarea 
+                id="referencia-descricao"
+                placeholder="O que te atraiu? (ex: tipografia limpa, cores escuras, etc)"
+                rows="2"
+                class="field-input"
+                style="resize: vertical;"></textarea>
+              
+              <button 
+                class="btn-secondary"
+                type="button"
+                onclick="App.adicionarReferenciaManual()"
+                style="align-self: flex-start;">
+                <i data-lucide="plus" style="width: 16px; height: 16px;"></i>
+                Adicionar Link de Referência
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -424,6 +479,254 @@ Object.assign(window.App, {
     this.setField('arte_ficha_aprovada', JSON.stringify(fichaManual));
     this.autosave();
     this.showToast('Direção de Arte aprovada!', 'success');
+    this.renderAll();
+  },
+
+  // ============================================================
+  // REFERÊNCIAS VISUAIS
+  // ============================================================
+
+  adicionarReferenciaVisual(event) {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    
+    if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) {
+      this.showToast('❌ Arquivo deve ser imagem ou PDF', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      this.showToast('❌ Arquivo deve ter menos de 5MB', 'error');
+      return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      const referencia = {
+        id: Date.now().toString(),
+        tipo: 'arquivo',
+        nome: file.name,
+        tamanho: (file.size / 1024).toFixed(2) + 'KB',
+        mimetype: file.type,
+        conteudo: e.target.result,
+        descricao: '',
+        dataAdicao: new Date().toISOString()
+      };
+
+      if (!this.B.referenciasVisuais) {
+        this.B.referenciasVisuais = [];
+      }
+
+      this.B.referenciasVisuais.push(referencia);
+      this.autosave();
+      this.renderizarReferenciasList();
+
+      this.showToast(`✅ Arquivo "${file.name}" adicionado!`, 'success');
+    };
+
+    reader.readAsDataURL(file);
+    event.target.value = '';
+  },
+
+  adicionarReferenciaManual() {
+    const link = document.getElementById('referencia-link')?.value || '';
+    const descricao = document.getElementById('referencia-descricao')?.value || '';
+
+    if (!link && !descricao) {
+      this.showToast('⚠️ Preencha pelo menos um campo', 'warning');
+      return;
+    }
+
+    const referencia = {
+      id: Date.now().toString(),
+      tipo: 'link',
+      link: link,
+      descricao: descricao,
+      dataAdicao: new Date().toISOString()
+    };
+
+    if (!this.B.referenciasVisuais) {
+      this.B.referenciasVisuais = [];
+    }
+
+    this.B.referenciasVisuais.push(referencia);
+    this.autosave();
+
+    document.getElementById('referencia-link').value = '';
+    document.getElementById('referencia-descricao').value = '';
+
+    this.renderizarReferenciasList();
+    this.showToast('✅ Referência adicionada!', 'success');
+  },
+
+  removerReferencia(id) {
+    if (this.B.referenciasVisuais) {
+      this.B.referenciasVisuais = this.B.referenciasVisuais.filter(r => r.id !== id);
+      this.autosave();
+      this.renderizarReferenciasList();
+      this.showToast('✅ Referência removida', 'success');
+    }
+  },
+
+  renderizarReferenciasList() {
+    const container = document.getElementById('referencia-visual-list');
+    if (!container) return;
+    
+    const refs = this.B.referenciasVisuais || [];
+
+    if (refs.length === 0) {
+      container.innerHTML = `
+        <div class="placeholder">
+          <p>Nenhum arquivo adicionado ainda</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = refs.map(ref => `
+      <div class="referencia-item" style="position: relative; border: 1px solid var(--border-default); border-radius: var(--r-md); background: var(--bg-raised); margin-bottom: 12px; padding: 12px;">
+        
+        <button 
+          class="btn-ghost btn-sm danger"
+          style="position: absolute; top: 12px; right: 12px; color: var(--danger); display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600;"
+          onclick="App.removerReferencia('${ref.id}')"
+          title="Remover referência">
+          <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i> Remover
+        </button>
+
+        ${ref.tipo === 'arquivo' ? `
+          <div class="referencia-header" style="display: flex; gap: 12px; align-items: flex-start; margin-bottom: ${ref.mimetype.includes('image') ? '12px' : '0'}; padding-right: 80px;">
+            <div class="referencia-icon" style="color: var(--accent2); background: rgba(var(--accent2-rgb), 0.1); padding: 8px; border-radius: 8px; display: flex;">
+              <i data-lucide="${ref.mimetype.includes('image') ? 'image' : 'file-text'}" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div class="referencia-info">
+              <div class="referencia-nome" style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px;">${ref.nome}</div>
+              <div class="referencia-meta" style="font-size: 11px; color: var(--text-tertiary);">${ref.tamanho}</div>
+            </div>
+          </div>
+          ${ref.mimetype.includes('image') ? `
+            <div class="referencia-preview" style="border-radius: var(--r-sm); overflow: hidden; border: 1px solid var(--border-subtle); background: var(--bg-body);">
+              <img src="${ref.conteudo}" alt="${ref.nome}" style="width: 100%; max-height: 200px; object-fit: contain; display: block;">
+            </div>
+          ` : ''}
+        ` : `
+          <div class="referencia-header" style="display: flex; gap: 12px; align-items: flex-start; padding-right: 80px;">
+            <div class="referencia-icon" style="color: var(--accent); background: rgba(var(--accent-rgb), 0.1); padding: 8px; border-radius: 8px; display: flex;">
+              <i data-lucide="link" style="width: 20px; height: 20px;"></i>
+            </div>
+            <div class="referencia-info" style="padding-top: 2px;">
+              <div class="referencia-nome" style="font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; word-break: break-all;">
+                <a href="${ref.link.startsWith('http') ? ref.link : 'https://' + ref.link}" target="_blank" style="color: inherit; text-decoration: none;">${ref.link}</a>
+              </div>
+              <div class="referencia-desc" style="font-size: 12px; color: var(--text-secondary); line-height: 1.5;">${ref.descricao}</div>
+            </div>
+          </div>
+        `}
+      </div>
+    `).join('');
+
+    // Renderizar os ícones Lucide recém-adicionados
+    if (window.lucide) {
+      lucide.createIcons({ nodes: [container] });
+    }
+  },
+
+  // ============================================================
+  // COLOR PICKER CUSTOM
+  // ============================================================
+
+  validarEAtualizarHex(tipo, valor) {
+    const regexHex = /^#[0-9A-F]{6}$/i;
+
+    if (!regexHex.test(valor)) {
+      return;
+    }
+
+    let pickerId;
+    if (tipo === 'principal') pickerId = 'cor-principal-picker';
+    else if (tipo === 'secundaria') pickerId = 'cor-secundaria-picker';
+    else if (tipo === 'complementar') pickerId = 'cor-complementar-picker';
+
+    const picker = document.getElementById(pickerId);
+    if (picker) {
+      picker.value = valor;
+    }
+
+    if (tipo === 'principal') {
+      this.setField('arte_cor_principal', valor);
+    } else if (tipo === 'secundaria') {
+      this.setField('arte_cor_secundaria', valor);
+    } else if (tipo === 'complementar') {
+      this.setField('arte_cor_complementar', valor);
+    }
+    
+    this.autosave();
+  },
+
+  atualizarCorPrincipal() {
+    const picker = document.getElementById('cor-principal-picker');
+    const hexInput = document.getElementById('cor-principal-hex');
+
+    if (picker && hexInput) {
+      hexInput.value = picker.value;
+      this.validarEAtualizarHex('principal', picker.value);
+    }
+  },
+
+  atualizarCorSecundaria() {
+    const picker = document.getElementById('cor-secundaria-picker');
+    const hexInput = document.getElementById('cor-secundaria-hex');
+
+    if (picker && hexInput) {
+      hexInput.value = picker.value;
+      this.validarEAtualizarHex('secundaria', picker.value);
+    }
+  },
+
+  atualizarCorComplementar() {
+    const picker = document.getElementById('cor-complementar-picker');
+    const hexInput = document.getElementById('cor-complementar-hex');
+
+    if (picker && hexInput) {
+      hexInput.value = picker.value;
+      this.validarEAtualizarHex('complementar', picker.value);
+    }
+  },
+
+  // ============================================================
+  // MODAL DIREÇÃO DE ARTE (NOVO)
+  // ============================================================
+
+  selecionarAbaModal(abaId) {
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    document.querySelectorAll('.aba-modal').forEach(aba => aba.classList.remove('visible'));
+
+    if (event && event.target) {
+      event.target.classList.add('active');
+    }
+    const abaElement = document.getElementById(`aba-${abaId}`);
+    if (abaElement) {
+      abaElement.classList.add('visible');
+    }
+  },
+
+  fecharModalDirecaoArte() {
+    const modal = document.getElementById('modal-direcao-arte');
+    if (modal) {
+      modal.classList.remove('visible');
+      // Adicionado para lidar com o estilo display
+      setTimeout(() => { modal.style.display = 'none'; }, 300);
+    }
+  },
+
+  aprovarDirecaoArte() {
+    this.setField('arte_ficha_aprovada', this.B.ficha_direcao_arte || 'Aprovada');
+    this.autosave();
+    this.showToast('✅ Direção de Arte aprovada!', 'success');
+    this.fecharModalDirecaoArte();
     this.renderAll();
   }
 });

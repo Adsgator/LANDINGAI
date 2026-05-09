@@ -84,8 +84,8 @@ Object.assign(window.App, {
       title.textContent = 'Direção de Arte';
       subtitle.textContent = 'Identidade visual e referências';
     } else if (this.state.screen === 'structure') {
-      title.textContent = 'Estrutura da LP';
-      subtitle.textContent = 'Organização das seções e blocos';
+      title.textContent = 'Estrutura e Copy';
+      subtitle.textContent = 'Definição dos blocos e textos da página';
     } else if (this.state.screen === 'review') {
       title.textContent = 'Revisão Final';
       subtitle.textContent = 'Pronto para gerar documentação';

@@ -932,5 +932,115 @@ Dúvidas? Documentação completa em:
     // Aprovada manualmente (campos mínimos preenchidos)
     if (B.arte_cor_principal && B.arte_fonte_principal) return true;
     return false;
+  },
+
+  // ============================================================
+  // MODAL DE ALERTAS (REVISÃO)
+  // ============================================================
+
+  gerarAlertas() {
+    const alertas = [];
+    const B = this.B || {};
+
+    // Validações
+    if (!B.estrutura_copy || B.estrutura_copy.trim().length < 100) {
+      alertas.push({
+        tipo: 'warning',
+        titulo: 'Copy muito curta',
+        mensagem: 'A copy total tem menos de 100 caracteres. Considere expandir.',
+        acao: 'editar-estrutura'
+      });
+    }
+
+    if (B.estrutura_lp_blocos && B.estrutura_lp_blocos.some(b => !b.copy)) {
+      alertas.push({
+        tipo: 'warning',
+        titulo: 'Bloco sem copy',
+        mensagem: 'Um ou mais blocos não têm copy definida. Verifique antes de gerar.',
+        acao: 'editar-estrutura'
+      });
+    }
+
+    if (!B.arte_cor_principal) {
+      alertas.push({
+        tipo: 'info',
+        titulo: 'Cor principal não definida',
+        mensagem: 'A direção de arte não tem cor principal. Será usado preto por padrão.',
+        acao: 'editar-arte'
+      });
+    }
+
+    if (!B.referenciasVisuais || B.referenciasVisuais.length < 2) {
+      alertas.push({
+        tipo: 'info',
+        titulo: 'Poucas referências',
+        mensagem: 'Recomendamos pelo menos 2-3 referências visuais para melhor alinhamento.',
+        acao: 'editar-arte'
+      });
+    }
+
+    return alertas;
+  },
+
+  mostrarAlertas() {
+    const alertas = this.gerarAlertas();
+
+    if (alertas.length === 0) {
+      this.showToast('✅ Nenhum problema detectado!', 'success');
+      return;
+    }
+
+    // Preencher modal
+    const container = document.getElementById('alertas-container');
+    if (container) {
+      container.innerHTML = alertas.map((alerta, idx) => `
+        <div class="alerta-item alerta-${alerta.tipo}">
+          <div class="alerta-icon">
+            ${alerta.tipo === 'error' ? '❌' : alerta.tipo === 'warning' ? '⚠️' : 'ℹ️'}
+          </div>
+          <div class="alerta-content">
+            <h4 class="alerta-titulo">${alerta.titulo}</h4>
+            <p class="alerta-mensagem">${alerta.mensagem}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Salvar ações para botão "Editar"
+    this.alertasGeracaoAtivas = alertas;
+
+    // Abrir modal
+    const modal = document.getElementById('modal-alertas-geracao');
+    if (modal) {
+      modal.style.display = 'flex';
+      // Permite o display = flex ter efeito antes da transição de opacidade
+      setTimeout(() => {
+        modal.classList.add('visible');
+      }, 10);
+    }
+  },
+
+  fecharAlertas() {
+    this.alertasIgnorados = true;
+    const modal = document.getElementById('modal-alertas-geracao');
+    if (modal) {
+      modal.classList.remove('visible');
+      setTimeout(() => {
+        modal.style.display = 'none';
+      }, 300);
+    }
+  },
+
+  abrirEditor() {
+    // Ir para tela de edição apropriada
+    const primeiroAlerta = this.alertasGeracaoAtivas?.[0];
+    
+    if (primeiroAlerta?.acao === 'editar-estrutura') {
+      this.goToScreen('structure');
+    } else if (primeiroAlerta?.acao === 'editar-arte') {
+      this.goToScreen('art');
+    }
+
+    this.fecharAlertas();
   }
 });

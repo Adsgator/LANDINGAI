@@ -64,7 +64,7 @@ App.config = {
     'gemini-2.5-flash': {
       name: 'Gemini 2.5 Flash',
       provider: 'google',
-      model: 'gemini-2.5-flash-preview-05-20',
+      model: 'gemini-1.5-flash',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: true,
       info: 'Versão estável e rápida'
@@ -72,7 +72,7 @@ App.config = {
     'gemini-2.5-pro': {
       name: 'Gemini 2.5 Pro',
       provider: 'google',
-      model: 'gemini-2.5-pro-preview-06-05',
+      model: 'gemini-1.5-pro',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: false,
       info: 'Versão pro de alta precisão'
@@ -80,7 +80,7 @@ App.config = {
     'gemini-2.5-flash-image': {
       name: 'Gemini 2.5 Flash Image',
       provider: 'google',
-      model: 'gemini-2.5-flash-preview-05-20',
+      model: 'gemini-1.5-flash',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: false,
       info: 'Geração de Imagens',
@@ -89,18 +89,18 @@ App.config = {
     'gemini-3-flash-preview': {
       name: 'Gemini 3 Flash Preview',
       provider: 'google',
-      model: 'gemini-3.1-flash-lite-preview',
+      model: 'gemini-2.0-flash-exp',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: false,
-      info: 'Geração 3 Experimental'
+      info: 'Geração 2.0 Experimental (Flash)'
     },
     'gemini-3.1-pro-preview': {
       name: 'Gemini 3.1 Pro Preview',
       provider: 'google',
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-1.5-pro-exp-0801',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: false,
-      info: 'Geração 3.1 Experimental'
+      info: 'Geração 1.5 Pro Experimental'
     },
 
     // ========== xAI GROK ==========

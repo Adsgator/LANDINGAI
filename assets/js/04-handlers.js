@@ -84,8 +84,7 @@ Object.assign(window.App, {
     if (artBtn) artBtn.addEventListener('click', () => this.runArtAnalysis());
 
     // ── Botões da Review ────────────────────────────────────
-    const doc1Btn = container.querySelector('#btn-download-doc1');
-    if (doc1Btn) doc1Btn.addEventListener('click', () => this.downloadDoc1());
+
 
     const genBtn = container.querySelector('#btn-generate-docimpl');
     if (genBtn) genBtn.addEventListener('click', () => this.generateDocImpl());
@@ -1833,35 +1832,7 @@ Sem placeholders, pronto para npm install + npm run dev.
   /* ----------------------------------------------------------
      Downloads
   ---------------------------------------------------------- */
-  downloadDoc1() {
-    // Validar que DOC-1 pode ser gerado
-    const doc1 = this.buildDoc1();
 
-    if (!doc1 || doc1.length < 100) {
-      this.showToast('⚠️ DOC-1 não pode ser gerado. Complete todos os steps primeiro.', 'warning');
-      return;
-    }
-
-    // Criar slug do projeto
-    const slug = (this.B?.nome_projeto || 'landing-page')
-      .toLowerCase()
-      .replace(/\s+/g, '-')
-      .replace(/[^\w-]/g, '');
-
-    // Criar blob e download
-    const blob = new Blob([doc1], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `doc1-${slug}-${new Date().toISOString().split('T')[0]}.md`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    // Feedback ao usuário
-    this.showToast('✓ DOC-1 baixado com sucesso! Copie para Claude ou Gemini.', 'success');
-  },
 
   downloadText(content, filename, mime = 'text/plain') {
     const blob = new Blob([content], { type: `${mime};charset=utf-8` });

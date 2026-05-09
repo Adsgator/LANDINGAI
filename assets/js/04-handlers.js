@@ -274,7 +274,7 @@ Object.assign(window.App, {
       this.aiLogStep(2);
       const resultado = await this.callAI({
         userPrompt: prompt,
-        maxTokens: 4000 // Aumentado para garantir que o JSON longo caiba
+        maxTokens: 8192 // Aumentado para garantir que o JSON longo caiba
       });
       await this.aiLogDelay(300);
 
@@ -1975,38 +1975,59 @@ Sem placeholders, pronto para npm install + npm run dev.
       }
     }
 
-    // Limpeza agressiva: tenta encontrar o primeiro { e o último }
-    let cleanedString = jsonString;
-    const firstBrace = cleanedString.indexOf('{');
-    const lastBrace = cleanedString.lastIndexOf('}');
-
-    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-      cleanedString = cleanedString.substring(firstBrace, lastBrace + 1);
-
-      // Tenta remover comentários de linha (//) e comentários de bloco (/* */)
-      cleanedString = cleanedString.replace(/\/\/[^\n\r]*/g, ''); // Remove // comments
-      cleanedString = cleanedString.replace(/\/\*[\s\S]*?\*\//g, ''); // Remove /* */ comments
-
-      // Tenta remover trailing commas (vírgulas no final de objetos ou arrays)
-      cleanedString = cleanedString.replace(/,(\s*[}\]])/g, '$1');
-
-      try {
-        return JSON.parse(cleanedString);
-      } catch (e3) {
-        // Ignorar, lançar erro no final
+    // Função para reparar JSON truncado
+    const fixTruncatedJSON = (str) => {
+      let inString = false;
+      let escape = false;
+      let stack = [];
+      for (let i = 0; i < str.length; i++) {
+        let c = str[i];
+        if (escape) { escape = false; continue; }
+        if (c === '\\') { escape = true; continue; }
+        if (c === '"') { inString = !inString; continue; }
+        if (!inString) {
+          if (c === '{' || c === '[') stack.push(c);
+          else if (c === '}') {
+            if (stack[stack.length - 1] === '{') stack.pop();
+          } else if (c === ']') {
+            if (stack[stack.length - 1] === '[') stack.pop();
+          }
+        }
       }
+      let fixed = str;
+      if (inString) fixed += '"';
+      while (stack.length > 0) {
+        let c = stack.pop();
+        if (c === '{') fixed += '}';
+        else if (c === '[') fixed += ']';
+      }
+      return fixed;
+    };
+
+    // Extrair apenas a parte que parece ser JSON
+    const jsonMatch = jsonString.match(/\{[\s\S]*/);
+    let cleanedString = jsonMatch ? jsonMatch[0] : jsonString;
+
+    // Tenta remover comentários
+    cleanedString = cleanedString.replace(/\/\/[^\n\r]*/g, '');
+    cleanedString = cleanedString.replace(/\/\*[\s\S]*?\*\//g, '');
+
+    // Aplica o fix de truncamento
+    let fixedString = fixTruncatedJSON(cleanedString);
+
+    // Tenta remover trailing commas (vírgulas antes de chaves ou colchetes)
+    fixedString = fixedString.replace(/,(\s*[}\]])/g, '$1');
+
+    try {
+      return JSON.parse(fixedString);
+    } catch (e3) {
+      // Fallback final: tenta a string limpa original caso o fix tenha quebrado algo
     }
 
-    // Fallback: tentar extrair o primeiro objeto JSON (abordagem original)
-    const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
-    if (jsonMatch && jsonMatch[0]) {
-      try {
-        return JSON.parse(jsonMatch[0]);
-      } catch (e3) {
-        // Ignora, lança erro no final
-      }
+    try {
+      return JSON.parse(cleanedString);
+    } catch (e4) {
+      throw new Error('Não foi possível parsear JSON. Formato inválido. Conteúdo: ' + jsonString.substring(0, 500) + '...');
     }
-
-    throw new Error('Não foi possível parsear JSON. Formato inválido. Conteúdo: ' + jsonString.substring(0, 500) + '...');
   },
 });

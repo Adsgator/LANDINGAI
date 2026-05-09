@@ -16,7 +16,7 @@ Object.assign(window.App, {
       { label: 'Modalidade de atendimento', done: !!B.modalidade?.trim(), step: 4 },
       { label: 'Serviço principal', done: !!B.servico_principal?.trim(), step: 5 },
       { label: 'Público-alvo definido', done: !!B.publico_primario?.trim(), step: 6 },
-      { label: 'Estrutura da LP gerada', done: !!B.estrutura_rascunho?.trim(), step: 'Estrutura' },
+      { label: 'Estrutura da LP gerada', done: !!B.estrutura_lp?.trim(), step: 'Estrutura' },
       { label: 'Estrutura aprovada', done: !!B.estrutura_aprovada?.trim(), step: 'Estrutura' },
       { label: 'Direção de arte aprovada', done: !!B.arte_ficha_aprovada?.trim(), step: 'Direção de Arte' },
       { label: 'API Key configurada', done: Object.values(this.state.apiKeys).some(k => k?.trim()), step: 'Config. API' }
@@ -101,7 +101,7 @@ Object.assign(window.App, {
 
     // Banner de validação de estrutura
     const estruturaAprovada = this.B?.estrutura_aprovada?.trim();
-    const estruturaRascunho = this.B?.estrutura_rascunho?.trim();
+    const estruturaRascunho = this.B?.estrutura_lp?.trim();
 
     let alertaHTML = '';
     if (!estruturaAprovada || !estruturaRascunho) {
@@ -226,12 +226,12 @@ Object.assign(window.App, {
               <span>Estrutura da Landing Page</span>
             </div>
 
-            ${B.estrutura_rascunho ? `
+            ${B.estrutura_lp ? `
             <div class="review-estrutura-summary-card">
                <div class="estrutura-summary-info">
                   <i data-lucide="layout-template" style="width:24px;height:24px;color:var(--accent2);opacity:0.8"></i>
                   <div>
-                    <strong>${this.contarBlocos(B.estrutura_rascunho)} blocos gerados</strong>
+                    <strong>${this.contarBlocos(B.estrutura_lp)} blocos gerados</strong>
                     <p style="font-size:12px;color:var(--text-tertiary)">Narrativa em 1ª pessoa configurada</p>
                   </div>
                   <button class="btn-ghost btn-sm" onclick="App.goToScreen('structure')" style="margin-left:auto;">
@@ -316,6 +316,18 @@ Object.assign(window.App, {
   // Mantido apenas para compatibilidade — não faz nada
   gerarPrototipoVisual() {
     this.showToast('Geração de protótipo visual não disponível nesta versão.', 'info');
+  },
+
+  contarBlocos(estruturaRaw) {
+    if (!estruturaRaw) return 0;
+    try {
+      const data = typeof estruturaRaw === 'string' ? JSON.parse(estruturaRaw) : estruturaRaw;
+      const blocos = data?.estrutura_lp?.blocos || data?.blocos || [];
+      return blocos.filter(b => b.incluir).length;
+    } catch (e) {
+      console.error('Erro ao contar blocos:', e);
+      return 0;
+    }
   },
 
   checkReady() {
@@ -654,7 +666,7 @@ ${stepsResumo}
 
 ## ESTRUTURA DA PÁGINA (Aprovada)
 
-${B.estrutura_aprovada || B.estrutura_rascunho || '> Estrutura ainda não definida.'}
+${B.estrutura_aprovada || B.estrutura_lp || '> Estrutura ainda não definida.'}
 
 ---
 

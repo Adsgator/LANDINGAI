@@ -56,7 +56,7 @@ App.config = {
     'gemini-2.5-flash-lite': {
       name: 'Gemini 2.5 Flash Lite',
       provider: 'google',
-      model: 'gemini-2.5-flash-lite-preview-06-17',
+      model: 'gemini-2.5-flash-lite',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: true,
       info: 'Preview do Flash Lite 2.5'
@@ -64,7 +64,7 @@ App.config = {
     'gemini-2.5-flash': {
       name: 'Gemini 2.5 Flash',
       provider: 'google',
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: true,
       info: 'Versão estável e rápida'
@@ -72,7 +72,7 @@ App.config = {
     'gemini-2.5-pro': {
       name: 'Gemini 2.5 Pro',
       provider: 'google',
-      model: 'gemini-1.5-pro',
+      model: 'gemini-2.5-pro',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: false,
       info: 'Versão pro de alta precisão'
@@ -80,7 +80,7 @@ App.config = {
     'gemini-2.5-flash-image': {
       name: 'Gemini 2.5 Flash Image',
       provider: 'google',
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash-image',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: false,
       info: 'Geração de Imagens',
@@ -89,18 +89,18 @@ App.config = {
     'gemini-3-flash-preview': {
       name: 'Gemini 3 Flash Preview',
       provider: 'google',
-      model: 'gemini-2.0-flash-exp',
+      model: 'gemini-3-flash-preview',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: false,
-      info: 'Geração 2.0 Experimental (Flash)'
+      info: 'Geração 3 Experimental'
     },
     'gemini-3.1-pro-preview': {
       name: 'Gemini 3.1 Pro Preview',
       provider: 'google',
-      model: 'gemini-1.5-pro-exp-0801',
+      model: 'gemini-3.1-pro-preview',
       baseURL: 'https://generativelanguage.googleapis.com',
       freeModel: false,
-      info: 'Geração 1.5 Pro Experimental'
+      info: 'Geração 3.1 Experimental'
     },
 
     // ========== xAI GROK ==========

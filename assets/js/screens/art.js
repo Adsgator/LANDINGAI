@@ -726,7 +726,9 @@ Object.assign(window.App, {
     this.setField('arte_ficha_aprovada', this.B.ficha_direcao_arte || 'Aprovada');
     this.autosave();
     this.showToast('✅ Direção de Arte aprovada!', 'success');
-    this.fecharModalDirecaoArte();
+    if (window.App && window.App.closeModal) {
+      window.App.closeModal('modal-direcao-arte');
+    }
     this.renderAll();
   }
 });

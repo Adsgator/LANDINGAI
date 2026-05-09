@@ -648,9 +648,8 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       lucide.createIcons({ nodes: [modal] });
     }
 
-    // Exibir modal (usando lógica direta para evitar falhas)
-    modal.classList.add('visible');
-    modal.style.display = 'block';
+    // Exibir modal via função padrão
+    this.openModal('modal-direcao-arte');
     
     // Garantir que a primeira aba está ativa
     if (this.selecionarAbaModal) {

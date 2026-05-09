@@ -333,80 +333,54 @@
   </div>
 
   <!-- Modal: Visualizar Direção de Arte (CORRIGIDO) -->
-  <div id="modal-direcao-arte" class="modal-overlay" style="display: none;">
-    <div class="modal-content modal-lg" style="background: var(--bg-surface); border-radius: var(--r-lg); width: 90vw; max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); z-index: 1001; position: relative; margin: auto; top: 50%; transform: translateY(-50%);">
-      <header class="modal-header">
-        <h3>Direção de Arte — Preview</h3>
-        <button 
-          class="btn-close" 
-          onclick="App.fecharModalDirecaoArte()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary);">
-          ×
+  <div id="modal-direcao-arte" class="modal-overlay">
+    <div class="modal" style="max-width: 800px; max-height: 85vh; display: flex; flex-direction: column; padding: 0;">
+      <div class="modal-header" style="padding: 1.5rem; border-bottom: 1px solid var(--border-default);">
+        <h3 style="margin: 0; font-size: 18px; font-weight: 700;">Direção de Arte — Preview</h3>
+        <button class="modal-close" onclick="App.closeModal('modal-direcao-arte')">
+          <i data-lucide="x" style="width:20px;height:20px"></i>
         </button>
-      </header>
+      </div>
 
       <!-- Abas de navegação -->
-      <div class="modal-tabs" style="display: flex; gap: 0.5rem; padding: 1rem; border-bottom: 1px solid var(--border-default); overflow-x: auto;">
-        <button class="tab-btn active" onclick="App.selecionarAbaModal('direacao')">
-          🎨 Direção Geral
-        </button>
-        <button class="tab-btn" onclick="App.selecionarAbaModal('referencias')">
-          📸 Referências
-        </button>
-        <button class="tab-btn" onclick="App.selecionarAbaModal('cores')">
-          🎯 Cores e Elementos
-        </button>
-        <button class="tab-btn" onclick="App.selecionarAbaModal('detalhes')">
-          ⚙️ Detalhes
-        </button>
+      <div class="modal-tabs" style="display: flex; gap: 0.5rem; padding: 1rem; border-bottom: 1px solid var(--border-default); overflow-x: auto; flex-shrink: 0;">
+        <button class="tab-btn active" onclick="App.selecionarAbaModal('direacao')">🎨 Direção Geral</button>
+        <button class="tab-btn" onclick="App.selecionarAbaModal('referencias')">📸 Referências</button>
+        <button class="tab-btn" onclick="App.selecionarAbaModal('cores')">🎯 Cores e Elementos</button>
+        <button class="tab-btn" onclick="App.selecionarAbaModal('detalhes')">⚙️ Detalhes</button>
       </div>
 
       <!-- Conteúdo com scroll -->
-      <div class="modal-body scrollable" style="flex: 1; overflow-y: auto; overflow-x: hidden; scroll-behavior: smooth;">
+      <div class="modal-body" style="flex: 1; overflow-y: auto; overflow-x: hidden; padding: 0;">
         <!-- Aba 1: Direção Geral -->
-        <div id="aba-direacao" class="aba-modal visible">
-          <h4>Direção Geral</h4>
-          <div id="content-direcao-geral" class="modal-content-area">
-            <!-- Preenchido dinamicamente -->
-          </div>
+        <div id="aba-direacao" class="aba-modal visible" style="padding: 1.5rem;">
+          <h4 style="margin: 0 0 1rem 0; font-size: 16px; font-weight: 700;">Direção Geral</h4>
+          <div id="content-direcao-geral" class="modal-content-area"></div>
         </div>
 
         <!-- Aba 2: Referências -->
-        <div id="aba-referencias" class="aba-modal">
-          <h4>Referências Visuais</h4>
-          <div id="content-referencias" class="modal-content-area">
-            <!-- Preenchido dinamicamente -->
-          </div>
+        <div id="aba-referencias" class="aba-modal" style="padding: 1.5rem;">
+          <h4 style="margin: 0 0 1rem 0; font-size: 16px; font-weight: 700;">Referências Visuais</h4>
+          <div id="content-referencias" class="modal-content-area"></div>
         </div>
 
         <!-- Aba 3: Cores -->
-        <div id="aba-cores" class="aba-modal">
-          <h4>Cores e Identidade</h4>
-          <div id="content-cores" class="modal-content-area">
-            <!-- Preenchido dinamicamente -->
-          </div>
+        <div id="aba-cores" class="aba-modal" style="padding: 1.5rem;">
+          <h4 style="margin: 0 0 1rem 0; font-size: 16px; font-weight: 700;">Cores e Identidade</h4>
+          <div id="content-cores" class="modal-content-area"></div>
         </div>
 
         <!-- Aba 4: Detalhes -->
-        <div id="aba-detalhes" class="aba-modal">
-          <h4>Detalhes Técnicos</h4>
-          <div id="content-detalhes" class="modal-content-area">
-            <!-- Preenchido dinamicamente -->
-          </div>
+        <div id="aba-detalhes" class="aba-modal" style="padding: 1.5rem;">
+          <h4 style="margin: 0 0 1rem 0; font-size: 16px; font-weight: 700;">Detalhes Técnicos</h4>
+          <div id="content-detalhes" class="modal-content-area"></div>
         </div>
       </div>
 
-      <footer class="modal-footer" style="display: flex; gap: 1rem; padding: 1.5rem; border-top: 1px solid var(--border-default);">
-        <button 
-          class="btn btn-outline"
-          onclick="App.fecharModalDirecaoArte()" style="flex: 1;">
-          ← Voltar
-        </button>
-        <button 
-          class="btn btn-primary"
-          onclick="App.aprovarDirecaoArte()" style="flex: 1;">
-          ✅ Aprovar
-        </button>
-      </footer>
+      <div class="modal-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-default); display: flex; gap: 1rem;">
+        <button class="btn-ghost" onclick="App.closeModal('modal-direcao-arte')" style="flex: 1;">← Voltar</button>
+        <button class="btn-primary" onclick="App.aprovarDirecaoArte()" style="flex: 1;">✅ Aprovar Direção de Arte</button>
+      </div>
     </div>
   </div>
 

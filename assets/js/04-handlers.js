@@ -15,7 +15,7 @@ Object.assign(window.App, {
       el.addEventListener('input', () => {
         const field = el.dataset.field;
         this.setField(field, el.value);
-        
+
         // Atualiza preview do WhatsApp em tempo real
         if (field === 'whatsapp') {
           const preview = container.querySelector('#wa-preview');
@@ -272,8 +272,8 @@ Object.assign(window.App, {
       await this.aiLogDelay(300);
 
       this.aiLogStep(2);
-      const resultado = await this.callAI({ 
-        userPrompt: prompt, 
+      const resultado = await this.callAI({
+        userPrompt: prompt,
         maxTokens: 4000 // Aumentado para garantir que o JSON longo caiba
       });
       await this.aiLogDelay(300);
@@ -300,172 +300,27 @@ Object.assign(window.App, {
 
   buildIntakePrompt(briefing) {
     return `
-Você é um estrategista sênior de marketing digital especializado em landing pages de conversão.
+Você é um estrategista sênior de marketing digital. Extraia TODAS as informações do briefing abaixo para preencher o JSON.
 
-Leia o briefing abaixo e extraia TODAS as informações disponíveis.
-Retorne um JSON válido com EXATAMENTE esta estrutura.
-Para campos sem informação no briefing: retorne string vazia "".
-NUNCA invente informações que não estejam no briefing.
-Responda APENAS com o JSON, sem markdown, sem explicação.
+REGRAS:
+1. Retorne APENAS o JSON.
+2. NUNCA invente informações. Se não houver info, use "".
+3. Garanta que o JSON seja VÁLIDO e bem formatado.
+4. Responda APENAS com o objeto JSON, sem textos extras ou markdown.
 
+ESTRUTURA DO JSON:
 {
-  "step1": {
-    "nome_profissional": "",
-    "nome_cliente": "",
-    "nome_marca": "",
-    "nicho": "",
-    "segmento": "",
-    "cidade": "",
-    "estado": "",
-    "proposta_valor": "",
-    "missao": "",
-    "anos_experiencia": "",
-    "formacao": "",
-    "certificacoes": "",
-    "tipo": "",
-    "dominio": "",
-    "cnpj": "",
-    "aviso_legal": ""
-  },
-  "step2": {
-    "avatar_nome": "",
-    "avatar_idade": "",
-    "avatar_genero": "",
-    "avatar_profissao": "",
-    "avatar_renda": "",
-    "dor_principal": "",
-    "dores_secundarias": "",
-    "desejo_principal": "",
-    "objecao_preco": "",
-    "objecao_tempo": "",
-    "objecao_confianca": "",
-    "objecao_resultado": "",
-    "gatilhos_mentais": "",
-    "whatsapp": "",
-    "email": "",
-    "horarios": "",
-    "gtm_id": "",
-    "objetivo_conversao": ""
-  },
-  "step3": {
-    "servico_principal": "",
-    "servico_descricao": "",
-    "servicos_descricao": "",
-    "como_funciona_passo1": "",
-    "como_funciona_passo2": "",
-    "como_funciona_passo3": "",
-    "como_funciona_passo4": "",
-    "modalidade": "",
-    "duracao_sessao": "",
-    "frequencia": "",
-    "formato": "",
-    "resultado_esperado": "",
-    "prazo_resultado": "",
-    "servicos_adicionais": "",
-    "instagram": "",
-    "tiktok": "",
-    "youtube": "",
-    "google_business": "",
-    "google_nota": "",
-    "google_qtd": ""
-  },
-  "step4": {
-    "depoimento1_nome": "",
-    "depoimento1_texto": "",
-    "depoimento1_resultado": "",
-    "depoimento2_nome": "",
-    "depoimento2_texto": "",
-    "depoimento2_resultado": "",
-    "depoimento3_nome": "",
-    "depoimento3_texto": "",
-    "depoimento3_resultado": "",
-    "casos_de_sucesso": "",
-    "perfil_google": "",
-    "nota_google": "",
-    "quantidade_avaliacoes": "",
-    "instagram": "",
-    "seguidores": "",
-    "midia_aparicoes": "",
-    "endereco": "",
-    "exibir_localizacao": "",
-    "maps_link": "",
-    "cidades_atendimento": "",
-    "faq": "",
-    "objecoes_atendimento": "",
-    "plataforma_online": ""
-  },
-  "step5": {
-    "diferencial1_titulo": "",
-    "diferencial1_descricao": "",
-    "diferencial2_titulo": "",
-    "diferencial2_descricao": "",
-    "diferencial3_titulo": "",
-    "diferencial3_descricao": "",
-    "diferencial4_titulo": "",
-    "diferencial4_descricao": "",
-    "metodologia_propria": "",
-    "garantia": "",
-    "atendimento_diferenciado": "",
-    "diferencial": "",
-    "frase_impacto": "",
-    "historia": "",
-    "casos_resultados": "",
-    "depoimentos": "",
-    "depoimentos_qtd": "",
-    "depoimentos_formato": []
-  },
-  "step6": {
-    "whatsapp": "",
-    "whatsapp_mensagem_padrao": "",
-    "email": "",
-    "preco_plano1_nome": "",
-    "preco_plano1_valor": "",
-    "preco_plano1_descricao": "",
-    "preco_plano2_nome": "",
-    "preco_plano2_valor": "",
-    "preco_plano2_descricao": "",
-    "preco_plano3_nome": "",
-    "preco_plano3_valor": "",
-    "preco_plano3_descricao": "",
-    "forma_pagamento": "",
-    "desconto_pix": "",
-    "parcelas": "",
-    "trial_gratuito": "",
-    "horario_atendimento": "",
-    "publico_primario": "",
-    "publico_dor": "",
-    "publico_resultado": ""
-  },
-  "step7": {
-    "cor_primaria": "",
-    "cor_secundaria": "",
-    "cor_acento": "",
-    "cor_fundo": "",
-    "estilo_visual": "",
-    "fonte_titulo": "",
-    "fonte_corpo": "",
-    "tom_comunicacao": "",
-    "referencias_visuais": "",
-    "logo_descricao": "",
-    "imagens_disponiveis": "",
-    "video_disponivel": "",
-    "estilo_desejado": "",
-    "sensacao_visitante": "",
-    "restricoes": ""
-  },
-  "step8": {
-    "titulo_seo": "",
-    "descricao_seo": "",
-    "palavra_chave_principal": "",
-    "palavras_chave_secundarias": "",
-    "dominio_sugerido": "",
-    "schema_tipo": "",
-    "og_titulo": "",
-    "og_descricao": ""
-  }
+  "step1": { "nome_profissional": "", "nome_cliente": "", "nome_marca": "", "nicho": "", "segmento": "", "cidade": "", "estado": "", "proposta_valor": "", "missao": "", "anos_experiencia": "", "formacao": "", "certificacoes": "", "tipo": "", "dominio": "", "cnpj": "", "aviso_legal": "" },
+  "step2": { "avatar_nome": "", "avatar_idade": "", "avatar_genero": "", "avatar_profissao": "", "avatar_renda": "", "dor_principal": "", "dores_secundarias": "", "desejo_principal": "", "objecao_preco": "", "objecao_tempo": "", "objecao_confianca": "", "objecao_resultado": "", "gatilhos_mentais": "", "whatsapp": "", "email": "", "horarios": "", "gtm_id": "", "objetivo_conversao": "" },
+  "step3": { "servico_principal": "", "servico_descricao": "", "servicos_descricao": "", "como_funciona_passo1": "", "como_funciona_passo2": "", "como_funciona_passo3": "", "como_funciona_passo4": "", "modalidade": "", "duracao_sessao": "", "frequencia": "", "formato": "", "resultado_esperado": "", "prazo_resultado": "", "servicos_adicionais": "", "instagram": "", "tiktok": "", "youtube": "", "google_business": "", "google_nota": "", "google_qtd": "" },
+  "step4": { "depoimento1_nome": "", "depoimento1_texto": "", "depoimento1_resultado": "", "depoimento2_nome": "", "depoimento2_texto": "", "depoimento2_resultado": "", "depoimento3_nome": "", "depoimento3_texto": "", "depoimento3_resultado": "", "casos_de_sucesso": "", "perfil_google": "", "nota_google": "", "quantidade_avaliacoes": "", "instagram": "", "seguidores": "", "midia_aparicoes": "", "endereco": "", "exibir_localizacao": "", "maps_link": "", "cidades_atendimento": "", "faq": "", "objecoes_atendimento": "", "plataforma_online": "" },
+  "step5": { "diferencial1_titulo": "", "diferencial1_descricao": "", "diferencial2_titulo": "", "diferencial2_descricao": "", "diferencial3_titulo": "", "diferencial3_descricao": "", "diferencial4_titulo": "", "diferencial4_descricao": "", "metodologia_propria": "", "garantia": "", "atendimento_diferenciado": "", "diferencial": "", "frase_impacto": "", "historia": "", "casos_resultados": "", "depoimentos": "", "depoimentos_qtd": "", "depoimentos_formato": [] },
+  "step6": { "whatsapp": "", "whatsapp_mensagem_padrao": "", "email": "", "preco_plano1_nome": "", "preco_plano1_valor": "", "preco_plano1_descricao": "", "preco_plano2_nome": "", "preco_plano2_valor": "", "preco_plano2_descricao": "", "preco_plano3_nome": "", "preco_plano3_valor": "", "preco_plano3_descricao": "", "forma_pagamento": "", "desconto_pix": "", "parcelas": "", "trial_gratuito": "", "horario_atendimento": "", "publico_primario": "", "publico_dor": "", "publico_resultado": "" },
+  "step7": { "cor_primaria": "", "cor_secundaria": "", "cor_acento": "", "cor_fundo": "", "estilo_visual": "", "fonte_titulo": "", "fonte_corpo": "", "tom_comunicacao": "", "referencias_visuais": "", "logo_descricao": "", "imagens_disponiveis": "", "video_disponivel": "", "estilo_desejado": "", "sensacao_visitante": "", "restricoes": "" },
+  "step8": { "titulo_seo": "", "descricao_seo": "", "palavra_chave_principal": "", "palavras_chave_secundarias": "", "dominio_sugerido": "", "schema_tipo": "", "og_titulo": "", "og_descricao": "" }
 }
 
-BRIEFING DO CLIENTE:
+BRIEFING:
 ${briefing}
     `.trim();
   },
@@ -473,36 +328,11 @@ ${briefing}
   async applyIntakeJSON(jsonString) {
     let data;
     try {
-      // 1. Limpeza agressiva
-      let clean = jsonString.replace(/```json|```/g, '').trim();
-      
-      // 2. Tentar extrair o maior bloco de chaves { }
-      const firstBrace = clean.indexOf('{');
-      const lastBrace = clean.lastIndexOf('}');
-      
-      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
-        clean = clean.substring(firstBrace, lastBrace + 1);
-      }
-
-      data = JSON.parse(clean);
+      data = this.robustParseJSON(jsonString);
     } catch (e) {
-      console.error('[Intake] Erro ao parsear JSON da IA:', e);
+      console.error('[Intake] Erro fatal ao parsear JSON da IA:', e);
       console.log('[Intake] Conteúdo bruto recebido:', jsonString);
-      
-      // Tentar recuperação se for apenas aspas não escapadas ou quebras de linha
-      try {
-        const fixed = jsonString
-          .replace(/\n/g, ' ')
-          .match(/\{[\s\S]*\}/)?.[0];
-        if (fixed) {
-          data = JSON.parse(fixed);
-          console.log('[Intake] Recuperado com sucesso após limpeza extra');
-        } else {
-          throw new Error('Não foi possível localizar um objeto JSON válido');
-        }
-      } catch (e2) {
-        throw new Error('Resposta da IA inválida — o formato retornado não é um JSON válido. Verifique o console para detalhes.');
-      }
+      throw new Error('Resposta da IA inválida — o formato retornado não é um JSON válido. Verifique o console para detalhes.');
     }
 
     const steps = ['step1', 'step2', 'step3', 'step4', 'step5', 'step6', 'step7', 'step8'];
@@ -614,19 +444,16 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
 
       this.aiLogStep(4);
       let ficha = null;
-      const cleanRes = res.replace(/```json|```/g, '').trim();
       try {
-        ficha = JSON.parse(cleanRes);
-      } catch {
-        const match = cleanRes.match(/\{[\s\S]*\}/);
-        if (match) ficha = JSON.parse(match[0]);
-        else throw new Error('Resposta da IA inválida. Tente novamente.');
+        ficha = this.robustParseJSON(res);
+      } catch (e) {
+        throw new Error('Resposta da IA inválida. O formato de Direção de Arte não é um JSON válido.');
       }
 
       // Validação do output (Regras Blindadas)
       const textoValidar = JSON.stringify(ficha);
       const validacao = this.validateBlindedOutput(textoValidar);
-      
+
       if (!validacao.valido) {
         console.warn('Output da arte falhou na validação blindada:', validacao.erros);
         // Aqui poderíamos forçar um retry, mas vamos apenas mostrar o aviso no modal de resultado
@@ -661,13 +488,13 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
     // 1. Normalizar restrições do state
     const restricoesRaw = this.B?.restricoes || '';
     const restricoes = this.normalizeRestricoes(restricoesRaw);
-    
+
     // 2. Extrair todo o texto da ficha
     const textoCompleto = this.extrairTextoJson(ficha);
-    
+
     // 3. Validar
     const validacao = this.validateCopyComRestricoes(textoCompleto, restricoes);
-    
+
     // 4. Se houver violações, preparar aviso
     let avisoHTML = '';
     if (!validacao.valido) {
@@ -857,7 +684,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       const est = typeof B.estrutura_lp === 'string' ? JSON.parse(B.estrutura_lp) : B.estrutura_lp;
       const listaBlocos = est?.estrutura_lp?.blocos || [];
       blocos = listaBlocos.filter(b => b.incluir).length;
-      
+
       if (blocos < 5) {
         errors.push(`Estrutura incompleta: apenas ${blocos} blocos inclusos. Mínimo 5 obrigatório.`);
       }
@@ -951,7 +778,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       this.aiLogStep(2);
       this.aiLogMessage('Solicitando PARTE 1 (Fundação)...');
       const startP1 = Date.now();
-      
+
       const restricoesPrompt = this.buildRestricoesPrompt(this.B?.restricoes);
       const systemPromptBase = this.buildBlindedSystemPrompt(this.B, 'copy_completa');
 
@@ -1076,7 +903,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
             erros: [...val1.erros, ...val2.erros, ...val3.erros, ...val4.erros],
             avisos: [...val1.avisos, ...val2.avisos, ...val3.avisos, ...val4.avisos],
             acoes: [
-              { label: 'Entendido', primary: true, onclick: () => {} }
+              { label: 'Entendido', primary: true, onclick: () => { } }
             ]
           });
         }, 800);
@@ -1131,7 +958,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
     try {
       const parsed = typeof estruturaRaw === 'string' ? JSON.parse(estruturaRaw) : estruturaRaw;
       estruturaAprovada = JSON.stringify(parsed, null, 2);
-    } catch (e) {}
+    } catch (e) { }
 
     return `
 Você é um Full-Stack Developer Senior especializado em Astro + Tailwind CSS.
@@ -1371,7 +1198,7 @@ Apenas os 3 arquivos acima. Nada mais. Sem explicação.
     try {
       const parsed = typeof estruturaRaw === 'string' ? JSON.parse(estruturaRaw) : estruturaRaw;
       estruturaAprovada = JSON.stringify(parsed, null, 2);
-    } catch (e) {}
+    } catch (e) { }
 
     return `
 Você é um Full-Stack Developer Senior especializado em Astro + Tailwind CSS.
@@ -1593,7 +1420,7 @@ Nada de placeholders ou TODO.
     try {
       const parsed = typeof estruturaRaw === 'string' ? JSON.parse(estruturaRaw) : estruturaRaw;
       estruturaAprovada = JSON.stringify(parsed, null, 2);
-    } catch (e) {}
+    } catch (e) { }
 
     return `
 Você é um Frontend Developer Senior especializado em Astro + Tailwind CSS + GSAP.
@@ -2128,5 +1955,34 @@ Sem placeholders, pronto para npm install + npm run dev.
 
     log.appendChild(msgEl);
     log.parentElement?.scrollTo({ top: log.parentElement.scrollHeight, behavior: 'smooth' });
+  },
+
+  robustParseJSON(jsonString) {
+    try {
+      // 1. Tenta parsear diretamente
+      return JSON.parse(jsonString);
+    } catch (e) {
+      // 2. Tenta extrair de bloco de código markdown
+      const markdownMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
+      if (markdownMatch && markdownMatch[1]) {
+        try {
+          return JSON.parse(markdownMatch[1]);
+        } catch (e2) {
+          // Ignora, tenta a próxima abordagem
+        }
+      }
+
+      // 3. Tenta extrair o primeiro objeto JSON
+      const jsonMatch = jsonString.match(/\{[\s\S]*\}/);
+      if (jsonMatch && jsonMatch[0]) {
+        try {
+          return JSON.parse(jsonMatch[0]);
+        } catch (e3) {
+          // Ignora, lança erro no final
+        }
+      }
+
+      throw new Error('Não foi possível parsear JSON. Formato inválido.');
+    }
   },
 });

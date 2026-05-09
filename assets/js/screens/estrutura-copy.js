@@ -599,7 +599,12 @@ Não resuma a copy. Não invente dados. Não use placeholders.
       return;
     }
 
-    this.showLoader('Analisando briefing e gerando copy...');
+    this.openAILog('Gerando Estrutura e Copy', [
+      { id: 1, icon: 'file-text', label: 'Analisando briefing...' },
+      { id: 2, icon: 'cpu', label: 'Gerando conteúdo (pode levar 1-2 min)...' },
+      { id: 3, icon: 'save', label: 'Processando resultado...' }
+    ]);
+    this.aiLogStep(1);
 
     try {
       const conteudoArquivo = this.gerarArquivoEstruturaCopy();
@@ -610,19 +615,21 @@ Não resuma a copy. Não invente dados. Não use placeholders.
 INSTRUÇÃO ADICIONAL: Gere agora o output completo seguindo exatamente o FORMATO OBRIGATÓRIO DE ENTREGA acima. Inclua os delimitadores ===INICIO-OUTPUT=== e ===FIM-OUTPUT===.
 `;
 
+      this.aiLogStep(2);
       const resposta = await this.callAI({
         userPrompt: prompt,
         maxTokens: 4000 // Aumentar para garantir copy completa
       });
 
-      this.hideLoader();
+      this.aiLogStep(3);
+      this.closeAILog();
 
       const ok = this.processarOutputColado(resposta);
       if (ok) {
         this.renderScreen();
       }
     } catch (error) {
-      this.hideLoader();
+      this.closeAILog();
       this.showToast(`❌ Erro ao gerar: ${error.message}`, 'error');
       console.error(error);
     }

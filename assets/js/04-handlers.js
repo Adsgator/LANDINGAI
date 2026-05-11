@@ -501,7 +501,8 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       this.aiLogStep(3);
       const res = await this.callAI({
         systemPrompt: systemPrompt,
-        userPrompt: prompt
+        userPrompt: prompt,
+        maxTokens: 4096 // Aumentado para garantir a ficha completa
       });
 
       this.aiLogStep(4);
@@ -1060,7 +1061,8 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
 
       const parte1 = await this.callAI({
         systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
-        userPrompt: this.buildImplPromptParte1()
+        userPrompt: this.buildImplPromptParte1(),
+        maxTokens: 8192
       });
 
       // Validar PARTE 1
@@ -1080,7 +1082,8 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       const startP2 = Date.now();
       const parte2 = await this.callAI({
         systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
-        userPrompt: this.buildImplPromptParte2()
+        userPrompt: this.buildImplPromptParte2(),
+        maxTokens: 8192
       });
 
       // Validar PARTE 2
@@ -1099,7 +1102,8 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       const startP3 = Date.now();
       const parte3 = await this.callAI({
         systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
-        userPrompt: this.buildImplPromptParte3()
+        userPrompt: this.buildImplPromptParte3(),
+        maxTokens: 8192
       });
 
       // Validar PARTE 3
@@ -1118,7 +1122,8 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       const startP4 = Date.now();
       const parte4 = await this.callAI({
         systemPrompt: systemPromptBase + '\n\n' + restricoesPrompt,
-        userPrompt: this.buildImplPromptParte4()
+        userPrompt: this.buildImplPromptParte4(),
+        maxTokens: 8192
       });
 
       // Validar PARTE 4
@@ -2206,28 +2211,51 @@ Sem placeholders, pronto para npm install + npm run dev.
   },
 
   robustParseJSON(jsonString) {
-    // Primeira tentativa: parsear diretamente
+    if (!jsonString || typeof jsonString !== 'string') return jsonString;
+
+    // 1. Tenta parsear diretamente
     try {
       return JSON.parse(jsonString);
-    } catch (e) {
-      // Ignorar, tentar abordagens mais robustas
-    }
+    } catch (e) { }
 
-    // Tenta extrair de bloco de código markdown
+    // 2. Tenta extrair de bloco de código markdown
     const markdownMatch = jsonString.match(/```json\s*([\s\S]*?)\s*```/);
     if (markdownMatch && markdownMatch[1]) {
       try {
         return JSON.parse(markdownMatch[1]);
       } catch (e2) {
-        // Ignorar, tentar a próxima abordagem
+        jsonString = markdownMatch[1]; // Continua tentando com o conteúdo do bloco
       }
     }
 
-    // Função para reparar JSON truncado
-    const fixTruncatedJSON = (str) => {
+    // 3. Limpeza inicial
+    let cleaned = jsonString.trim();
+
+    // Extrair apenas o que parece ser o objeto JSON principal
+    const firstBrace = cleaned.indexOf('{');
+    const lastBrace = cleaned.lastIndexOf('}');
+
+    if (firstBrace !== -1) {
+      if (lastBrace > firstBrace) {
+        // Tenta o conteúdo entre a primeira e última chave
+        const candidate = cleaned.substring(firstBrace, lastBrace + 1);
+        try {
+          return JSON.parse(candidate);
+        } catch (e) {
+          cleaned = candidate; // Tenta consertar esse pedaço
+        }
+      } else {
+        // Só tem a primeira chave, pega dali até o fim
+        cleaned = cleaned.substring(firstBrace);
+      }
+    }
+
+    // 4. Função para reparar JSON truncado (equilibrar chaves e aspas)
+    const fixTruncated = (str) => {
       let inString = false;
       let escape = false;
       let stack = [];
+
       for (let i = 0; i < str.length; i++) {
         let c = str[i];
         if (escape) { escape = false; continue; }
@@ -2242,41 +2270,48 @@ Sem placeholders, pronto para npm install + npm run dev.
           }
         }
       }
+
       let fixed = str;
       if (inString) fixed += '"';
+
+      // REMOVER lixo no final antes de fechar:
+      // Se termina com vírgula, dois pontos ou um início de chave/valor, limpa.
+      // Ex: {"a":1, "b":   -> {"a":1}
+      if (!inString) {
+        fixed = fixed.replace(/,\s*$/, ''); // Remove vírgula final
+        fixed = fixed.replace(/:\s*$/, '');  // Remove dois pontos final
+        // Remove chaves vazias ou nomes de campos pendentes no final
+        fixed = fixed.replace(/,\s*"[^"]*"\s*$/, '');
+      }
+
       while (stack.length > 0) {
         let c = stack.pop();
         if (c === '{') fixed += '}';
         else if (c === '[') fixed += ']';
       }
+
+      // Limpeza final de trailing commas que o fix possa ter deixado ou que já existiam
+      fixed = fixed.replace(/,(\s*[}\]])/g, '$1');
+
       return fixed;
     };
 
-    // Extrair apenas a parte que parece ser JSON
-    const jsonMatch = jsonString.match(/\{[\s\S]*/);
-    let cleanedString = jsonMatch ? jsonMatch[0] : jsonString;
-
-    // Tenta remover comentários
-    cleanedString = cleanedString.replace(/\/\/[^\n\r]*/g, '');
-    cleanedString = cleanedString.replace(/\/\*[\s\S]*?\*\//g, '');
-
-    // Aplica o fix de truncamento
-    let fixedString = fixTruncatedJSON(cleanedString);
-
-    // Tenta remover trailing commas (vírgulas antes de chaves ou colchetes)
-    fixedString = fixedString.replace(/,(\s*[}\]])/g, '$1');
-
+    // 5. Tentativas iterativas de conserto
+    let attempt = fixTruncated(cleaned);
     try {
-      return JSON.parse(fixedString);
+      return JSON.parse(attempt);
     } catch (e3) {
-      // Fallback final: tenta a string limpa original caso o fix tenha quebrado algo
+      // Se falhou, tenta remover o último par chave-valor se parecer quebrado
+      // Isso é útil se o truncamento aconteceu no meio de uma string ou valor complexo
+      try {
+        let secondAttempt = attempt.replace(/,\s*"[^"]+"\s*:\s*[^,}]*$/, '');
+        secondAttempt = fixTruncated(secondAttempt);
+        return JSON.parse(secondAttempt);
+      } catch (e4) { }
     }
 
-    try {
-      return JSON.parse(cleanedString);
-    } catch (e4) {
-      throw new Error('Não foi possível parsear JSON. Formato inválido. Conteúdo: ' + jsonString.substring(0, 500) + '...');
-    }
+    // Fallback final: se nada funcionar, lança o erro original mas com contexto
+    throw new Error('Não foi possível parsear JSON. Formato inválido. Conteúdo: ' + jsonString.substring(0, 400) + '...');
   },
 
   /* ----------------------------------------------------------

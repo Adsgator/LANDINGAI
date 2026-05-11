@@ -682,7 +682,7 @@ INSTRUÇÃO ADICIONAL: Gere agora o output completo seguindo exatamente o FORMAT
       this.aiLogStep(2);
       const resposta = await this.callAI({
         userPrompt: prompt,
-        maxTokens: 4000 // Aumentar para garantir copy completa
+        maxTokens: 8192 // Aumentado para garantir copy completa de todos os blocos
       });
 
       this.aiLogStep(3);

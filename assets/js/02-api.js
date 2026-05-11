@@ -151,11 +151,16 @@ Object.assign(window.App, {
     // 8. Fazer requisição
     console.log(`📤 Chamando ${modelConfig.provider} (${modelConfig.model})...`);
 
+    // Criar AbortController para permitir cancelamento
+    const abortController = new AbortController();
+    this.state.currentAbortController = abortController;
+
     try {
       const response = await fetch(url, {
         method: 'POST',
         headers: headers,
-        body: JSON.stringify(finalPayload)
+        body: JSON.stringify(finalPayload),
+        signal: abortController.signal
       });
 
       // 9. Tratar resposta
@@ -196,10 +201,16 @@ Object.assign(window.App, {
 
       console.log(`✅ Resposta recebida de ${modelConfig.provider}`);
 
+      // Limpar controller
+      this.state.currentAbortController = null;
+
       // Retorna apenas o conteúdo para manter compatibilidade com o resto do app
       return content;
 
     } catch (error) {
+      // Limpar controller mesmo em erro
+      this.state.currentAbortController = null;
+
       console.error(`❌ Erro ao chamar ${modelConfig.provider}:`, error);
       throw error;
     }

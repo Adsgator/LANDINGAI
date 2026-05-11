@@ -418,10 +418,18 @@ ${briefing}
 
     try {
       this.aiLogStep(1);
+
+      // Coletar referências de URL antigo sistema
       const refs = [
         ...(B.arte_referencias_pessoais || []).map(r => r.url).filter(Boolean),
         ...(B.arte_referencias_nicho || []).map(r => r.url).filter(Boolean),
       ];
+
+      // Incluir nomes e descrições das referências visuais (novo sistema)
+      const refVisuaisDesc = (B.referenciasVisuais || [])
+        .map(r => `- ${r.nome || 'Arquivo'}: ${r.descricao || 'Referência visual'}`)
+        .join('\n');
+
       await this.aiLogDelay(200);
 
       this.aiLogStep(2);
@@ -449,6 +457,13 @@ DADOS DO PROJETO:
 - Tema preferido: ${B.arte_tema || 'IA decide'}
 - Intensidade visual: ${B.arte_intensidade || 'moderado'}
 - URLs de referência: ${refs.length > 0 ? refs.join(', ') : 'Nenhuma fornecida'}
+${refVisuaisDesc ? '\nReferências Visuais Enviadas:\n' + refVisuaisDesc : ''}
+
+IMPORTANTE: Se houver referências visuais, analise-as para extrair:
+- Paleta de cores predominante
+- Tipografia e hierarquia visual
+- Atmosfera, tom e estilo visual
+- Padrões gráficos e elementos de design
 
 Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
 
@@ -519,6 +534,21 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
         this.closeAILog();
         this.showToast('Erro ao gerar arte: ' + e.message, 'error');
       }, 1200);
+    }
+  },
+
+  /**
+   * Cancela a geração em andamento
+   */
+  cancelGeneration() {
+    const controller = this.state.currentAbortController;
+    if (controller) {
+      controller.abort();
+      this.state.currentAbortController = null;
+      this.closeModal('modal-gen');
+      this.showToast('Geração cancelada', 'info');
+    } else {
+      this.showToast('Nenhuma geração em andamento', 'warning');
     }
   },
 

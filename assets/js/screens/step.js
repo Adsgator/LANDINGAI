@@ -50,6 +50,7 @@ Object.assign(window.App, {
         { v: 'consultoria', icon: 'bar-chart', title: 'Consultoria', desc: 'B2B, consultoria especializada, assessoria' },
         { v: 'produto', icon: 'package', title: 'Produto', desc: 'Venda física, produto digital, ecommerce' },
         { v: 'saas', icon: 'monitor', title: 'SaaS / Digital', desc: 'Software, app, ferramenta, plataforma' },
+        { v: 'curso', icon: 'book-open', title: 'Curso', desc: 'Curso online, treinamento, workshop, infoproduto' },
       ].map(o => `
             <div class="sel-card ${B.tipo === o.v ? 'on' : ''}" data-field="tipo" data-selcard="${o.v}" tabindex="0" role="option" aria-selected="${B.tipo === o.v}">
               <i data-lucide="${o.icon}" class="sel-card-icon" style="width:18px;height:18px"></i>
@@ -128,6 +129,15 @@ Object.assign(window.App, {
           </div>
           <span class="field-hint">Somente dígitos: DDI + DDD + número. O link wa.me é gerado automaticamente.</span>
         </div>
+      </div>
+
+      <div class="field-group">
+        ${this.fieldLabel('mensagem_wa', 'Mensagem padrão do WhatsApp', false, true)}
+        <input type="text" class="field-input" data-field="mensagem_wa" placeholder="Ex: Olá! Vi o site e quero saber mais." value="${B.mensagem_wa || ''}">
+        <span class="field-hint">Esta mensagem será pré-preenchida quando os visitantes clicarem para conversar via WhatsApp.</span>
+      </div>
+
+      <div class="form-row">
         <div class="field-group">
           ${this.fieldLabel('email', 'E-mail de contato', false, true)}
           <input type="email" class="field-input" data-field="email" placeholder="contato@email.com.br" value="${B.email || ''}">

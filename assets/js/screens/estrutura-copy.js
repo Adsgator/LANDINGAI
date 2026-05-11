@@ -124,6 +124,9 @@ Especialista conversando olho no olho. Firmeza sem arrogância. Proximidade sem 
 **Foco na Ação**
 Cada título, subtítulo e botão guia o usuário para o CTA principal. Não há texto decorativo — cada palavra tem função persuasiva.
 
+**Linguagem Natural sem Travessão**
+Proibido usar travessão (—) na copy. Escreva de forma natural e conversacional, como se estivesse falando diretamente com o cliente. Use vírgulas, pontos ou "e", nunca travessão.
+
 ---
 
 ## BRIEFING DO PROJETO

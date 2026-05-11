@@ -76,14 +76,16 @@ Object.assign(window.App, {
                   value="${B.arte_cor_principal || '#000000'}"
                   onchange="App.atualizarCorPrincipal()">
                 
-                <input 
-                  type="text" 
+                <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-weight:600; pointer-events:none;">#</span>
+                <input
+                  type="text"
                   id="cor-principal-hex"
                   class="color-hex-input"
-                  placeholder="#000000"
-                  maxlength="7"
-                  value="${B.arte_cor_principal || ''}"
-                  oninput="App.validarEAtualizarHex('principal', this.value)">
+                  placeholder="000000"
+                  maxlength="6"
+                  value="${(B.arte_cor_principal || '').replace('#', '')}"
+                  oninput="App.validarEAtualizarHex('principal', this.value)"
+                  style="padding-left: 28px;">
               </div>
             </div>
 
@@ -97,14 +99,16 @@ Object.assign(window.App, {
                   value="${B.arte_cor_secundaria || '#FFFFFF'}"
                   onchange="App.atualizarCorSecundaria()">
                 
-                <input 
-                  type="text" 
+                <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-weight:600; pointer-events:none;">#</span>
+                <input
+                  type="text"
                   id="cor-secundaria-hex"
                   class="color-hex-input"
-                  placeholder="#FFFFFF"
-                  maxlength="7"
-                  value="${B.arte_cor_secundaria || ''}"
-                  oninput="App.validarEAtualizarHex('secundaria', this.value)">
+                  placeholder="FFFFFF"
+                  maxlength="6"
+                  value="${(B.arte_cor_secundaria || '').replace('#', '')}"
+                  oninput="App.validarEAtualizarHex('secundaria', this.value)"
+                  style="padding-left: 28px;">
               </div>
             </div>
 
@@ -118,14 +122,16 @@ Object.assign(window.App, {
                   value="${B.arte_cor_complementar || '#000000'}"
                   onchange="App.atualizarCorComplementar()">
                 
-                <input 
-                  type="text" 
+                <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-secondary); font-weight:600; pointer-events:none;">#</span>
+                <input
+                  type="text"
                   id="cor-complementar-hex"
                   class="color-hex-input"
-                  placeholder="#000000"
-                  maxlength="7"
-                  value="${B.arte_cor_complementar || ''}"
-                  oninput="App.validarEAtualizarHex('complementar', this.value)">
+                  placeholder="000000"
+                  maxlength="6"
+                  value="${(B.arte_cor_complementar || '').replace('#', '')}"
+                  oninput="App.validarEAtualizarHex('complementar', this.value)"
+                  style="padding-left: 28px;">
               </div>
             </div>
           </div>
@@ -231,7 +237,7 @@ Object.assign(window.App, {
             <label style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-tertiary); margin-bottom: 4px; display: block;">Referências Visuais — Arquivos e Links</label>
             
             <!-- Upload de Arquivos -->
-            <div id="art-upload-zone" class="upload-zone" onclick="document.getElementById('upload-referencia-visual').click()">
+            <div id="art-upload-zone-refs" class="upload-zone" onclick="document.getElementById('upload-referencia-visual').click()">
               <input 
                 type="file" 
                 id="upload-referencia-visual"
@@ -562,6 +568,44 @@ Object.assign(window.App, {
     this.showToast('✅ Referência adicionada!', 'success');
   },
 
+  handleReferenciaDropFiles(files) {
+    files.forEach(file => {
+      if (!['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type)) {
+        this.showToast(`❌ ${file.name}: tipo não suportado`, 'error');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        this.showToast(`❌ ${file.name}: arquivo muito grande`, 'error');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const referencia = {
+          id: Date.now().toString() + Math.random(),
+          tipo: 'arquivo',
+          nome: file.name,
+          tamanho: (file.size / 1024).toFixed(2) + 'KB',
+          mimetype: file.type,
+          conteudo: e.target.result,
+          descricao: '',
+          dataAdicao: new Date().toISOString()
+        };
+
+        if (!this.B.referenciasVisuais) {
+          this.B.referenciasVisuais = [];
+        }
+
+        this.B.referenciasVisuais.push(referencia);
+        this.autosave();
+        this.renderizarReferenciasList();
+        this.showToast(`✅ "${file.name}" adicionado!`, 'success');
+      };
+      reader.readAsDataURL(file);
+    });
+  },
+
   removerReferencia(id) {
     if (this.B.referenciasVisuais) {
       this.B.referenciasVisuais = this.B.referenciasVisuais.filter(r => r.id !== id);
@@ -639,9 +683,11 @@ Object.assign(window.App, {
   // ============================================================
 
   validarEAtualizarHex(tipo, valor) {
+    // Garantir que começa com #
+    let hex = valor.startsWith('#') ? valor : '#' + valor;
     const regexHex = /^#[0-9A-F]{6}$/i;
 
-    if (!regexHex.test(valor)) {
+    if (!regexHex.test(hex)) {
       return;
     }
 
@@ -652,17 +698,17 @@ Object.assign(window.App, {
 
     const picker = document.getElementById(pickerId);
     if (picker) {
-      picker.value = valor;
+      picker.value = hex;
     }
 
     if (tipo === 'principal') {
-      this.setField('arte_cor_principal', valor);
+      this.setField('arte_cor_principal', hex);
     } else if (tipo === 'secundaria') {
-      this.setField('arte_cor_secundaria', valor);
+      this.setField('arte_cor_secundaria', hex);
     } else if (tipo === 'complementar') {
-      this.setField('arte_cor_complementar', valor);
+      this.setField('arte_cor_complementar', hex);
     }
-    
+
     this.autosave();
   },
 
@@ -671,7 +717,7 @@ Object.assign(window.App, {
     const hexInput = document.getElementById('cor-principal-hex');
 
     if (picker && hexInput) {
-      hexInput.value = picker.value;
+      hexInput.value = picker.value.replace('#', '');
       this.validarEAtualizarHex('principal', picker.value);
     }
   },
@@ -681,7 +727,7 @@ Object.assign(window.App, {
     const hexInput = document.getElementById('cor-secundaria-hex');
 
     if (picker && hexInput) {
-      hexInput.value = picker.value;
+      hexInput.value = picker.value.replace('#', '');
       this.validarEAtualizarHex('secundaria', picker.value);
     }
   },
@@ -691,7 +737,7 @@ Object.assign(window.App, {
     const hexInput = document.getElementById('cor-complementar-hex');
 
     if (picker && hexInput) {
-      hexInput.value = picker.value;
+      hexInput.value = picker.value.replace('#', '');
       this.validarEAtualizarHex('complementar', picker.value);
     }
   },

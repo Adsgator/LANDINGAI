@@ -52,19 +52,40 @@ Object.assign(window.App, {
           </button>
         </div>
 
-        <!-- 2. Visualização da Estrutura (JSON Renderizado) -->
+        <!-- 2. Edição Manual (opcional) -->
+        <div class="estrutura-section-card">
+          <div class="estrutura-section-header">
+            <i data-lucide="edit-3" style="width:15px;height:15px;color:var(--accent)"></i>
+            <span class="estrutura-section-title">Ou Editar Manualmente (JSON)</span>
+          </div>
+          <p class="estrutura-section-desc">
+            Cole ou edite o JSON da estrutura diretamente. Use se preferir customizar manualmente.
+          </p>
+          <textarea
+            id="estrutura-json-manual"
+            class="field-input"
+            style="font-family: var(--font-mono); font-size: 12px; min-height: 200px; width: 100%; padding: 12px; margin-bottom: 12px;"
+            placeholder="${JSON.stringify({ blocos: [] }, null, 2)}"
+          >${estrutura ? JSON.stringify(estrutura, null, 2) : ''}</textarea>
+          <button class="btn-secondary" id="btn-save-estrutura-manual">
+            <i data-lucide="save" style="width:15px;height:15px"></i>
+            Salvar como Estrutura
+          </button>
+        </div>
+
+        <!-- 3. Visualização da Estrutura (JSON Renderizado) -->
         <div id="estrutura-container">
           ${estrutura ? this.renderizarEstrutura(estrutura) : `
             <div class="estrutura-section-card">
               <div class="estrutura-preview-empty">
                 <i data-lucide="layout" style="width:32px;height:32px;color:var(--text-disabled)"></i>
-                <p>A estrutura inteligente aparecerá aqui após a geração.</p>
+                <p>A estrutura inteligente aparecerá aqui após a geração ou edição manual.</p>
               </div>
             </div>
           `}
         </div>
 
-        <!-- 3. Card: Aprovação -->
+        <!-- 4. Card: Aprovação -->
         ${estrutura && !aprovada ? `
         <div class="estrutura-section-card" style="border-color: var(--accent-border); background: var(--accent-dim);">
           <div style="display:flex; justify-content: space-between; align-items:center;">

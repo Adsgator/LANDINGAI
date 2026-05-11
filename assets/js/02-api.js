@@ -554,6 +554,7 @@ Restrições: ${briefing.restricoes || 'Nenhuma'}
 
 - [ ] Procurei a resposta por "px" — NENHUM encontrado
 - [ ] Procurei por "[", "{{", "]" — NENHUM encontrado
+- [ ] Procurei por travessão (—) — NENHUM encontrado na copy
 - [ ] Toda imagem tem alt descritivo
 - [ ] Todo CTA é específica e clara
 - [ ] Copy tem 5 seções: Problema, Solução, Benefícios, Prova, CTA
@@ -562,6 +563,7 @@ Restrições: ${briefing.restricoes || 'Nenhuma'}
 - [ ] Não há links vazios (href="")
 - [ ] Sem jargão técnico não explicado
 - [ ] Estrutura semântica (header, main, footer)
+- [ ] Copy é natural e conversacional, sem artificialismos
 
 Se NÃO passou em TODOS os itens, REESCREVA antes de responder.
 

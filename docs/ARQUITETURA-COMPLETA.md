@@ -290,7 +290,56 @@ O módulo google-ads está planejado mas **NÃO deve ser implementado ainda**.
 
 ---
 
-## 12. O Que Nunca Fazer
+## 12. Prompts Enviados à IA
+
+Todos os prompts seguem a estrutura: **system prompt** (contexto) + **user prompt** (dados do cliente).
+
+### Locais dos Prompts
+
+| Fluxo | Function | Arquivo | Linhas |
+|---|---|---|---|
+| **Intake** | `buildIntakePrompt()` | `04-handlers.js` | 319–343 |
+| **Estrutura** | `montarPromptEstrutura()` | `estrutura.js` | 127–252 |
+| **Arte** | prompt em `runArtAnalysis()` | `04-handlers.js` | 391–398 |
+| **DOC-IMPL Parte 1** | `buildImplPromptParte1()` | `04-handlers.js` | 1023+ |
+| **DOC-IMPL Parte 2** | `buildImplPromptParte2()` | `04-handlers.js` | 1264+ |
+| **DOC-IMPL Parte 3** | `buildImplPromptParte3()` | `04-handlers.js` | 1486+ |
+| **DOC-IMPL Parte 4** | `buildImplPromptParte4()` | `04-handlers.js` | 1644+ |
+| **DOC-1 Externo** | Montado em `montarParteADoc1()` | `gerar-doc1.js` | 536–770 |
+
+### System Prompt Base
+
+Enviado em quase TODAS as chamadas de IA:
+
+```js
+buildBlindedSystemPrompt(B, tipoGerada) // assets/js/02-api.js, linha 478
+```
+
+Contém:
+- Instruções de Tailwind (rem, não px)
+- Regras de HTML (sem placeholders, sem links vazios)
+- Estrutura de copy (Problema → Solução → Benefícios → Prova → CTA)
+- Restrições técnicas (acessibilidade, responsividade)
+- **Checklist de qualidade** (inclui verificação de travessão)
+
+### DNA Adsgator
+
+Está em `estrutura-copy.js` (linha 106–129). Contém:
+- 1ª pessoa sempre
+- Zero corporativo
+- Comunicação direta
+- Tom conversacional com autoridade
+- Foco na ação
+- **Linguagem natural sem travessão (—)**
+
+### Regra Crítica
+
+Todos os prompts incluem:
+> "NUNCA invente informações. Se não houver, use vazio."
+
+---
+
+## 13. O Que Nunca Fazer
 
 - ❌ Reescrever app.js, 01-state.js, 03-ui.js inteiros
 - ❌ Remover ou renomear IDs listados em "IDs Críticos"

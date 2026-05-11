@@ -539,7 +539,21 @@ SEM footer genérico — sempre com identidade visual conectada à página
     const intencao = B.intencao || {};
     const seo = B.seo || {};
     const estruturaCopyBlocos = B.estruturaCopyBlocos || [];
-    const artDirection = B.artDirection || B.arte_ficha || {}; // Fallback para arte_ficha se artDirection não existir
+    // Tentar parsear a direção de arte aprovada
+    let artDirection = B.artDirection || {};
+    if (!Object.keys(artDirection).length && B.arte_ficha_aprovada) {
+      try {
+        artDirection = typeof B.arte_ficha_aprovada === 'string'
+          ? JSON.parse(B.arte_ficha_aprovada)
+          : B.arte_ficha_aprovada;
+      } catch (e) {
+        artDirection = {};
+      }
+    }
+    // Fallback para B.arte_ficha se nada acima funcionou
+    if (!Object.keys(artDirection).length && B.arte_ficha) {
+      artDirection = B.arte_ficha;
+    }
 
     const nomeCliente = B.nome_cliente || P.name || 'Não informado';
     const slug = P.slug || 'projeto';

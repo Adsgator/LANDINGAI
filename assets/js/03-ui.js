@@ -260,18 +260,24 @@ Object.assign(window.App, {
 
     if (prev) {
       prev.style.visibility = (screen === 'intake' || screen === 'google-ads') ? 'hidden' : 'visible';
-      prev.onclick = () => this.goPrev();
+      // Remover listeners antigos e adicionar novo
+      const prevClone = prev.cloneNode(true);
+      prev.parentNode.replaceChild(prevClone, prev);
+      prevClone.addEventListener('click', () => this.goPrev());
     }
     if (next) {
       if (screen === 'review' || screen === 'google-ads') {
         next.style.display = 'none';
       } else {
         next.style.display = '';
-        next.onclick = () => this.goNext();
-        next.innerHTML = screen === 'art'
+        // Remover listeners antigos e adicionar novo
+        const nextClone = next.cloneNode(true);
+        next.parentNode.replaceChild(nextClone, next);
+        nextClone.addEventListener('click', () => this.goNext());
+        nextClone.innerHTML = screen === 'art'
           ? '<i data-lucide="check-square" style="width:16px;height:16px"></i> Revisar'
           : 'Próximo <i data-lucide="arrow-right" style="width:16px;height:16px"></i>';
-        lucide.createIcons({ nodes: [next] });
+        lucide.createIcons({ nodes: [nextClone] });
       }
     }
     if (center) {

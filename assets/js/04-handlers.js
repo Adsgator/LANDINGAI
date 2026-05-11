@@ -25,10 +25,6 @@ Object.assign(window.App, {
           }
         }
 
-        // Se for campo de arte, forçar re-render para mostrar botão de aprovação manual
-        if (['arte_cor_principal', 'arte_fonte_principal'].includes(field)) {
-          this.renderScreen(true);
-        }
       });
     });
 
@@ -133,6 +129,25 @@ Object.assign(window.App, {
       });
     }
 
+    // ── Upload Referências Visuais (drag and drop) ──────────
+    const refZone = container.querySelector('#art-upload-zone-refs');
+    const refInput = refZone?.querySelector('input[type="file"]');
+    if (refZone && refInput) {
+      refZone.addEventListener('click', e => { if (e.target !== refInput) refInput.click(); });
+      refZone.addEventListener('dragover', e => { e.preventDefault(); refZone.classList.add('drag-over'); });
+      refZone.addEventListener('dragleave', () => refZone.classList.remove('drag-over'));
+      refZone.addEventListener('drop', e => {
+        e.preventDefault();
+        refZone.classList.remove('drag-over');
+        this.handleReferenciaDropFiles(Array.from(e.dataTransfer.files));
+      });
+      refInput.addEventListener('change', () => {
+        if (refInput.files && refInput.files.length > 0) {
+          App.adicionarReferenciaVisual({ target: refInput });
+        }
+      });
+    }
+
     // ── Referências de Arte (add/remove) ────────────────────
     container.querySelectorAll('[data-add-ref]').forEach(btn => {
       btn.addEventListener('click', () => this.addArtRef(btn.dataset.addRef));
@@ -176,6 +191,23 @@ Object.assign(window.App, {
     // ── Estrutura: Aprovar ────────────────────────────────────────
     const approveEstruturaBtn = container.querySelector('#btn-approve-estrutura');
     if (approveEstruturaBtn) approveEstruturaBtn.addEventListener('click', () => this.aprovarEstrutura());
+
+    // ── Estrutura: Salvar Manual ──────────────────────────────────
+    const saveManualBtn = container.querySelector('#btn-save-estrutura-manual');
+    if (saveManualBtn) {
+      saveManualBtn.addEventListener('click', () => {
+        const textarea = container.querySelector('#estrutura-json-manual');
+        if (!textarea) return;
+        try {
+          const json = JSON.parse(textarea.value);
+          this.setField('estrutura_lp', JSON.stringify(json));
+          this.showToast('✅ Estrutura salva com sucesso!', 'success');
+          this.renderScreen();
+        } catch (e) {
+          this.showToast('❌ JSON inválido: ' + e.message, 'error');
+        }
+      });
+    }
 
     // ── Estrutura: Refinar ────────────────────────────────────────
     const refinarEstruturaBtn = container.querySelector('#btn-refinar-estrutura');
@@ -310,6 +342,7 @@ REGRAS:
 2. NUNCA invente informações. Se não houver info, use "".
 3. Garanta que o JSON seja VÁLIDO e bem formatado.
 4. Responda APENAS com o objeto JSON, sem textos extras ou markdown.
+5. Escreva textos (depoimentos, descrições, copy) de forma natural e conversacional. PROIBIDO usar travessão (—).
 
 ESTRUTURA DO JSON:
 {
@@ -347,6 +380,11 @@ ${briefing}
         }
       });
     });
+
+    // Garantir que depoimentos tem um valor válido (sim/nao)
+    if (!this.B.depoimentos || !['sim', 'nao'].includes(this.B.depoimentos)) {
+      this.setField('depoimentos', 'nao');
+    }
 
     // Atualiza segmento na sidebar imediatamente
     const segEl = document.getElementById('project-segment');

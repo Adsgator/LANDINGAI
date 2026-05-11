@@ -62,6 +62,71 @@ Object.assign(window.App, {
   // ============================================================
 
   /**
+   * Retorna as regras do DNA Adsgator conforme o tipo de negócio
+   */
+  obterDNAAdsgatorPorTipo(tipo) {
+    const tipoNormalizado = (tipo || 'servico').toLowerCase();
+
+    const dnasPorTipo = {
+      'servico': `**Foco em Credibilidade e Proximidade**
+O texto reforça especialização, experiência e confiança no profissional. Cada elemento mostra por que escolher VOCÊ, não um concorrente. Destaque autoridade, depoimentos reais e cases específicos.
+
+**Primeira Pessoa Sempre**
+A copy fala do profissional para o visitante. Use "eu", "meu", "com você" — nunca terceira pessoa. Se o profissional é Maria, a copy diz "Eu atendo..." — nunca "Maria atende...".
+
+**Foco no Resultado Mensurável**
+Para serviços, mostre ANTES/DEPOIS real, transformações comprovadas, tempo de resultado. Evite promessas vagas. "Você sairá da sessão com X" é melhor que "Transformação total".`,
+
+      'mentoria': `**Foco na Transformação Progressiva**
+O texto mostra a jornada do aluno: onde está agora → onde quer chegar → como você o leva lá. Cada bloco representa um passo dessa transformação. Use storytelling do resultado.
+
+**Primeira Pessoa Sempre**
+A copy fala do mentor para o mentorado. Use "eu guio", "te levo", "meu método" — construa confiança pessoal.
+
+**Linguagem Aspiracional sem Ser Fake**
+Descreva o resultado final que o mentorado pode alcançar. Seja realista: "90 dias para..." é melhor que "transformação garantida". Mostre o caminho, não mágica.`,
+
+      'consultoria': `**Foco em Resultado Quantificável e ROI**
+O texto prova que a consultoria gera valor mensurável: aumento de receita, redução de custos, otimização de processos. Use números e métricas reais.
+
+**Linguagem B2B Direta**
+Fale com decisores: CEO, CFO, diretor de operações. Seja objetivo. Evite buzzwords. "Reduzir 35% de desperdício em 60 dias" é melhor que "otimização operacional".
+
+**Foco em Expertise Comprovada**
+Cite industrias atendidas, cases específicos, certificações. O comprador de consultoria busca prova de que você já resolveu problema similar.`,
+
+      'produto': `**Foco na Experiência de Compra**
+O texto reduz fricção até o checkout. Cada bloco responde: por que comprar? qual é o benefício? como funciona? quanto custa? por que agora?
+
+**Linguagem de Vantagem Imediata**
+"Entrega em 24h", "garantia de 30 dias", "sem risco". Mostre o que o cliente recebe AGORA, não promessas futuras.
+
+**Prova Social Abundante**
+Avaliações, número de vendas, fotos de clientes reais usando. Para produtos digitais, acesso imediato. Para físicos, frete e prazo em destaque.`,
+
+      'saas': `**Foco em Problema → Solução → Resultado**
+O texto começa no ponto de dor (o que o usuário sofre hoje) e termina com a vida melhor (com o seu SaaS). Cada feature é um benefício, não uma funcionalidade.
+
+**Linguagem de Eficiência**
+"Economize 10 horas por semana", "integra com X em 5 minutos", "sem necessidade de programação". Fale no tempo do usuário ocupado.
+
+**Foco em Onboarding Simples**
+Destaque facilidade de entrada, trial grátis ou plano inicial barato, suporte. Reduza barreiras mentais.`,
+
+      'curso': `**Foco na Ação**
+Cada título, subtítulo e botão guia o usuário para o CTA principal. Não há texto decorativo — cada palavra tem função persuasiva. O objetivo é fazer o aluno clicar em "Comprar Curso".
+
+**Linguagem de Urgência e Escassez Ética**
+"Inscrições abertas até X", "apenas 30 vagas", "preço especial hoje". Crie movimento sem enganar.
+
+**Prova Social de Resultado**
+Mostre quantos alunos já fizeram, depoimentos específicos do que conseguiram após o curso, menção a nomes reais (com permissão). "João saiu de $0 para $5k/mês" impacta mais que "mudou de vida".`
+    };
+
+    return dnasPorTipo[tipoNormalizado] || dnasPorTipo['servico'];
+  },
+
+  /**
    * Monta o arquivo .md completo para download e envio à IA externa
    */
   gerarArquivoEstruturaCopy() {
@@ -106,11 +171,10 @@ Leia o briefing abaixo na íntegra. Execute os três passos na ordem. Não pule 
 
 ## DNA ADSGATOR — REGRAS INEGOCIÁVEIS
 
+${this.obterDNAAdsgatorPorTipo(briefing.tipo)}
+
 **Intenção de Busca em Primeiro Lugar**
 O texto espelha a dor exata que levou o usuário a pesquisar. A H1 justifica o clique no anúncio nos primeiros 3 segundos. Venda o alívio da dor, não o nome técnico do serviço.
-
-**Primeira Pessoa Sempre**
-A copy fala do profissional para o visitante. Use "eu", "meu", "com você" — nunca terceira pessoa. Se o profissional é Maria, a copy diz "Eu atendo..." — nunca "Maria atende...".
 
 **Zero Institucional**
 Proibido: "inovador", "excelência", "missão", "visão", "somos apaixonados por", "comprometidos com", "resultados extraordinários", "transforme sua vida". Se parece site corporativo genérico, está errado.
@@ -120,9 +184,6 @@ Sem promessas milagrosas. Sem adjetivar o óbvio. A copy entrega o que o serviç
 
 **Tom Conversacional com Autoridade**
 Especialista conversando olho no olho. Firmeza sem arrogância. Proximidade sem informalidade excessiva.
-
-**Foco na Ação**
-Cada título, subtítulo e botão guia o usuário para o CTA principal. Não há texto decorativo — cada palavra tem função persuasiva.
 
 **Linguagem Natural sem Travessão**
 Proibido usar travessão (—) na copy. Escreva de forma natural e conversacional, como se estivesse falando diretamente com o cliente. Use vírgulas, pontos ou "e", nunca travessão.

@@ -719,28 +719,40 @@ ${copyBlocos || '(copy não gerada)'}
 
 **Cores da Marca:**
 \`\`\`
-Cor principal:    ${artDirection.corPrincipal || artDirection.cor_primaria || 'Sem identidade definida'}
-Cor secundária:   ${artDirection.corSecundaria || artDirection.cor_secundaria || 'Não existe'}
-Logo disponível:  ${B.logo ? (B.logo_formato || 'Sim') : 'Não'}
+Cor principal:    ${artDirection.corPrincipal || artDirection.cor_primaria || B.arte_cor_principal || 'Sem identidade definida'}
+Cor secundária:   ${artDirection.corSecundaria || artDirection.cor_secundaria || B.arte_cor_secundaria || 'Não existe'}
+Cor complementar: ${B.arte_cor_complementar || 'Não existe'}
+Fundo (Base):     ${B.arte_cor_fundo || '#ffffff'}
+Texto Principal:  ${B.arte_cor_texto || '#1d1d1c'}
+Texto Suporte:    ${B.arte_cor_suporte || '#535353'}
+Logo disponível:  ${B.arte_logo === 'nao' ? 'Não' : (B.arte_logo ? B.arte_logo.toUpperCase() : (B.logo ? (B.logo_formato || 'Sim') : 'Não'))}
+Desc. Logo:       ${B.arte_logo_descricao || '—'}
+Qualidade Fotos:  ${B.arte_fotos === 'boa' ? 'Boa qualidade' : (B.arte_fotos === 'media' ? 'Qualidade média' : 'Sem fotos')}
 Observações:      ${artDirection.corObservacoes || artDirection.cores_notas || '—'}
+\`\`\`
+
+**Tipografia:**
+\`\`\`
+Fonte Principal (Títulos):       ${B.arte_fonte_principal || 'Inter'}
+Fonte Secundária (Textos Apoio): ${B.arte_fonte_secundaria || 'Inter'}
 \`\`\`
 
 **Direção Geral:**
 \`\`\`
 Estilo desejado:    ${artDirection.estilo || artDirection.estilo_geral || '—'}
 O que não quero:    ${artDirection.naoQuero || artDirection.estilo_nao_quero || '—'}
-Tema:               ${artDirection.tema || 'IA decide com base nas referências'}
-Intensidade visual: ${artDirection.intensidade || artDirection.intensidade_visual || '—'}
+Tema:               ${artDirection.tema || B.arte_tema || 'IA decide com base nas referências'}
+Intensidade visual: ${artDirection.intensidade || artDirection.intensidade_visual || B.arte_intensidade || '—'}
 \`\`\`
 
 **Referências Visuais:**
-${(artDirection.referenciasVisuais || B.arte_referencias_pessoais || []).map((r, i) => `
+${(artDirection.referenciasVisuais || B.referenciasVisuais || B.arte_referencias_pessoais || []).map((r, i) => `
 Referência ${i + 1}: ${r.link || r.nome || r.url || '—'}
-O que me atraiu: ${r.descricao || r.motivo || '—'}
+O que me atraiu: ${r.descricao || r.nota || r.motivo || '—'}
 `).join('') || 'Nenhuma referência adicionada'}
 
 **Referências do Nicho:**
-${artDirection.referenciasNicho || B.arte_referencias_nicho?.join(', ') || '—'}
+${artDirection.referenciasNicho || B.arte_referencias_nicho?.map(r => r.url).join(', ') || '—'}
 
 **Direção do Footer:**
 \`\`\`
@@ -752,7 +764,7 @@ Sensação:          ${artDirection.footer_sensacao || '—'}
 
 **Menu Mobile:**
 \`\`\`
-Estilo desejado:   ${artDirection.menu_estilo || 'Fullscreen overlay (padrão Adsgator)'}
+Estilo desejado:   ${artDirection.menu_estilo || B.arte_menu_mobile || 'Fullscreen overlay (padrão Adsgator)'}
 Elemento especial: ${artDirection.menu_especial || '—'}
 \`\`\`
 `;

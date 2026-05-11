@@ -20,6 +20,19 @@ Object.assign(window.App, {
         </p>
       </div>
 
+      ${B.arte_ficha_aprovada ? `
+      <div class="aprovado-banner" style="margin-bottom: 24px;">
+        <i data-lucide="check-circle" style="width:16px;height:16px;color:var(--accent)"></i>
+        <span>Direção de Arte aprovada</span>
+        <button class="btn-ghost btn-sm" onclick="App.reabrirModalDirecaoArte();" style="margin-left: auto;">
+          👁️ Ver Direção
+        </button>
+        <button class="btn-ghost btn-sm" onclick="App.setField('arte_ficha_aprovada','');App.renderScreen();">
+          Reeditar
+        </button>
+      </div>
+      ` : ''}
+
       <!-- Ativos da Marca -->
       <div class="art-section">
         <div class="art-section-header">

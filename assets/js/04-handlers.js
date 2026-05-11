@@ -203,6 +203,12 @@ Object.assign(window.App, {
           this.setField('estrutura_lp', JSON.stringify(json));
           this.showToast('✅ Estrutura salva com sucesso!', 'success');
           this.renderScreen();
+          // Automatically approve after save to prevent "Estrutura Pendente" warning
+          setTimeout(() => {
+            if (this.aprovarEstrutura) {
+              this.aprovarEstrutura();
+            }
+          }, 300);
         } catch (e) {
           this.showToast('❌ JSON inválido: ' + e.message, 'error');
         }
@@ -711,6 +717,9 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
       `;
     }
 
+    // Aba 5: Editar — Preencher campos com dados atuais
+    this.populateEditArtFields(ficha);
+
     // Atualizar ícones Lucide
     if (window.lucide) {
       lucide.createIcons({ nodes: [modal] });
@@ -718,7 +727,7 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
 
     // Exibir modal via função padrão
     this.openModal('modal-direcao-arte');
-    
+
     // Garantir que a primeira aba está ativa
     if (this.selecionarAbaModal) {
       this.selecionarAbaModal('direacao');
@@ -739,6 +748,135 @@ Responda APENAS com um objeto JSON válido (sem markdown, sem \`\`\`json):
     this.showToast('Direção de Arte aprovada!', 'success');
     this.closeModal('modal-art-result');
     this.renderScreen();
+  },
+
+  /* ============================================================
+     EDITAR DIREÇÃO DE ARTE
+  ============================================================ */
+
+  populateEditArtFields(ficha) {
+    // Preencher campos da aba Editar com dados da ficha
+    const temaBtn = document.querySelector(`[data-edit-field="tema"][data-value="${ficha.tema || 'claro'}"]`);
+    if (temaBtn) temaBtn.classList.add('on');
+
+    const tomVisual = document.getElementById('edit-tom-visual');
+    if (tomVisual) tomVisual.value = ficha.tom_visual || '';
+
+    const displayFont = document.getElementById('edit-tipografia-display');
+    if (displayFont) displayFont.value = ficha.tipografia?.display || '';
+
+    const bodyFont = document.getElementById('edit-tipografia-body');
+    if (bodyFont) bodyFont.value = ficha.tipografia?.body || '';
+
+    // Cores: tentar extrair a primeira cor primária e secundária
+    const paleta = ficha.paleta || [];
+    const corPrimaria = document.getElementById('edit-cor-primaria');
+    const corSecundaria = document.getElementById('edit-cor-secundaria');
+
+    if (paleta.length > 0 && corPrimaria) {
+      corPrimaria.value = paleta[0].hex || '#000000';
+    }
+    if (paleta.length > 1 && corSecundaria) {
+      corSecundaria.value = paleta[1].hex || '#FFFFFF';
+    } else if (corSecundaria) {
+      corSecundaria.value = '#FFFFFF';
+    }
+
+    // Mostrar botão de salvar edições
+    const btnSalvar = document.getElementById('btn-salvar-edicoes');
+    if (btnSalvar) btnSalvar.style.display = '';
+  },
+
+  selectEditField(field, value) {
+    // Toggle tema visual
+    if (field === 'tema') {
+      document.querySelectorAll(`[data-edit-field="tema"]`).forEach(btn => {
+        btn.classList.remove('on');
+      });
+      document.querySelector(`[data-edit-field="tema"][data-value="${value}"]`).classList.add('on');
+    }
+  },
+
+  salvarEdicoesArte() {
+    const B = this.B || {};
+    if (!B.ficha_direcao_arte) {
+      this.showToast('Nenhuma ficha de arte para editar.', 'warning');
+      return;
+    }
+
+    // Ler dados atuais
+    let ficha = {};
+    try {
+      ficha = typeof B.ficha_direcao_arte === 'string'
+        ? JSON.parse(B.ficha_direcao_arte)
+        : B.ficha_direcao_arte;
+    } catch (e) {
+      this.showToast('Erro ao processar ficha de arte.', 'error');
+      return;
+    }
+
+    // Atualizar campos editáveis
+    const tema = document.querySelector('[data-edit-field="tema"].on')?.getAttribute('data-value');
+    if (tema) ficha.tema = tema;
+
+    const tomVisual = document.getElementById('edit-tom-visual')?.value.trim();
+    if (tomVisual) ficha.tom_visual = tomVisual;
+
+    const displayFont = document.getElementById('edit-tipografia-display')?.value.trim();
+    if (displayFont) {
+      if (!ficha.tipografia) ficha.tipografia = {};
+      ficha.tipografia.display = displayFont;
+    }
+
+    const bodyFont = document.getElementById('edit-tipografia-body')?.value.trim();
+    if (bodyFont) {
+      if (!ficha.tipografia) ficha.tipografia = {};
+      ficha.tipografia.body = bodyFont;
+    }
+
+    const corPrimaria = document.getElementById('edit-cor-primaria')?.value;
+    const corSecundaria = document.getElementById('edit-cor-secundaria')?.value;
+
+    if (corPrimaria || corSecundaria) {
+      if (!ficha.paleta) ficha.paleta = [];
+      if (corPrimaria) {
+        if (!ficha.paleta[0]) ficha.paleta[0] = {};
+        ficha.paleta[0].hex = corPrimaria;
+      }
+      if (corSecundaria) {
+        if (!ficha.paleta[1]) ficha.paleta[1] = {};
+        ficha.paleta[1].hex = corSecundaria;
+      }
+    }
+
+    // Salvar ficha atualizada
+    this.setField('ficha_direcao_arte', JSON.stringify(ficha));
+    this.setField('arte_ficha_aprovada', JSON.stringify(ficha));
+    this.autosave();
+
+    this.showToast('✅ Edições salvas com sucesso!', 'success');
+
+    // Re-renderizar o modal para refletir mudanças
+    setTimeout(() => {
+      this._showArtResultModal(ficha);
+    }, 300);
+  },
+
+  reabrirModalDirecaoArte() {
+    const B = this.B || {};
+    if (!B.arte_ficha_aprovada) {
+      this.showToast('Nenhuma direção de arte aprovada.', 'warning');
+      return;
+    }
+
+    try {
+      const ficha = typeof B.arte_ficha_aprovada === 'string'
+        ? JSON.parse(B.arte_ficha_aprovada)
+        : B.arte_ficha_aprovada;
+      this._showArtResultModal(ficha);
+    } catch (e) {
+      this.showToast('Erro ao abrir direção de arte.', 'error');
+    }
   },
 
   async runEstruturaAnalysis() {

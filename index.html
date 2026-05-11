@@ -354,6 +354,7 @@
         <button class="tab-btn" onclick="App.selecionarAbaModal('referencias')">📸 Referências</button>
         <button class="tab-btn" onclick="App.selecionarAbaModal('cores')">🎯 Cores e Elementos</button>
         <button class="tab-btn" onclick="App.selecionarAbaModal('detalhes')">⚙️ Detalhes</button>
+        <button class="tab-btn" onclick="App.selecionarAbaModal('editar')">✏️ Editar</button>
       </div>
 
       <!-- Conteúdo com scroll -->
@@ -381,10 +382,61 @@
           <h4 style="margin: 0 0 1rem 0; font-size: 16px; font-weight: 700;">Detalhes Técnicos</h4>
           <div id="content-detalhes" class="modal-content-area"></div>
         </div>
+
+        <!-- Aba 5: Editar -->
+        <div id="aba-editar" class="aba-modal" style="padding: 1.5rem;">
+          <h4 style="margin: 0 0 1rem 0; font-size: 16px; font-weight: 700;">Editar Direção de Arte</h4>
+          <div id="content-editar" class="modal-content-area" style="display: flex; flex-direction: column; gap: 16px;">
+            <!-- Tema -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Tema Visual</label>
+              <div style="display: flex; gap: 8px;">
+                <button class="chip" data-edit-field="tema" data-value="escuro" onclick="App.selectEditField('tema', 'escuro')" style="flex: 1;">🌙 Escuro</button>
+                <button class="chip" data-edit-field="tema" data-value="claro" onclick="App.selectEditField('tema', 'claro')" style="flex: 1;">☀️ Claro</button>
+              </div>
+            </div>
+
+            <!-- Tom Visual -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Tom Visual</label>
+              <textarea id="edit-tom-visual" placeholder="Ex: Minimalista, moderno, acolhedor..." style="font-size: 13px; padding: 10px; border: 1px solid var(--border-default); border-radius: 6px; font-family: inherit; resize: vertical; min-height: 80px; background: var(--bg-raised); color: var(--text-primary);"></textarea>
+            </div>
+
+            <!-- Tipografia Display -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Fonte para Títulos (Display)</label>
+              <input id="edit-tipografia-display" type="text" placeholder="Ex: Inter, Poppins..." style="font-size: 13px; padding: 10px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--bg-raised); color: var(--text-primary);">
+            </div>
+
+            <!-- Tipografia Body -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Fonte para Textos (Body)</label>
+              <input id="edit-tipografia-body" type="text" placeholder="Ex: Inter, Open Sans..." style="font-size: 13px; padding: 10px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--bg-raised); color: var(--text-primary);">
+            </div>
+
+            <!-- Cores Principais -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Cor Primária</label>
+              <input id="edit-cor-primaria" type="color" style="width: 100%; height: 50px; border: 1px solid var(--border-default); border-radius: 6px; cursor: pointer;">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Cor Secundária</label>
+              <input id="edit-cor-secundaria" type="color" style="width: 100%; height: 50px; border: 1px solid var(--border-default); border-radius: 6px; cursor: pointer;">
+            </div>
+
+            <!-- Observações -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); text-transform: uppercase;">Observações (opcional)</label>
+              <textarea id="edit-observacoes" placeholder="Adicione qualquer observação ou ajuste necesário..." style="font-size: 13px; padding: 10px; border: 1px solid var(--border-default); border-radius: 6px; font-family: inherit; resize: vertical; min-height: 60px; background: var(--bg-raised); color: var(--text-primary);"></textarea>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div class="modal-footer" style="padding: 1.5rem; border-top: 1px solid var(--border-default); display: flex; gap: 1rem;">
         <button class="btn-ghost" onclick="App.closeModal('modal-direcao-arte')" style="flex: 1;">← Voltar</button>
+        <button class="btn-secondary" id="btn-salvar-edicoes" onclick="App.salvarEdicoesArte()" style="flex: 1; display: none;">💾 Salvar Edições</button>
         <button class="btn-primary" onclick="App.aprovarDirecaoArte()" style="flex: 1;">✅ Aprovar Direção de Arte</button>
       </div>
     </div>
